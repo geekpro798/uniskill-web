@@ -1,7 +1,9 @@
 "use client";
 
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useState } from "react";
+import { useSession, signOut } from "next-auth/react";
+import SignInModal from "./SignInModal";
 
 /* ─── Navbar 组件：固定在顶部的导航栏 ──────────────────────────────────
    功能：随滚动增强背景模糊效果，Logo 在左，Sign In 按钮在右
@@ -91,11 +93,12 @@ export default function Navbar() {
 }
 
 /* ─── NavbarAuthButton：根据登录状态显示不同按钮 ────────────────────────
-   - 未登录：显示 Sign In → 触发 GitHub OAuth
+   - 未登录：点击 Sign In → 打开 SignInModal 弹窗确认授权
    - 已登录：显示用户头像 + Dashboard 链接 + Sign Out
    ─────────────────────────────────────────────────────────────────────── */
 function NavbarAuthButton() {
     const { data: session, status } = useSession();
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     /* 加载中：显示占位骨架 */
     if (status === "loading") {
@@ -129,15 +132,19 @@ function NavbarAuthButton() {
         );
     }
 
-    /* 未登录：Sign In 按钮 → GitHub OAuth */
+    /* 未登录：Sign In 按钮 → 打开 Modal 弹窗 */
     return (
-        <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
-            className="px-4 py-2 rounded-lg text-sm font-semibold border border-blue-500/50 text-blue-400 hover:bg-blue-500/10 hover:border-blue-400 transition-all duration-200"
-        >
-            Sign In
-        </motion.button>
+        <>
+            <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setIsModalOpen(true)}
+                className="px-4 py-2 rounded-lg text-sm font-semibold border border-blue-500/50 text-blue-400 hover:bg-blue-500/10 hover:border-blue-400 transition-all duration-200"
+            >
+                Sign In
+            </motion.button>
+            {/* 授权确认 Modal：弹窗打开 GitHub OAuth，授权后自动关闭 */}
+            <SignInModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+        </>
     );
 }
