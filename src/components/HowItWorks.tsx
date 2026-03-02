@@ -134,7 +134,7 @@ export default function HowItWorks() {
                             key={step.number}
                             initial={{ opacity: 0, y: 40 }}
                             animate={isInView ? { opacity: 1, y: 0 } : {}}
-                            transition={{ duration: 0.6, delay: 0.1 + index * 0.15, ease: [0.25, 0.46, 0.45, 0.94] }}
+                            transition={{ duration: 0.6, delay: 0.1 + index * 0.15, ease: [0.25, 0.46, 0.45, 0.94] as const }}
                             className="group relative"
                         >
                             {/* 卡片主体 */}
