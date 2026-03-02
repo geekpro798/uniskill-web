@@ -53,8 +53,11 @@ export async function handleUserRegistration(
 
     // 用户已存在，直接返回（不重新生成 Token）
     if (existingUser) {
+        console.log("[auth] User already exists in DB:", existingUser.github_id);
         return { profile: existingUser as UserProfile };
     }
+
+    console.log("[auth] New user detected, creating profile for:", githubId);
 
     // ─── Step 2: 生成新的原始 Token ───────────────────────────────────
     // 格式：us- + UUID，例如 us-550e8400-e29b-41d4-a716-446655440000
@@ -85,9 +88,13 @@ export async function handleUserRegistration(
         throw new Error(`Database insert failed: ${insertError.message}`);
     }
 
+    console.log("[auth] Inserted new profile successfully. Profile ID:", newProfile?.id);
+
     // ─── Step 5: 同步到 Cloudflare KV（通过网关 Admin API）─────────
     try {
         const gatewayUrl = process.env.GATEWAY_URL ?? "https://your-gateway.workers.dev";
+        console.log(`[auth] Initiating KV sync to ${gatewayUrl}/admin/provision...`);
+
         const response = await fetch(`${gatewayUrl}/admin/provision`, {
             method: "POST",
             headers: {
@@ -101,12 +108,15 @@ export async function handleUserRegistration(
         });
 
         if (!response.ok) {
+            const errText = await response.text();
             // KV 同步失败不阻断注册流程，仅记录警告日志
-            console.warn("[auth] Cloudflare KV sync failed:", response.status);
+            console.warn(`[auth] Cloudflare KV sync failed: Status ${response.status}, Body: ${errText}`);
+        } else {
+            console.log("[auth] Cloudflare KV sync successful!");
         }
     } catch (kvError) {
         // 网络错误同样不阻断，后续可补偿同步
-        console.warn("[auth] Cloudflare KV sync error:", kvError);
+        console.warn("[auth] Cloudflare KV sync error (network etc):", kvError);
     }
 
     // ─── Step 6: 返回结果，rawToken 仅此一次返回给前端展示 ───────────
