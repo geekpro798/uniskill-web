@@ -59,64 +59,62 @@ export async function handleUserRegistration(
 
     console.log("[auth] New user detected, creating profile for:", githubId);
 
-    // ─── Step 2: 生成新的原始 Token ───────────────────────────────────
-    // 格式：us- + UUID，例如 us-550e8400-e29b-41d4-a716-446655440000
+    // 1. Generate the raw token and its unique hash ONCE
+    // 仅生成一次原始 Token 及其唯一的哈希值
     const rawToken = `us-${crypto.randomUUID()}`;
+    const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
 
-    // ─── Step 3: 计算 SHA-256 哈希，仅存哈希值到数据库（安全模式）────
-    const tokenHash = crypto
-        .createHash("sha256")
-        .update(rawToken)
-        .digest("hex");
-
-    // ─── Step 4: 将新用户 profile 存入 Supabase ──────────────────────
-    const { data: newProfile, error: insertError } = await supabase
+    // 2. Insert into Supabase
+    // 存入 Supabase
+    const { data: newProfile, error: dbError } = await supabase
         .from("profiles")
         .insert({
             github_id: githubId,
             email: githubProfile.email ?? null,
             name: githubProfile.name ?? null,
             avatar_url: githubProfile.image ?? null,
-            token_hash: tokenHash,
-            credits: 50, // 新用户赠送 50 次调用配额
+            token_hash: tokenHash, // 使用变量 A
+            credits: 50,
         })
         .select()
         .single();
 
-    if (insertError) {
-        console.error("[auth] Failed to insert user (insertError):", insertError);
-        throw new Error(`Database insert failed: ${insertError.message}`);
+    if (dbError) {
+        console.error("[auth] Failed to insert user (dbError):", dbError);
+        throw new Error(`Database insert failed: ${dbError.message}`);
     }
 
     console.log("[auth] Inserted new profile successfully. Profile ID:", newProfile?.id);
 
-    // ─── Step 5: 同步到 Cloudflare KV（通过网关 Admin API）─────────
-    try {
-        const gatewayUrl = process.env.GATEWAY_URL ?? "https://your-gateway.workers.dev";
-        console.log(`[auth] Initiating KV sync to ${gatewayUrl}/admin/provision...`);
+    // 3. Sync to Cloudflare KV
+    // 同步到 Cloudflare KV
+    if (!dbError) {
+        try {
+            const gatewayUrl = process.env.GATEWAY_URL ?? "https://your-gateway.workers.dev";
+            console.log(`[auth] Initiating KV sync to ${gatewayUrl}/admin/provision...`);
 
-        const response = await fetch(`${gatewayUrl}/admin/provision`, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${process.env.ADMIN_KEY}`,
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                hash: tokenHash,
-                credits: 50,
-            }),
-        });
+            const syncRes = await fetch(`${gatewayUrl}/admin/provision`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${process.env.ADMIN_KEY}`,
+                    "Content-Type": "application/json",
+                },
+                // CRITICAL: Must use the same 'tokenHash' variable here
+                // 关键：此处必须使用同一个 'tokenHash' 变量
+                body: JSON.stringify({ hash: tokenHash, credits: 50 }),
+            });
 
-        if (!response.ok) {
-            const errText = await response.text();
-            // KV 同步失败不阻断注册流程，仅记录警告日志
-            console.warn(`[auth] Cloudflare KV sync failed: Status ${response.status}, Body: ${errText}`);
-        } else {
-            console.log("[auth] Cloudflare KV sync successful!");
+            if (!syncRes.ok) {
+                const errText = await syncRes.text();
+                // KV 同步失败不阻断注册流程，仅记录警告日志
+                console.warn(`[auth] Cloudflare KV sync failed: Status ${syncRes.status}, Body: ${errText}`);
+            } else {
+                console.log("[auth] Cloudflare KV sync successful!");
+            }
+        } catch (kvError) {
+            // 网络错误同样不阻断，后续可补偿同步
+            console.warn("[auth] Cloudflare KV sync error (network etc):", kvError);
         }
-    } catch (kvError) {
-        // 网络错误同样不阻断，后续可补偿同步
-        console.warn("[auth] Cloudflare KV sync error (network etc):", kvError);
     }
 
     // ─── Step 6: 返回结果，rawToken 仅此一次返回给前端展示 ───────────
