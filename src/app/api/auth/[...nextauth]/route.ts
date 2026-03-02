@@ -6,7 +6,10 @@ import NextAuth from "next-auth";
 import GithubProvider from "next-auth/providers/github";
 import { handleUserRegistration } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 /* ─── NextAuth 核心配置 ──────────────────────────────────────────────── */
+
 const handler = NextAuth({
     /* 配置 GitHub OAuth Provider */
     providers: [
