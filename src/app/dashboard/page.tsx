@@ -251,17 +251,14 @@ export default function DashboardPage() {
     /* 已登录：渲染 Dashboard */
     const user = session?.user;
 
-    // Safety check matching status
-    if (!user) return null;
-
-    const rawToken = user.rawToken;
-    const initialCredits = user.credits ?? 50;
+    const rawToken = user?.rawToken;
+    const initialCredits = user?.credits ?? 50;
 
     const [liveCredits, setLiveCredits] = useState<number>(initialCredits);
 
     // ── 获取最新活体积分 ──
     const fetchLiveCredits = async () => {
-        if (!user.id) return;
+        if (!user?.id) return;
         try {
             // 注意：这里需要能在前端用的 supabase-js 客户端
             // 我们通过一个专门的 API 路由来抓取，避免把 RLS 或 token 暴露
@@ -282,7 +279,7 @@ export default function DashboardPage() {
         // 当用户切换回当前 Tab 时自动刷新（非常适合 Webhook 异步扣费场景）
         window.addEventListener("focus", fetchLiveCredits);
         return () => window.removeEventListener("focus", fetchLiveCredits);
-    }, [user.id]);
+    }, [user?.id]);
 
     const credits = liveCredits;
 
@@ -303,10 +300,10 @@ export default function DashboardPage() {
 
                     {/* 用户信息 + 登出 */}
                     <div className="flex items-center gap-3">
-                        {user.image && (
-                            <img src={user.image} alt={user.name ?? "User"} className="w-8 h-8 rounded-full border border-slate-700" />
+                        {user?.image && (
+                            <img src={user.image} alt={user?.name ?? "User"} className="w-8 h-8 rounded-full border border-slate-700" />
                         )}
-                        <span className="hidden sm:block text-sm text-slate-400">{user.name}</span>
+                        <span className="hidden sm:block text-sm text-slate-400">{user?.name}</span>
                         <button
                             onClick={() => signOut({ callbackUrl: "/" })}
                             className="btn-outline text-xs px-3 py-1.5"
@@ -327,7 +324,7 @@ export default function DashboardPage() {
                     className="mb-8"
                 >
                     <h1 className="text-2xl font-black text-white mb-1">
-                        Welcome back, {user.name?.split(" ")[0]} 👋
+                        Welcome back, {user?.name?.split(" ")[0]} 👋
                     </h1>
                     <p className="text-slate-500 text-sm">Your UniSkill.io API Gateway dashboard</p>
                 </motion.div>
