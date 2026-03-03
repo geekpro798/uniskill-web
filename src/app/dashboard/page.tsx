@@ -203,6 +203,33 @@ function QuickstartCard({ token }: { token?: string }) {
 export default function DashboardPage() {
     const { data: session, status } = useSession();
 
+    // ── ALL HOOKS MUST BE AT TOP LEVEL (React Rules of Hooks) ──
+    const initialCredits = session?.user?.credits ?? 50;
+    const [liveCredits, setLiveCredits] = useState<number>(initialCredits);
+
+    const fetchLiveCredits = async () => {
+        if (!session?.user?.id) return;
+        try {
+            const res = await fetch("/api/user/credits");
+            if (res.ok) {
+                const data = await res.json();
+                if (typeof data.credits === "number") {
+                    setLiveCredits(data.credits);
+                }
+            }
+        } catch (e) {
+            console.error("Failed to fetch live credits", e);
+        }
+    };
+
+    useEffect(() => {
+        if (status !== "authenticated") return;
+        fetchLiveCredits();
+        window.addEventListener("focus", fetchLiveCredits);
+        return () => window.removeEventListener("focus", fetchLiveCredits);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [status]);
+
     /* 未认证：显示登录提示 */
     if (status === "unauthenticated") {
         return (
@@ -250,37 +277,7 @@ export default function DashboardPage() {
     /* 已登录：渲染 Dashboard */
     /* 已登录：渲染 Dashboard */
     const user = session?.user;
-
     const rawToken = user?.rawToken;
-    const initialCredits = user?.credits ?? 50;
-
-    const [liveCredits, setLiveCredits] = useState<number>(initialCredits);
-
-    // ── 获取最新活体积分 ──
-    const fetchLiveCredits = async () => {
-        if (!user?.id) return;
-        try {
-            // 注意：这里需要能在前端用的 supabase-js 客户端
-            // 我们通过一个专门的 API 路由来抓取，避免把 RLS 或 token 暴露
-            const res = await fetch("/api/user/credits");
-            if (res.ok) {
-                const data = await res.json();
-                if (typeof data.credits === "number") {
-                    setLiveCredits(data.credits);
-                }
-            }
-        } catch (e) {
-            console.error("Failed to fetch live credits", e);
-        }
-    };
-
-    useEffect(() => {
-        fetchLiveCredits();
-        // 当用户切换回当前 Tab 时自动刷新（非常适合 Webhook 异步扣费场景）
-        window.addEventListener("focus", fetchLiveCredits);
-        return () => window.removeEventListener("focus", fetchLiveCredits);
-    }, [user?.id]);
-
     const credits = liveCredits;
 
     return (
