@@ -30,7 +30,7 @@ export default function Navbar() {
             style={{ backgroundColor: navBg, borderBottomColor: navBorder }}
             className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-xl"
         >
-            <nav className="max-w-7xl mx-auto px-6 lg:px-8 h-16 flex items-center justify-between">
+            <nav className="max-w-7xl mx-auto px-6 lg:px-8 h-16 flex items-center justify-between relative">
 
                 {/* ─── Logo 区域：左侧品牌标识 ─── */}
                 <motion.a
@@ -63,47 +63,53 @@ export default function Navbar() {
                     </span>
                 </motion.a>
 
-                {/* ─── 右侧操作区域 ─── */}
+                {/* ─── 居中导航区域：绝对居中，顺序 Skills / Docs / Pricing ─── */}
                 <motion.div
-                    className="flex items-center gap-4"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-1"
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
-                    {/* 文档链接 */}
-                    <a
-                        href="/docs"
-                        className="hidden md:block text-sm text-slate-400 hover:text-slate-200 transition-colors font-medium"
-                    >
-                        Docs
-                    </a>
-
-                    {/* 价格链接 */}
-                    <a
-                        href="/pricing"
-                        className="hidden md:block text-sm text-slate-400 hover:text-slate-200 transition-colors font-medium"
-                    >
-                        Pricing
-                    </a>
-
-                    {/* Skills 链接：对所有用户（含未登录）公开显示，active 时 indigo 高亮 */}
+                    {/* Skills 链接：Zap 图标，active 时 indigo 高亮 */}
                     <motion.a
                         href="/dashboard/skills"
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
-                        className={`hidden md:flex items-center gap-1.5 text-sm font-medium transition-all px-2 py-1 rounded-lg ${isSkillsActive
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${isSkillsActive
                                 ? "text-indigo-400 bg-indigo-500/10 border border-indigo-500/25"
-                                : "text-slate-400 hover:text-slate-200"
+                                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
                             }`}
                     >
-                        {/* Zap 图标 */}
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
                         </svg>
                         Skills
                     </motion.a>
 
-                    {/* Sign In / Dashboard 按钮：根据登录状态切换 */}
+                    {/* Docs 链接 */}
+                    <a
+                        href="/docs"
+                        className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition-all"
+                    >
+                        Docs
+                    </a>
+
+                    {/* Pricing 链接 */}
+                    <a
+                        href="/pricing"
+                        className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition-all"
+                    >
+                        Pricing
+                    </a>
+                </motion.div>
+
+                {/* ─── 右侧操作区域：仅保留 Sign In / Dashboard ─── */}
+                <motion.div
+                    className="flex items-center gap-3 ml-auto"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5 }}
+                >
                     <NavbarAuthButton />
                 </motion.div>
             </nav>
