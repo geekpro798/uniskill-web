@@ -19,7 +19,7 @@ export default function IntegrationCard({ token }: IntegrationCardProps) {
     const displayToken = token ?? "your-token-here";
 
     // 更新后的脚本名称与参数，侧重于"能力注入"
-    const installCmd = `curl -s https://uniskill.io/setup-tools.sh | bash -s -- ${displayToken}`;
+    const installCmd = `curl -fsSL https://uniskill-web.vercel.app/setup-skills.sh | bash -s -- ${displayToken}`;
 
     const handleCopy = () => {
         navigator.clipboard.writeText(installCmd);
@@ -64,8 +64,8 @@ export default function IntegrationCard({ token }: IntegrationCardProps) {
                 <code className="break-all block">
                     <span className="text-slate-500">$ </span>
                     <span className="text-blue-400">curl</span>
-                    <span className="text-slate-400"> -s </span>
-                    <span className="text-green-400">https://uniskill.io/setup-tools.sh</span>
+                    <span className="text-slate-400"> -fsSL </span>
+                    <span className="text-green-400">https://uniskill-web.vercel.app/setup-skills.sh</span>
                     <span className="text-slate-400"> | </span>
                     <span className="text-blue-400">bash</span>
                     <span className="text-slate-400"> -s -- </span>
