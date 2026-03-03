@@ -103,6 +103,13 @@ printf "❓ Do you want to verify the sync now? (y/n): "
 read -r choice < /dev/tty
 
 if [[ "$choice" =~ ^[Yy]$ ]]; then
+    # 8. Dependency Check Logic
+    # 自动检查并安装脚本所需的 Python 依赖
+    if ! python3 -c "import requests" 2>/dev/null; then
+        echo -e "📦 Installing missing Python dependencies (requests)..."
+        pip3 install requests --user
+    fi
+
     echo -e "🚀 Testing synchronization..."
     python3 uniskill_run.py
 else
