@@ -2,6 +2,7 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useSession, signIn, signOut } from "next-auth/react";
+import { usePathname } from "next/navigation";
 
 /* ─── Navbar 组件：固定在顶部的导航栏 ──────────────────────────────────
    功能：随滚动增强背景模糊效果，Logo 在左，Sign In 按钮在右
@@ -9,6 +10,9 @@ import { useSession, signIn, signOut } from "next-auth/react";
 export default function Navbar() {
     /* 监听页面滚动，动态调整导航栏背景透明度 */
     const { scrollY } = useScroll();
+    /* 检测当前路由，用于 Skills 链接的 active 高亮 */
+    const pathname = usePathname();
+    const isSkillsActive = pathname === "/skills";
     const navBg = useTransform(
         scrollY,
         [0, 80],
@@ -59,13 +63,29 @@ export default function Navbar() {
                     </span>
                 </motion.a>
 
-                {/* ─── 居中导航区域：Docs / Pricing ─── */}
+                {/* ─── 居中导航区域：Skills / Docs / Pricing ─── */}
                 <motion.div
                     className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-1"
                     initial={{ opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
+                    {/* Skills 链接：路由 /skills，active 时 indigo 高亮 */}
+                    <motion.a
+                        href="/skills"
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${isSkillsActive
+                                ? "text-indigo-400 bg-indigo-500/10 border border-indigo-500/25"
+                                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+                            }`}
+                    >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
+                        </svg>
+                        Skills
+                    </motion.a>
+
                     {/* Docs 链接 */}
                     <a
                         href="/docs"
