@@ -15,14 +15,6 @@ interface DashboardNavbarProps {
     totalCredits?: number;
 }
 
-/* ─── Zap 图标：用于 Skills 导航链接 ─── */
-function ZapIcon({ size = 14, color = "currentColor" }: { size?: number; color?: string }) {
-    return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
-        </svg>
-    );
-}
 
 export default function DashboardNavbar({ credits, totalCredits = 50 }: DashboardNavbarProps) {
     const { data: session } = useSession();
@@ -54,8 +46,8 @@ export default function DashboardNavbar({ credits, totalCredits = 50 }: Dashboar
                         <Link
                             href="/dashboard"
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isActive("/dashboard")
-                                    ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
-                                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                                ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
                                 }`}
                         >
                             {/* 概览图标 */}
@@ -66,18 +58,6 @@ export default function DashboardNavbar({ credits, totalCredits = 50 }: Dashboar
                                 <rect x="14" y="14" width="7" height="7" rx="1" />
                             </svg>
                             Overview
-                        </Link>
-
-                        {/* Skills Store 链接：路由匹配时高亮显示 */}
-                        <Link
-                            href="/dashboard/skills"
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isActive("/dashboard/skills")
-                                    ? "bg-indigo-500/15 text-indigo-400 border border-indigo-500/30"
-                                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-                                }`}
-                        >
-                            <ZapIcon size={12} />
-                            Skills
                         </Link>
                     </nav>
                 </div>
@@ -92,9 +72,9 @@ export default function DashboardNavbar({ credits, totalCredits = 50 }: Dashboar
                             animate={{ opacity: 1, scale: 1 }}
                             className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/25 text-xs font-semibold"
                         >
-                            {/* 闪电图标 */}
-                            <ZapIcon size={10} color="#a78bfa" />
-                            {/* 显示剩余 / 总量格式 */}
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2">
+                                <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
+                            </svg>
                             <span className="text-purple-300">{credits}</span>
                             <span className="text-slate-600">/</span>
                             <span className="text-slate-500">{totalCredits}</span>
