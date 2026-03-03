@@ -93,11 +93,10 @@ export default function QuickStart({ rawApiToken }: QuickStartProps) {
                 </span>
             </div>
 
-            {/* ── 说明文字 ── */}
             <p className="text-xs text-slate-600 mt-3 leading-relaxed">
-                This script injects{" "}
-                <code className="text-slate-500 bg-slate-800 px-1 rounded">UNISKILL_API_KEY</code>{" "}
-                into your <code className="text-slate-500 bg-slate-800 px-1 rounded">.env</code> and generates tool manifests for frameworks like OpenClaw.
+                This script injects your{" "}
+                <code className="text-slate-500 bg-slate-800 px-1 rounded">API key</code>{" "}
+                and auto-syncs cloud skills into your OpenClaw project.
                 {!rawApiToken && (
                     <span className="block mt-1 text-amber-600/70">
                         ⚠ Your token is only shown once at registration — re-login to retrieve a new session if needed.

@@ -82,10 +82,10 @@ export default function IntegrationCard({ token }: IntegrationCardProps) {
                     <span>Keep your local LLM settings (OpenAI / Claude) intact.</span>
                 </div>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                    This script configures{" "}
-                    <code className="text-indigo-400 bg-slate-800 px-1 rounded">UNISKILL_API_KEY</code>{" "}
-                    and generates tool definitions for OpenClaw automatically.
-                    {/* 该脚本会自动配置环境变量并为 OpenClaw 生成工具定义 */}
+                    This script injects your{" "}
+                    <code className="text-indigo-400 bg-slate-800 px-1 rounded">API key</code>{" "}
+                    and auto-syncs cloud skills into your OpenClaw project.
+                    {/* 该脚本会自动配置环境变量并为 OpenClaw 同步云端技能 */}
                     {!token && (
                         <span className="block mt-1 text-amber-600/70">
                             ⚠ Your token is only shown once at registration — re-login to retrieve a new session if needed.
