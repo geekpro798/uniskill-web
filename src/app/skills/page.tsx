@@ -88,11 +88,12 @@ const SKILLS = [
 /* ─── 技能卡片组件 ─── */
 function SkillCard({ skill, index }: { skill: typeof SKILLS[0]; index: number }) {
     return (
-        <motion.div
+        <motion.a
+            href={`/skills/${skill.id}`}
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 * index + 0.2, duration: 0.45 }}
-            className={`glass-card p-6 border border-slate-700/50 ${skill.borderColor} hover:shadow-lg transition-all duration-300 group`}
+            className={`glass-card p-6 border border-slate-700/50 ${skill.borderColor} hover:shadow-lg transition-all duration-300 group block cursor-pointer`}
         >
             <div className="flex items-start justify-between mb-4">
                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${skill.gradientFrom} ${skill.gradientTo} flex items-center justify-center text-2xl shadow-lg`}>
@@ -100,8 +101,8 @@ function SkillCard({ skill, index }: { skill: typeof SKILLS[0]; index: number })
                 </div>
                 {/* 状态徽章：Active 绿色，Beta 橙色 */}
                 <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${skill.status === "Active"
-                        ? "bg-green-500/10 text-green-400 border-green-500/25"
-                        : "bg-orange-500/10 text-orange-400 border-orange-500/25"
+                    ? "bg-green-500/10 text-green-400 border-green-500/25"
+                    : "bg-orange-500/10 text-orange-400 border-orange-500/25"
                     }`}>
                     {skill.status}
                 </span>
@@ -118,7 +119,7 @@ function SkillCard({ skill, index }: { skill: typeof SKILLS[0]; index: number })
                     <span className="text-xs text-slate-600">/ call</span>
                 </div>
             </div>
-        </motion.div>
+        </motion.a>
     );
 }
 
@@ -226,8 +227,8 @@ export default function SkillsPage() {
                                 whileTap={{ scale: 0.95 }}
                                 onClick={handleCopyInstall}
                                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold border transition-all shrink-0 ${copied
-                                        ? "bg-green-500/15 text-green-400 border-green-500/30"
-                                        : "bg-indigo-500/10 text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/20 hover:border-indigo-400/50"
+                                    ? "bg-green-500/15 text-green-400 border-green-500/30"
+                                    : "bg-indigo-500/10 text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/20 hover:border-indigo-400/50"
                                     }`}
                             >
                                 {copied ? (
