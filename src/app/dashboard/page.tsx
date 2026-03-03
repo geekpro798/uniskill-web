@@ -119,7 +119,30 @@ function TokenCard({ rawToken }: { rawToken?: string }) {
 }
 
 /* ─── 配额进度条组件 ─────────────────────────────────────────────────── */
-function CreditsBar({ credits = 50, total = 50 }: { credits?: number; total?: number }) {
+function CreditsBar({ credits, total = 50 }: { credits?: number; total?: number }) {
+    /* credits 未确定时显示骨架，避免 session 加载前误显示默认值 50 */
+    if (credits === undefined) {
+        return (
+            <div className="glass-card p-6 border border-slate-700/50">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2">
+                                <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
+                            </svg>
+                        </div>
+                        <span className="text-sm font-semibold text-slate-300">Credits Remaining</span>
+                    </div>
+                    <div className="w-16 h-7 rounded bg-slate-700/50 animate-pulse" />
+                </div>
+                <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full w-1/2 rounded-full bg-slate-700/50 animate-pulse" />
+                </div>
+                <p className="text-xs text-slate-600 mt-2">Each API call consumes 1 credit · <a href="#" className="text-blue-500 hover:underline">Upgrade plan</a></p>
+            </div>
+        );
+    }
+
     const pct = Math.max(0, Math.min(100, (credits / total) * 100));
     const color = pct > 50 ? "from-blue-500 to-cyan-400" : pct > 20 ? "from-yellow-500 to-orange-400" : "from-red-500 to-rose-400";
 
@@ -150,15 +173,15 @@ function CreditsBar({ credits = 50, total = 50 }: { credits?: number; total?: nu
     );
 }
 
+
 /* ─── Dashboard 主页面 ──────────────────────────────────────────────────
    受保护路由：未登录自动跳转到 GitHub OAuth 页面
    ─────────────────────────────────────────────────────────────────────── */
 export default function DashboardPage() {
     const { data: session, status } = useSession();
 
-    // ── ALL HOOKS MUST BE AT TOP LEVEL (React Rules of Hooks) ──
-    const initialCredits = session?.user?.credits ?? 50;
-    const [liveCredits, setLiveCredits] = useState<number>(initialCredits);
+    // liveCredits 初始化为 undefined，避免 session 尚未加载时错误 fallback 到 50
+    const [liveCredits, setLiveCredits] = useState<number | undefined>(undefined);
 
     const fetchLiveCredits = async () => {
         if (!session?.user?.id) return;
@@ -177,6 +200,8 @@ export default function DashboardPage() {
 
     useEffect(() => {
         if (status !== "authenticated") return;
+        // 先用 session JWT 缓存展示（少有延迟，避免骨架闪烁），西同时发起真实值请求
+        setLiveCredits(session.user.credits ?? 50);
         fetchLiveCredits();
         window.addEventListener("focus", fetchLiveCredits);
         return () => window.removeEventListener("focus", fetchLiveCredits);
