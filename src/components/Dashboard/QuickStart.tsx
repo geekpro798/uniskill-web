@@ -39,9 +39,9 @@ export default function QuickStart({ rawApiToken }: QuickStartProps) {
                         </svg>
                     </div>
                     <div>
-                        <span className="text-sm font-semibold text-slate-300">Auto-Integration</span>
+                        <span className="text-sm font-semibold text-slate-300">Tool Suite Integration</span>
                         <p className="text-xs text-slate-500 mt-0.5">
-                            Recommended: Automate your agent&apos;s <code className="text-cyan-500 bg-slate-800 px-1 rounded">.env</code> configuration.
+                            Add UniSkill capabilities to your agent without changing your LLM provider.
                         </p>
                     </div>
                 </div>
@@ -51,8 +51,8 @@ export default function QuickStart({ rawApiToken }: QuickStartProps) {
                     whileTap={{ scale: 0.95 }}
                     onClick={handleCopy}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border transition-all shrink-0 ${copied
-                            ? "bg-green-500/20 text-green-400 border-green-500/30"
-                            : "bg-slate-800/60 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-slate-200"
+                        ? "bg-green-500/20 text-green-400 border-green-500/30"
+                        : "bg-slate-800/60 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-slate-200"
                         }`}
                 >
                     {copied ? (
@@ -95,8 +95,9 @@ export default function QuickStart({ rawApiToken }: QuickStartProps) {
 
             {/* ── 说明文字 ── */}
             <p className="text-xs text-slate-600 mt-3 leading-relaxed">
-                This script downloads and configures the UniSkill SDK, injecting your API token into the agent&apos;s{" "}
-                <code className="text-slate-500 bg-slate-800 px-1 rounded">.env</code> file automatically.
+                This script injects{" "}
+                <code className="text-slate-500 bg-slate-800 px-1 rounded">UNISKILL_API_KEY</code>{" "}
+                into your <code className="text-slate-500 bg-slate-800 px-1 rounded">.env</code> and generates tool manifests for frameworks like OpenClaw.
                 {!rawApiToken && (
                     <span className="block mt-1 text-amber-600/70">
                         ⚠ Your token is only shown once at registration — re-login to retrieve a new session if needed.
