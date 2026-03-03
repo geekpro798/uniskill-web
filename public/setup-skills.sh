@@ -72,3 +72,12 @@ echo "  1. Open ${RUNNER_DEST} and specify your agent's start module"
 echo "  2. Run: python ${RUNNER_DEST}"
 echo "  Your agent will launch with UniSkill tools automatically loaded!"
 echo ""
+
+echo -e "\n\033[1;33m? Do you want to launch your Agent with UniSkill now? (y/n)\033[0m"
+read -r response
+if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+    echo -e "🚀 Starting Agent..."
+    python uniskill_run.py
+else
+    echo -e "👍 No problem! You can run it later with: python uniskill_run.py"
+fi
