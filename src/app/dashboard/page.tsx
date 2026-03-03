@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import QuickStart from "@/components/Dashboard/QuickStart";
+import QuickActivity from "@/components/Dashboard/QuickActivity";
 import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
 
 /* ─── Token 展示卡片组件 ────────────────────────────────────────────────
@@ -297,7 +298,7 @@ export default function DashboardPage() {
                 </AnimatePresence>
 
                 {/* ─── 卡片网格 ─── */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
                     {/* Token 卡片（跨两列） */}
                     <motion.div
                         className="lg:col-span-2"
@@ -308,17 +309,25 @@ export default function DashboardPage() {
                         <TokenCard rawToken={rawToken} />
                     </motion.div>
 
-                    {/* 配额卡片 */}
+                    {/* ── 左列：Credits 卡片 + Recent Activity（flex-1 填满剩余高度）── */}
+                    {/* 左列用 flex column 布局，使两个子卡等高撑满整列 */}
                     <motion.div
+                        className="flex flex-col gap-4 h-full"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2, duration: 0.5 }}
                     >
+                        {/* 配额卡片 */}
                         <CreditsBar credits={credits} total={50} />
+                        {/* Recent Activity：flex-1 让它填满左列剩余高度，与右列等高 */}
+                        <div className="flex-1">
+                            <QuickActivity />
+                        </div>
                     </motion.div>
 
-                    {/* 快速接入代码 */}
+                    {/* ── 右列：Auto-Integration 卡片（h-full 匹配左列总高度）── */}
                     <motion.div
+                        className="h-full"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3, duration: 0.5 }}
