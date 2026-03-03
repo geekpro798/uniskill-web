@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import QuickStart from "@/components/Dashboard/QuickStart";
+import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
 
 /* ─── Token 展示卡片组件 ────────────────────────────────────────────────
    首次登录时显示原始 Token，用户必须立即复制保存，刷新后不可再查
@@ -234,34 +235,8 @@ export default function DashboardPage() {
 
     return (
         <div className="min-h-screen bg-[#0a0f1e] bg-grid">
-            {/* ─── 顶部 Navbar ─── */}
-            <header className="border-b border-white/5 bg-[#0a0f1e]/80 backdrop-blur-xl sticky top-0 z-50">
-                <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-                    {/* Logo */}
-                    <Link href="/" className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                        </div>
-                        <span className="font-bold text-white text-sm">UniSkill<span className="gradient-text">.io</span></span>
-                    </Link>
-
-                    {/* 用户信息 + 登出 */}
-                    <div className="flex items-center gap-3">
-                        {user?.image && (
-                            <img src={user.image} alt={user?.name ?? "User"} className="w-8 h-8 rounded-full border border-slate-700" />
-                        )}
-                        <span className="hidden sm:block text-sm text-slate-400">{user?.name}</span>
-                        <button
-                            onClick={() => signOut({ callbackUrl: "/" })}
-                            className="btn-outline text-xs px-3 py-1.5"
-                        >
-                            Sign Out
-                        </button>
-                    </div>
-                </div>
-            </header>
+            {/* ─── 顶部 Navbar：使用共享 DashboardNavbar 组件，传入实时 credits ─── */}
+            <DashboardNavbar credits={credits} totalCredits={50} />
 
             {/* ─── Dashboard 主内容 ─── */}
             <main className="max-w-5xl mx-auto px-6 py-10">
@@ -334,20 +309,38 @@ export default function DashboardPage() {
                     transition={{ delay: 0.4, duration: 0.5 }}
                     className="mt-5 glass-card p-6 border border-slate-700/50"
                 >
-                    <p className="text-sm font-semibold text-slate-300 mb-4">Available Skills</p>
+                    {/* 标题行：左侧技能标题，右侧跳转链接 */}
+                    <div className="flex items-center justify-between mb-4">
+                        <p className="text-sm font-semibold text-slate-300">Available Skills</p>
+                        {/* 跳转到完整 Skills Store 页面 */}
+                        <Link
+                            href="/dashboard/skills"
+                            className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors font-medium"
+                        >
+                            Explore All Skills
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M5 12h14M12 5l7 7-7 7" />
+                            </svg>
+                        </Link>
+                    </div>
+                    {/* 技能图标网格：每个 tile 均可点击跳转到 Skills Store */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
                         {[
-                            { name: "Search", icon: "🔍", color: "blue" },
-                            { name: "Scrape", icon: "🕷️", color: "purple" },
-                            { name: "News", icon: "📰", color: "cyan" },
-                            { name: "Social", icon: "💬", color: "green" },
-                            { name: "Extract", icon: "🗂️", color: "yellow" },
-                            { name: "Vision", icon: "👁️", color: "pink" },
+                            { name: "Search", icon: "🔍" },
+                            { name: "Scrape", icon: "🕷️" },
+                            { name: "News", icon: "📰" },
+                            { name: "Social", icon: "💬" },
+                            { name: "Extract", icon: "🗂️" },
+                            { name: "Vision", icon: "👁️" },
                         ].map((skill) => (
-                            <div key={skill.name} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-slate-600 transition-colors cursor-default">
-                                <span className="text-2xl">{skill.icon}</span>
-                                <span className="text-xs font-medium text-slate-400">{skill.name}</span>
-                            </div>
+                            <Link
+                                key={skill.name}
+                                href="/dashboard/skills"
+                                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all cursor-pointer group"
+                            >
+                                <span className="text-2xl group-hover:scale-110 transition-transform">{skill.icon}</span>
+                                <span className="text-xs font-medium text-slate-400 group-hover:text-indigo-300 transition-colors">{skill.name}</span>
+                            </Link>
                         ))}
                     </div>
                 </motion.div>
