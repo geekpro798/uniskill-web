@@ -81,13 +81,21 @@ if [ -z "$ENTRY_POINT" ]; then
     read -p "❓ What is your main Python file? (e.g. main.py): " ENTRY_POINT
 fi
 
+# 如果仍然为空，使用占位符防止 Python 语法错误
+if [ -z "$ENTRY_POINT" ]; then
+    ENTRY_POINT="YOUR_MAIN_FILE"
+    ENTRY_MODULE="YOUR_MAIN_FILE"
+else
+    ENTRY_MODULE=$(echo $ENTRY_POINT | cut -f 1 -d '.')
+fi
+
 # ── Step 5: Generate PRE-CONFIGURED Wrapper ──────────────────────────────
 # 生成已经配置好的启动包装器，用户无需再打开修改
-ENTRY_MODULE=$(echo $ENTRY_POINT | cut -f 1 -d '.')
-
 cat <<EOF > "$RUNNER_DEST"
 # uniskill_run.py - Pre-configured Wrapper
 # 预配置的 UniSkill 启动包装器
+# Please replace YOUR_MAIN_FILE with your actual start file if needed.
+# 如果自动探测失败，请将 YOUR_MAIN_FILE 替换为您的实际启动文件名
 
 import os
 import sys
@@ -143,7 +151,7 @@ echo ""
 
 echo -e "\n${YELLOW}? Do you want to launch your Agent with UniSkill now? (y/n)${NC}"
 read -r response
-if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+if [[ "$response" =~ ^[Yy]$ ]]; then
     echo -e "🚀 Starting Agent..."
     python3 "$RUNNER_DEST"
 else
