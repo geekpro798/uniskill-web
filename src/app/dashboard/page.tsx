@@ -8,7 +8,7 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import QuickStart from "@/components/Dashboard/QuickStart";
+import IntegrationCard from "@/components/Dashboard/IntegrationCard";
 import QuickActivity from "@/components/Dashboard/QuickActivity";
 import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
 
@@ -332,7 +332,7 @@ export default function DashboardPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3, duration: 0.5 }}
                     >
-                        <QuickStart rawApiToken={rawToken} />
+                        <IntegrationCard token={rawToken} />
                     </motion.div>
                 </div>
 
