@@ -86,6 +86,23 @@ export async function handleUserRegistration(
 
     console.log("[auth] Inserted new profile successfully. Profile ID:", newProfile?.id);
 
+    // 3a. 在 credit_events 表写入初始赠送记录，供 Recent Activity 组件展示
+    //     插入失败不阻断注册流程，仅记录警告
+    try {
+        const { error: eventError } = await supabase
+            .from("credit_events")
+            .insert({
+                github_id: githubId,
+                skill_name: "Welcome Bonus",
+                amount: 50,
+            });
+        if (eventError) {
+            console.warn("[auth] Failed to insert welcome credit_event:", eventError.message);
+        }
+    } catch (e) {
+        console.warn("[auth] credit_events insert exception:", e);
+    }
+
     // 3. Sync to Cloudflare KV
     // 同步到 Cloudflare KV
     if (!dbError) {
