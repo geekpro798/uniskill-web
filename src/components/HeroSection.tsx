@@ -61,11 +61,11 @@ export default function HeroSection() {
                     className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.05] mb-6"
                 >
                     {/* 第一行：纯白色 */}
-                    <span className="text-white block">One Token.</span>
+                    <span className="text-white block">One Key.</span>
                     {/* 第二行：渐变色强调 */}
-                    <span className="gradient-text block">Every Capability.</span>
+                    <span className="gradient-text block">Infinite Skills.</span>
                     {/* 第三行：纯白色 */}
-                    <span className="text-white block">Zero Configuration.</span>
+                    <span className="text-white block">Built for Agents.</span>
                 </motion.h1>
 
                 {/* ─── 副标题 ─── */}

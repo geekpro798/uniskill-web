@@ -12,7 +12,7 @@ export default function Footer() {
             group: "Product",
             links: [
                 { label: "Features", href: "#" },
-                { label: "Pricing", href: "#" },
+                { label: "Pricing", href: "/#pricing" },
                 { label: "Changelog", href: "#" },
                 { label: "Roadmap", href: "#" },
             ],
@@ -20,7 +20,7 @@ export default function Footer() {
         {
             group: "Developers",
             links: [
-                { label: "Documentation", href: "#" },
+                { label: "Documentation", href: "https://docs.uniskill.ai" },
                 { label: "API Reference", href: "#" },
                 { label: "SDKs", href: "#" },
                 { label: "Status", href: "#" },
@@ -57,7 +57,7 @@ export default function Footer() {
                             </span>
                         </div>
                         <p className="text-slate-500 text-sm leading-relaxed max-w-[200px]">
-                            The managed API gateway for intelligent agents.
+                            The universal skill layer for AI agents.
                         </p>
                     </div>
 

@@ -76,8 +76,8 @@ export default function Navbar() {
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${isSkillsActive
-                                ? "text-indigo-400 bg-indigo-500/10 border border-indigo-500/25"
-                                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+                            ? "text-indigo-400 bg-indigo-500/10 border border-indigo-500/25"
+                            : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
                             }`}
                     >
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -86,13 +86,20 @@ export default function Navbar() {
                         Skills
                     </motion.a>
 
-                    {/* Docs 链接 */}
-                    <a
-                        href="/docs"
-                        className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition-all"
+                    {/* Docs 链接：指向外部文档地址 */}
+                    <motion.a
+                        href="https://docs.uniskill.ai"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition-all"
                     >
                         Docs
-                    </a>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />
+                        </svg>
+                    </motion.a>
 
                     {/* Pricing 链接 */}
                     <a
