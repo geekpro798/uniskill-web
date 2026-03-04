@@ -42,7 +42,6 @@ export const footerConfig = {
             href: "/skills"
         },
         { label: "Pricing", href: "/#pricing" },
-        { label: "Changelog", href: "/docs/changelog" },
     ],
 
     // Column 2: Developers (Technical support and health)
