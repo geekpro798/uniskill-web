@@ -19,7 +19,7 @@ const fadeUp = {
    ─────────────────────────────────────────────────────────────────────── */
 export default function HeroSection() {
     return (
-        <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-grid pt-16">
+        <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-grid pt-10">
 
             {/* ─── 背景装饰：动态光晕球 ─── */}
             <div className="absolute inset-0 pointer-events-none">
