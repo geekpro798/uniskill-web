@@ -1,3 +1,4 @@
+import { signIn } from "next-auth/react";
 import { siteConfig } from "@/config/site";
 
 /**
@@ -6,14 +7,10 @@ import { siteConfig } from "@/config/site";
  */
 export const LoginButton = () => {
     const handleLogin = () => {
-        // Logic: Construct the full redirect URL
-        // 逻辑：构造完整的重定向 URL
-        const redirectUrl = `${siteConfig.links.url}${siteConfig.auth.callback}`;
-        console.log("Redirecting to:", redirectUrl);
-
-        // Perform login...
-        // 在此处执行登录逻辑，例如跳转到 redirectUrl
-        window.location.href = redirectUrl;
+        // Logic: Redirect to GitHub login via NextAuth custom path or direct URL
+        // 逻辑：通过 NextAuth 触发登录或跳转
+        const callbackUrl = "/dashboard";
+        signIn("github", { callbackUrl });
     };
 
     return (
