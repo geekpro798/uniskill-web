@@ -244,8 +244,8 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
             whileTap={{ scale: 0.95 }}
             onClick={handleCopy}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border transition-all ${copied
-                    ? "bg-green-500/15 text-green-400 border-green-500/30"
-                    : "bg-slate-800/60 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-slate-200"
+                ? "bg-green-500/15 text-green-400 border-green-500/30"
+                : "bg-slate-800/60 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-slate-200"
                 }`}
         >
             {copied ? (
@@ -276,8 +276,8 @@ export default function SkillDetailPage() {
     const displayToken = isLoggedIn && rawApiToken ? rawApiToken : "<LOGIN_TO_VIEW_TOKEN>";
     const hasRealToken = isLoggedIn && !!rawApiToken;
 
-    // 集成 curl 命令：使用 api.uniskill.io/v1/[id] 端点
-    const curlCommand = `curl -X POST https://api.uniskill.io/v1/${id} \\
+    // 集成 curl 命令：使用 api.uniskill.ai/v1/[id] 端点
+    const curlCommand = `curl -X POST https://api.uniskill.ai/v1/${id} \\
   -H "Authorization: Bearer ${displayToken}" \\
   -H "Content-Type: application/json" \\
   -d '{"query": "example query"}'`;
@@ -344,8 +344,8 @@ export default function SkillDetailPage() {
                             )}
                             {/* Status 徽章 */}
                             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${skill.status === "Active"
-                                    ? "bg-green-500/10 text-green-400 border-green-500/25"
-                                    : "bg-orange-500/10 text-orange-400 border-orange-500/25"
+                                ? "bg-green-500/10 text-green-400 border-green-500/25"
+                                : "bg-orange-500/10 text-orange-400 border-orange-500/25"
                                 }`}>{skill.status}</span>
                         </div>
                         <p className="text-slate-400 text-sm">by <span className="text-slate-300 font-medium">{skill.author}</span></p>
@@ -522,7 +522,7 @@ export default function SkillDetailPage() {
                             <div className="code-block text-[11px] leading-relaxed font-mono overflow-x-auto whitespace-pre">
                                 <span className="text-blue-400">curl</span>
                                 <span className="text-slate-400"> -X POST </span>
-                                <span className="text-green-400">https://api.uniskill.io/v1/{id}</span>
+                                <span className="text-green-400">https://api.uniskill.ai/v1/{id}</span>
                                 {`\n  `}
                                 <span className="text-slate-400">-H </span>
                                 <span className="text-yellow-300">&quot;Authorization: Bearer </span>

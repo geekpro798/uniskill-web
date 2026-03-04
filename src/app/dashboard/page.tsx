@@ -232,7 +232,7 @@ export default function DashboardPage() {
                             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     </div>
-                    <h1 className="text-xl font-bold text-white mb-2">Sign in to UniSkill.io</h1>
+                    <h1 className="text-xl font-bold text-white mb-2">Sign in to UniSkill</h1>
                     <p className="text-slate-400 text-sm mb-8">Access your API token and usage dashboard</p>
                     <motion.button
                         whileHover={{ scale: 1.03 }}
@@ -285,7 +285,7 @@ export default function DashboardPage() {
                     <h1 className="text-2xl font-black text-white mb-1">
                         Welcome back, {user?.name?.split(" ")[0]} 👋
                     </h1>
-                    <p className="text-slate-500 text-sm">Your UniSkill.io API Gateway dashboard</p>
+                    <p className="text-slate-500 text-sm">Your UniSkill API Gateway dashboard</p>
                 </motion.div>
 
                 {/* 首次登录一次性 Toast 提醒 */}

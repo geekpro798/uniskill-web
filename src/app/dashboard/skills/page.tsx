@@ -104,8 +104,8 @@ function SkillCard({ skill, index }: { skill: typeof SKILLS[0]; index: number })
                 {/* 状态徽章：Active 绿色，Beta 橙色 */}
                 <span
                     className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${skill.status === "Active"
-                            ? "bg-green-500/10 text-green-400 border-green-500/25"
-                            : "bg-orange-500/10 text-orange-400 border-orange-500/25"
+                        ? "bg-green-500/10 text-green-400 border-green-500/25"
+                        : "bg-orange-500/10 text-orange-400 border-orange-500/25"
                         }`}
                 >
                     {skill.status}
@@ -182,7 +182,7 @@ export default function SkillsPage() {
     const hasRealToken = isLoggedIn && !!rawApiToken;
 
     // 一键安装命令（Option B Tool Mode）
-    const installCommand = `curl -s https://uniskill.io/install-skills.sh | bash -s -- ${displayToken}`;
+    const installCommand = `curl -s https://uniskill.ai/install-skills.sh | bash -s -- ${displayToken}`;
 
     const handleCopyInstall = async () => {
         await navigator.clipboard.writeText(installCommand);
@@ -257,8 +257,8 @@ export default function SkillsPage() {
                                 whileTap={{ scale: 0.95 }}
                                 onClick={handleCopyInstall}
                                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold border transition-all shrink-0 ${copied
-                                        ? "bg-green-500/15 text-green-400 border-green-500/30"
-                                        : "bg-indigo-500/10 text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/20 hover:border-indigo-400/50"
+                                    ? "bg-green-500/15 text-green-400 border-green-500/30"
+                                    : "bg-indigo-500/10 text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/20 hover:border-indigo-400/50"
                                     }`}
                             >
                                 {copied ? (
@@ -300,7 +300,7 @@ export default function SkillsPage() {
                         <span>
                             <span className="text-blue-400">curl</span>
                             <span className="text-slate-400"> -s </span>
-                            <span className="text-green-400">https://uniskill.io/install-skills.sh</span>
+                            <span className="text-green-400">https://uniskill.ai/install-skills.sh</span>
                             <span className="text-slate-400"> | </span>
                             <span className="text-blue-400">bash</span>
                             <span className="text-slate-400"> -s -- </span>

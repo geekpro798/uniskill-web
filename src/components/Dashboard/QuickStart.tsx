@@ -18,7 +18,7 @@ export default function QuickStart({ rawApiToken }: QuickStartProps) {
     const displayToken = rawApiToken ?? "your-token-here";
 
     // 一键安装命令：curl 下载 install.sh 并通过 bash 自动配置 .env
-    const installCommand = `curl -s https://uniskill.io/install.sh | bash -s -- ${displayToken}`;
+    const installCommand = `curl -s https://uniskill.ai/install.sh | bash -s -- ${displayToken}`;
 
     const handleCopy = async () => {
         await navigator.clipboard.writeText(installCommand);
@@ -82,7 +82,7 @@ export default function QuickStart({ rawApiToken }: QuickStartProps) {
                     {/* curl 命令关键字着色 */}
                     <span className="text-blue-400">curl</span>
                     <span className="text-slate-400"> -s </span>
-                    <span className="text-green-400">https://uniskill.io/install.sh</span>
+                    <span className="text-green-400">https://uniskill.ai/install.sh</span>
                     <span className="text-slate-400"> | </span>
                     <span className="text-blue-400">bash</span>
                     <span className="text-slate-400"> -s -- </span>

@@ -151,7 +151,7 @@ export default function HeroSection() {
                         </div>
                         <div>
                             <span className="text-blue-400">curl</span>
-                            <span className="text-slate-300"> https://api.uniskill.io/v1/search</span>
+                            <span className="text-slate-300"> https://api.uniskill.ai/v1/search</span>
                         </div>
                         <div className="pl-4">
                             <span className="text-yellow-400">-H</span>

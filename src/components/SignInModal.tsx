@@ -135,7 +135,7 @@ export default function SignInModal({ isOpen, onClose }: SignInModalProps) {
                                                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                             </svg>
                                         </div>
-                                        <h2 className="text-xl font-black text-white mb-2">Sign in to UniSkill.io</h2>
+                                        <h2 className="text-xl font-black text-white mb-2">Sign in to UniSkill</h2>
                                         <p className="text-slate-400 text-sm mb-8 leading-relaxed">
                                             We'll open a small window to authorize your GitHub account. No passwords stored.
                                         </p>

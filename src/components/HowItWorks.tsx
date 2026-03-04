@@ -12,7 +12,7 @@ const steps = [
         title: "Provision",
         subtitle: "Get your unified token",
         description:
-            "Register once on UniSkill.io and receive a single gateway token. No provider accounts, no individual API key management.",
+            "Register once on UniSkill and receive a single gateway token. No provider accounts, no individual API key management.",
         icon: (
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -42,7 +42,7 @@ const steps = [
         color: "from-purple-500 to-purple-600",
         glowColor: "rgba(139, 92, 246, 0.2)",
         borderColor: "border-purple-500/20",
-        snippet: 'base_url = "api.uniskill.io"',
+        snippet: 'base_url = "api.uniskill.ai"',
         snippetColor: "text-purple-400",
         badge: "Zero Config",
         badgeColor: "bg-purple-500/10 text-purple-400 border-purple-500/20",
