@@ -166,7 +166,7 @@ export default function SkillsPage() {
     const hasRealToken = isLoggedIn && !!rawApiToken;
     const isLoading = status === "loading";
 
-    const installCommand = `curl -s https://uniskill.ai/install-skills.sh | bash -s -- ${displayToken}`;
+    const installCommand = `curl -s https://uniskill.ai/setup-skills.sh | bash -s -- ${displayToken}`;
 
     const handleCopyInstall = async () => {
         await navigator.clipboard.writeText(installCommand);
@@ -259,7 +259,7 @@ export default function SkillsPage() {
                         <span>
                             <span className="text-blue-400">curl</span>
                             <span className="text-slate-400"> -s </span>
-                            <span className="text-green-400">https://uniskill.ai/install-skills.sh</span>
+                            <span className="text-green-400">https://uniskill.ai/setup-skills.sh</span>
                             <span className="text-slate-400"> | </span>
                             <span className="text-blue-400">bash</span>
                             <span className="text-slate-400"> -s -- </span>
