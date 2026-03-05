@@ -71,7 +71,7 @@ export default function BillingPage() {
 
     return (
         <div className="min-h-screen bg-[#0a0f1e] bg-grid">
-            <DashboardNavbar credits={credits} totalCredits={50} />
+            <DashboardNavbar credits={credits} totalCredits={500} />
 
             <main className="max-w-3xl mx-auto px-6 py-10">
                 {/* 返回按钮 + 标题 */}

@@ -74,7 +74,7 @@ export async function handleUserRegistration(
             name: githubProfile.name ?? null,
             avatar_url: githubProfile.image ?? null,
             token_hash: tokenHash, // 使用变量 A
-            credits: 50,
+            credits: 500,
         })
         .select()
         .single();
@@ -94,7 +94,7 @@ export async function handleUserRegistration(
             .insert({
                 github_id: Number(githubId),   // bigint 列，需传数字
                 skill_name: "Welcome Bonus",
-                amount: 50,
+                amount: 500,
             });
         if (eventError) {
             console.warn("[auth] Failed to insert welcome credit_event:", eventError.message);
@@ -118,7 +118,7 @@ export async function handleUserRegistration(
                 },
                 // CRITICAL: Must use the same 'tokenHash' variable here
                 // 关键：此处必须使用同一个 'tokenHash' 变量
-                body: JSON.stringify({ hash: tokenHash, credits: 50 }),
+                body: JSON.stringify({ hash: tokenHash, credits: 500 }),
             });
 
             if (!syncRes.ok) {

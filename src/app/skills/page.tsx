@@ -148,7 +148,7 @@ export default function SkillsPage() {
     useEffect(() => {
         // 仅认证通过后才请求 credits 接口，避免 guest 触发无效请求
         if (status !== "authenticated") return;
-        setLiveCredits(session?.user?.credits ?? 50);
+        setLiveCredits(session?.user?.credits ?? 500);
         fetchLiveCredits();
         window.addEventListener("focus", fetchLiveCredits);
         return () => window.removeEventListener("focus", fetchLiveCredits);
