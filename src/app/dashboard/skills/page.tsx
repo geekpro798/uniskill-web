@@ -311,12 +311,11 @@ export default function SkillsPage() {
                         </span>
                     </div>
 
-                    {/* 占位符状态提示（仅未登录或 key 不可用时显示） */}
                     {!hasRealKey && (
                         <p className="mt-3 text-xs text-slate-600">
                             {isLoggedIn
                                 // 已登录但 key 不在 session（非首次登录）
-                                ? "⚠ Your key is only shown once at first sign-in. Go to Dashboard Overview to review your account."
+                                ? "⚠ Your key is only shown once at first sign-in. Go to Dashboard to review your account."
                                 // 未登录状态
                                 : "Sign in with GitHub to inject your real API key into this command."}
                         </p>

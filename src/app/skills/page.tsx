@@ -271,7 +271,7 @@ export default function SkillsPage() {
                     {!hasRealKey && (
                         <p className="mt-3 text-xs text-slate-600">
                             {isLoggedIn
-                                ? "⚠ Your key is only shown once at first sign-in. Go to Dashboard Overview to review your account."
+                                ? "⚠ Your key is only shown once at first sign-in. Go to Dashboard to review your account."
                                 : "Sign in with GitHub to inject your real API key into this command."}
                         </p>
                     )}

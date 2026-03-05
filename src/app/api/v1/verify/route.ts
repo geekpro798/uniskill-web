@@ -25,7 +25,7 @@ export async function POST(req: Request) {
         const { data, error } = await supabase
             .from("profiles")
             .select("github_id")
-            .eq("token_hash", tokenHash)
+            .eq("key_hash", tokenHash)
             .maybeSingle();
 
         if (error) {

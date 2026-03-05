@@ -19,7 +19,7 @@ export default function IntegrationCard({ rawKey }: IntegrationCardProps) {
     const displayKey = rawKey ?? "your-key-here";
 
     // 更新后的脚本名称与参数，侧重于"能力注入"
-    const installCmd = `curl -fsSL https://uniskill-web.vercel.app/setup-skills.sh | bash -s -- ${displayKey}`;
+    const installCmd = `curl -fsSL https://uniskill.ai/setup-skills.sh | bash -s -- ${displayKey}`;
 
     const handleCopy = () => {
         navigator.clipboard.writeText(installCmd);
@@ -65,7 +65,7 @@ export default function IntegrationCard({ rawKey }: IntegrationCardProps) {
                     <span className="text-slate-500">$ </span>
                     <span className="text-blue-400">curl</span>
                     <span className="text-slate-400"> -fsSL </span>
-                    <span className="text-green-400">https://uniskill-web.vercel.app/setup-skills.sh</span>
+                    <span className="text-green-400">https://uniskill.ai/setup-skills.sh</span>
                     <span className="text-slate-400"> | </span>
                     <span className="text-blue-400">bash</span>
                     <span className="text-slate-400"> -s -- </span>
@@ -88,7 +88,7 @@ export default function IntegrationCard({ rawKey }: IntegrationCardProps) {
                     {/* 该脚本会自动配置环境变量并为 OpenClaw 同步云端技能 */}
                     {!rawKey && (
                         <span className="block mt-1 text-amber-600/70">
-                            ⚠ Your key is only shown once at registration — re-login to retrieve a new session if needed.
+                            ⚠ Your key is only shown once at registration.
                         </span>
                     )}
                 </p>

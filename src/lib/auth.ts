@@ -3,6 +3,7 @@
 // UniSkill 核心认证业务逻辑：首次登录自动生成 API Key 并同步到 Supabase & Cloudflare KV
 
 import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 
 /* ─── 用户 Profile 类型定义 ─────────────────────────────────────────── */
@@ -12,7 +13,7 @@ export interface UserProfile {
     email: string | null;
     name: string | null;
     avatar_url: string | null;
-    token_hash: string;
+    key_hash: string;
     credits: number;
     created_at: string;
 }
@@ -59,21 +60,26 @@ export async function handleUserRegistration(
 
     console.log("[auth] New user detected, creating profile for:", githubId);
 
+    // 0. Initialize Admin client (Service Role) to bypass RLS
+    // 初始化 Admin 客户端（使用 Service Role 密钥）以绕过 RLS 限制执行行政操作
+    const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     // 1. Generate the raw API key and its unique hash ONCE
-    // 仅生成一次原始 API Key 及其唯一的哈希值
     const rawKey = `us-${crypto.randomUUID()}`;
     const tokenHash = crypto.createHash("sha256").update(rawKey).digest("hex");
 
-    // 2. Insert into Supabase
-    // 存入 Supabase
-    const { data: newProfile, error: dbError } = await supabase
+    // 2. Insert into Supabase (using Admin client)
+    const { data: newProfile, error: dbError } = await supabaseAdmin
         .from("profiles")
         .insert({
             github_id: githubId,
             email: githubProfile.email ?? null,
             name: githubProfile.name ?? null,
             avatar_url: githubProfile.image ?? null,
-            token_hash: tokenHash, // 使用变量 A
+            key_hash: tokenHash,
             credits: 500,
         })
         .select()
@@ -84,20 +90,22 @@ export async function handleUserRegistration(
         throw new Error(`Database insert failed: ${dbError.message}`);
     }
 
+
     console.log("[auth] Inserted new profile successfully. Profile ID:", newProfile?.id);
 
-    // 3a. 在 credit_events 表写入初始赠送记录，供 Recent Activity 组件展示
-    //     插入失败不阻断注册流程，仅记录警告
+    // 3a. 在 credit_events 表写入初始赠送记录，供 Recent Activity 组件展示 (using Admin client)
     try {
-        const { error: eventError } = await supabase
+        const { error: eventError } = await supabaseAdmin
             .from("credit_events")
             .insert({
-                github_id: Number(githubId),   // bigint 列，需传数字
+                github_id: Number(githubId),   // bigint 列，转为数字
                 skill_name: "Welcome Bonus",
                 amount: 500,
             });
         if (eventError) {
             console.warn("[auth] Failed to insert welcome credit_event:", eventError.message);
+        } else {
+            console.log("[auth] Welcome credit_event record created successfully.");
         }
     } catch (e) {
         console.warn("[auth] credit_events insert exception:", e);
@@ -116,21 +124,19 @@ export async function handleUserRegistration(
                     "Authorization": `Bearer ${process.env.ADMIN_KEY}`,
                     "Content-Type": "application/json",
                 },
-                // CRITICAL: Must use the same 'keyHash' identifier here
-                // 关键：此处必须使用同一个 'tokenHash' 变量 (数据库列名仍为 token_hash)
                 body: JSON.stringify({ hash: tokenHash, credits: 500 }),
             });
 
             if (!syncRes.ok) {
                 const errText = await syncRes.text();
-                // KV 同步失败不阻断注册流程，仅记录警告日志
-                console.warn(`[auth] Cloudflare KV sync failed: Status ${syncRes.status}, Body: ${errText}`);
+                console.error(`[auth] KV sync FAILED [Status ${syncRes.status}]: ${errText}`);
+                console.error(`[auth] Check if GATEWAY_URL (${gatewayUrl}) is correct and ADMIN_KEY is valid.`);
             } else {
                 console.log("[auth] Cloudflare KV sync successful!");
             }
-        } catch (kvError) {
-            // 网络错误同样不阻断，后续可补偿同步
-            console.warn("[auth] Cloudflare KV sync error (network etc):", kvError);
+        } catch (kvError: any) {
+            console.error("[auth] KV sync FATAL ERROR (Connection Refused?):", kvError.message);
+            console.error(`[auth] Is the gateway running at ${process.env.GATEWAY_URL ?? "localhost:8787"}?`);
         }
     }
 
