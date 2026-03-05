@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# UniSkill: The Universal Skill Layer for AI Agents
 
-## Getting Started
+**Empower your AI agents with real-time intelligence and universal connectivity through a single, managed infrastructure.**
 
-First, run the development server:
+[UniSkill](https://www.google.com/search?q=https://uniskill.ai) is a core skills layer designed for the next generation of AI agents. It standardizes how agents interact with the web, providing high-performance tools for searching, scraping, and connecting to any API with centralized billing and security.
+
+---
+
+## ⚡️ Quickstart: Initialize in 30 Seconds
+
+The fastest way to prepare your environment is using our automated setup script.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Get your API Key at uniskill.ai and execute the setup
+curl -fsSL https://uniskill.ai/setup-skills.sh | bash -s -- your_api_key
+
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+*This command automatically configures your `UNISKILL_KEY` environment variable in your shell profile (`.zshrc` or `.bashrc`).*
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## ✨ Core Skills
 
-## Learn More
+UniSkill provides a standardized catalog of skills optimized for LLM context windows:
 
-To learn more about Next.js, take a look at the following resources:
+* **`uniskill_search`**: Real-time web search that returns clean, agent-friendly Markdown content.
+* **`uniskill_scrape`**: Converts any URL into structured Markdown, stripping away ads, scripts, and navigation noise.
+* **`uniskill_connect`**: A basic API connector for proxying standard REST APIs with centralized authentication (1 credit per call).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🛠 Usage Example (Python)
 
-## Deploy on Vercel
+Once your environment is initialized, you can trigger any skill with a simple POST request.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```python
+import os
+import requests
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Logic: Retrieve the API key from the environment set by setup-skills.sh
+api_key = os.getenv("UNISKILL_KEY")
+
+def trigger_search_skill(query):
+    # Logic: Unified UniSkill Gateway endpoint for intelligence skills
+    url = "https://api.uniskill.ai/v1/search"
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    # Logic: Configure the request payload for optimized LLM context
+    payload = {
+        "query": query,
+        "count": 5
+    }
+
+    # Logic: Execute the skill call through the global gateway
+    response = requests.post(url, json=payload, headers=headers)
+    return response.json()
+
+# Empower your agent with real-time knowledge
+print(trigger_search_skill("Latest breakthroughs in autonomous AI agents 2026"))
+
+```
+
+---
+
+## 🚀 Why UniSkill?
+
+* **Markdown-First**: We believe agents process Markdown better. All our outputs are pre-formatted for maximum reasoning efficiency.
+* **Unified Billing**: Forget managing 10+ subscriptions. Use one balance for all search, scrape, and proxy needs.
+* **Extreme Performance**: Built on a KV-first architecture using Cloudflare Workers for sub-millisecond credit validation and reliability.
+* **Instant Start**: Authenticate via GitHub OAuth and receive **500 free credits** to start building immediately.
+
+---
+
+## 📂 Repository Structure
+
+* `uniskill-web`: Next.js dashboard for key management, billing, and usage analytics.
+* `uniskill-gateway`: The high-performance Cloudflare Workers gateway for skill distribution.
+* `uniskill-docs`: Technical documentation and API references for all available skills.
+
+---
+
+## 📜 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
