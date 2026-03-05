@@ -30,12 +30,30 @@ fi
 # Logic: Online verification against UniSkill API
 # 逻辑：联机验证 API Key 是否真实有效
 echo -n "Verifying API Key... "
-VERIFY_RES=$(curl -s -w "%{http_code}" -o /dev/null -X POST \
+# Use a temporary file to capture the HTTP status code
+# 使用临时文件捕获 HTTP 状态码，并保留 curl 的退出码
+HTTP_STATUS=$(curl -s -w "%{http_code}" -o /dev/null -X POST \
     -H "Content-Type: application/json" \
     -d "{\"token\":\"$API_KEY\"}" \
     https://uniskill.ai/api/v1/verify)
+CURL_RET=$?
 
-if [ "$VERIFY_RES" != "200" ]; then
+if [ $CURL_RET -ne 0 ]; then
+    echo -e "${RED}NETWORK ERROR${NC}"
+    echo -e "${RED}❌ Error: Could not reach UniSkill servers (curl exit code: $CURL_RET).${NC}"
+    case $CURL_RET in
+        6)  echo "Reason: DNS resolution failed. Please check your domain settings or ISP." ;;
+        7)  echo "Reason: Connection refused. The service might be temporarily down." ;;
+        28) echo "Reason: Connection timed out. Please check your firewall or proxy." ;;
+        35) echo "Reason: SSL/TLS handshake failed. Check your local clock or SSL environment." ;;
+        60) echo "Reason: Peer certificate cannot be authenticated with known CA certificates." ;;
+        *)  echo "Reason: General network failure." ;;
+    esac
+    echo -e "Try manually visiting ${BLUE}https://uniskill.ai${NC} to check accessibility."
+    exit 1
+fi
+
+if [ "$HTTP_STATUS" != "200" ]; then
     echo -e "${RED}FAILED${NC}"
     echo -e "${RED}❌ Error: Invalid API Key. The provided key ${BLUE}${API_KEY:0:7}...${RED} is not authorized. Please check your credentials at ${BLUE}https://uniskill.ai/dashboard${NC}."
     exit 1
