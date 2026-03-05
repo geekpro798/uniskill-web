@@ -4,12 +4,13 @@
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import HowItWorks from "@/components/HowItWorks";
+import QuickstartCard from "@/components/QuickstartCard";
 import PricingSection from "@/components/PricingSection";
 import Footer from "@/components/Footer";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen font-sans">
       {/* 固定顶部导航栏 */}
       <Navbar />
 

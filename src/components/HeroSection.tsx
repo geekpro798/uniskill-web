@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import QuickstartCard from "./QuickstartCard";
 
 /* ─── 动画配置常量 ───────────────────────────────────────────────────────
    fadeUp: 从下方淡入的通用动画变体，用于主内容区域的入场
@@ -19,7 +20,7 @@ const fadeUp = {
    ─────────────────────────────────────────────────────────────────────── */
 export default function HeroSection() {
     return (
-        <section className="relative min-h-screen flex items-start justify-center overflow-hidden bg-grid pt-[70px]">
+        <section className="relative min-h-[75vh] flex items-center justify-center overflow-hidden bg-grid pt-32 pb-12">
 
             {/* ─── 背景装饰：动态光晕球 ─── */}
             <div className="absolute inset-0 pointer-events-none">
@@ -131,43 +132,7 @@ export default function HeroSection() {
                         custom={0.4}
                         className="lg:pl-6"
                     >
-                        <div className="glass-card glow-blue w-full max-w-2xl mx-auto p-6 lg:mr-0">
-                            {/* 卡片顶部：模拟终端标题栏 */}
-                            <div className="flex items-center gap-2 mb-4">
-                                <div className="w-3 h-3 rounded-full bg-red-500/70" />
-                                <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
-                                <div className="w-3 h-3 rounded-full bg-green-500/70" />
-                                <span className="ml-2 text-xs text-slate-500 font-mono">terminal</span>
-                            </div>
-
-                            {/* 代码内容：展示单一 Token 即可调用所有技能 */}
-                            <div className="code-block text-left space-y-2 text-xs md:text-sm">
-                                <div>
-                                    <span className="text-slate-500"># 1. Set your single UniSkill token 🔑</span>
-                                </div>
-                                <div>
-                                    <span className="text-purple-400">export</span>
-                                    <span className="text-slate-300"> UNISKILL_TOKEN</span>
-                                    <span className="text-slate-400">=</span>
-                                    <span className="text-green-400">&quot;us-4x8k-aBcDeFgHiJkL&quot;</span>
-                                </div>
-                                <div className="pt-1">
-                                    <span className="text-slate-500"># 2. Your agent calls any skill — no extra keys needed ✨</span>
-                                </div>
-                                <div>
-                                    <span className="text-blue-400">curl</span>
-                                    <span className="text-slate-300"> https://api.uniskill.ai/v1/search</span>
-                                </div>
-                                <div className="pl-4">
-                                    <span className="text-yellow-400">-H</span>
-                                    <span className="text-green-400"> &quot;Authorization: Bearer $UNISKILL_TOKEN&quot;</span>
-                                </div>
-                                <div className="pl-4">
-                                    <span className="text-yellow-400">-H</span>
-                                    <span className="text-slate-300"> &apos;&#123;&quot;query&quot;: &quot;AI gateway&quot;&#125;&apos;</span>
-                                </div>
-                            </div>
-                        </div>
+                        <QuickstartCard />
                     </motion.div>
                 </div>
             </div>
