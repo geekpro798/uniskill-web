@@ -27,6 +27,21 @@ if [[ ! $API_KEY =~ ^us- ]]; then
     exit 1
 fi
 
+# Logic: Online verification against UniSkill API
+# 逻辑：联机验证 API Key 是否真实有效
+echo -n "Verifying API Key... "
+VERIFY_RES=$(curl -s -w "%{http_code}" -o /dev/null -X POST \
+    -H "Content-Type: application/json" \
+    -d "{\"token\":\"$API_KEY\"}" \
+    https://uniskill.ai/api/v1/verify)
+
+if [ "$VERIFY_RES" != "200" ]; then
+    echo -e "${RED}FAILED${NC}"
+    echo -e "${RED}❌ Error: Invalid API Key. The provided key ${BLUE}${API_KEY:0:7}...${RED} is not authorized. Please check your credentials at ${BLUE}https://uniskill.ai/dashboard${NC}."
+    exit 1
+fi
+echo -e "${GREEN}VALIDATED${NC}"
+
 # Logic: Detect the current user's shell profile
 # 逻辑：检测当前用户的 Shell 配置文件（.zshrc 或 .bashrc）
 if [ -n "$ZSH_VERSION" ]; then
