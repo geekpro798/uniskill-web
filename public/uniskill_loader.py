@@ -28,10 +28,13 @@ def _fetch_manifest() -> dict:
             "Run setup-skills.sh first or export the variable manually."
         )
 
-    # 构造带 Bearer 认证头的请求
+    # 构造带 Bearer 认证头与标准 User-Agent 的请求
     req = urllib.request.Request(
         MANIFEST_URL,
-        headers={"Authorization": f"Bearer {API_KEY}"},
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "User-Agent": "UniSkill-Python-SDK/1.0"
+        },
     )
 
     try:
@@ -68,6 +71,7 @@ def _make_caller(skill: dict):
             headers={
                 "Authorization": f"Bearer {API_KEY}",
                 "Content-Type": "application/json",
+                "User-Agent": "UniSkill-Python-SDK/1.0"
             },
             method="POST",
         )
@@ -93,8 +97,15 @@ def load_skills(verbose: bool = True) -> list:
     """
     manifest = _fetch_manifest()
 
-    # 兼容清单返回 {"skills": [...]} 或直接返回数组两种格式
-    skills_raw = manifest.get("skills", manifest) if isinstance(manifest, dict) else manifest
+    # 兼容清单返回 {"tools": [...]}, {"skills": [...]} 或直接返回数组格式
+    if isinstance(manifest, dict):
+        skills_raw = manifest.get("tools", manifest.get("skills", manifest))
+    else:
+        skills_raw = manifest
+
+    # 如果此时 skills_raw 仍为包含了额外元数据的字典（通常发生在接口新增了顶级属性），需要兜底防止崩溃
+    if isinstance(skills_raw, dict):
+        raise ValueError("[UniSkill] Unexpected manifest format: Neither 'tools' nor 'skills' array found.")
 
     skills = []
     for skill in skills_raw:
