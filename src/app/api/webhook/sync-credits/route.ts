@@ -15,10 +15,11 @@ export async function POST(req: Request) {
         process.env.SUPABASE_SERVICE_ROLE_KEY! // Use Service Role to bypass RLS 使用 Service Role 绕过权限限制
     );
     const authHeader = req.headers.get("Authorization");
+    const adminKey = process.env.ADMIN_KEY || "";
 
     // 1. Verify Admin Secret 验证管理员密钥
-    if (authHeader !== `Bearer ${process.env.ADMIN_KEY}`) {
-        console.warn("[Webhook] Unauthorized request. Header mismatch.");
+    if (authHeader !== `Bearer ${adminKey}`) {
+        console.warn(`[Webhook] Unauthorized request. Header mismatch. Received header length: ${authHeader?.length || 0}, Configured key length: ${adminKey.length}`);
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
