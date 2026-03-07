@@ -1,69 +1,37 @@
-import React from 'react';
-import { SkillDetail } from '@/components/SkillDetail'; // 逻辑：引入我们之前写好的通用详情页组件
-import { notFound } from 'next/navigation';
+// uniskill-web/src/app/skills/[skillId]/page.tsx
+// Logic: Server Component to load skill details from the official local registry.
 
-// 逻辑：定义 Next.js 页面接收的动态参数接口
+import React from 'react';
+import { SkillDetail } from '@/components/SkillDetail';
+import { notFound } from 'next/navigation';
+import { parseSkillFile } from '@/lib/skills-parser';
+
 interface PageProps {
     params: {
         skillId: string;
     };
 }
 
-/**
- * Logic: Next.js Server Component to fetch data before sending HTML to client
- * 逻辑：Next.js 服务端组件，在服务器端完成数据拉取，对 SEO 极其友好
- */
 export default async function SkillPage({ params }: PageProps) {
-    const { skillId } = await params; // Next.js 15+ 模式，params 是异步的
+    const { skillId } = await params;
 
-    try {
-        console.log(`[FRONTEND DEBUG] Loading Skill: ${skillId}`);
-        // 逻辑：兼容本地联调，优先使用环境变量中的 GATEWAY_URL，并去除可能自带的 /v1 尾巴
-        const rawGatewayUrl = process.env.GATEWAY_URL || 'https://api.uniskill.ai';
-        const gatewayUrl = rawGatewayUrl.replace(/\/v1\/?$/, '').replace(/\/+$/, '');
-        console.log(`[FRONTEND DEBUG] Fetching from: ${gatewayUrl}/v1/skills/${skillId}`);
+    // 逻辑：直接从本地 registry 目录读取 MD 文件，确保 ID 和 Name 绝对准确
+    const skillData = parseSkillFile(skillId);
 
-        const res = await fetch(`${gatewayUrl}/v1/skills/${skillId}`, {
-            cache: 'no-store'
-        });
-
-        console.log(`[FRONTEND DEBUG] Response Status: ${res.status}`);
-
-        if (!res.ok) {
-            if (res.status === 404) {
-                console.warn(`[FRONTEND DEBUG] Skill Not Found (404) at Gateway`);
-                notFound();
-            }
-            throw new Error(`Failed to fetch skill data (Status: ${res.status})`);
-        }
-
-        const data = await res.json();
-        console.log(`[FRONTEND DEBUG] Data success: ${data.success}`);
-
-        if (!data.success) {
-            console.warn(`[FRONTEND DEBUG] API reported failure: ${data.error}`);
-            notFound();
-        }
-
-        // 逻辑：将拉取到的核心规范和权限标识传递给统一的客户端 UI 组件
-        return (
-            <main className="min-h-screen bg-[#0a0f1e]">
-                <SkillDetail
-                    skillId={skillId}
-                    skill={data.spec}
-                    isOfficial={data.is_official}
-                    isOwner={data.is_owner}
-                />
-            </main>
-        );
-
-    } catch (error) {
-        console.error("Error loading skill:", error);
-        // 逻辑：当网关出现异常时的错误降级 UI
-        return (
-            <div className="flex items-center justify-center min-h-screen text-red-600 font-mono">
-                <p>System Error: Unable to load skill data at this time.</p>
-            </div>
-        );
+    if (!skillData) {
+        console.warn(`[SKILL PAGE] Skill not found in registry: ${skillId}`);
+        notFound();
     }
+
+    return (
+        <main className="min-h-screen bg-[#0a0f1e]">
+            {/* 逻辑：由于现在是直接读本地文件，我们将 data 结构对齐传递给客户端组件 */}
+            <SkillDetail
+                skillId={skillId}
+                skill={skillData}
+                isOfficial={skillData.status === "Official"}
+                isOwner={true} // 本地预览模式默认拥有权限
+            />
+        </main>
+    );
 }

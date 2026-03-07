@@ -112,17 +112,37 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skillId, skill, isOffi
                     <div className="lg:col-span-7 space-y-12">
 
                         {/* 1. 顶部 Header */}
-                        <div>
-                            <div className="flex items-center gap-3 mb-4">
-                                <h1 className="text-4xl font-black text-white tracking-tight">
-                                    {skillId} {/* 逻辑：复刻截图中的命名方式 */}
-                                </h1>
-                                <span className={`px-2.5 py-1 rounded text-[10px] font-bold tracking-widest uppercase border ${isOfficial ? "bg-blue-500/10 text-blue-400 border-blue-500/30" : "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                                    }`}>
+                        <div className="mb-8">
+                            {/* 逻辑：主标题显示给人类看的友好 Name */}
+                            <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">
+                                {skill.name || skillId}
+                            </h1>
+
+                            <div className="flex items-center gap-3">
+                                {/* 逻辑：副标题/徽章显示给机器执行用的严格 ID，并配有一键复制功能 */}
+                                <div className="group flex items-center gap-2 bg-[#050810]/80 border border-slate-700/80 px-3 py-1.5 rounded-lg backdrop-blur-sm cursor-pointer hover:border-blue-500/50 transition-colors"
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(skillId);
+                                        // TODO: Add toast notification if needed
+                                    }}
+                                    title="Click to copy Skill ID"
+                                >
+                                    <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">ID:</span>
+                                    <code className="text-blue-400 font-mono text-sm font-bold group-hover:text-blue-300 transition-colors">
+                                        {skillId}
+                                    </code>
+                                    <svg className="w-4 h-4 text-slate-500 group-hover:text-blue-400 transition-colors ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+
+                                {/* 逻辑：其他状态徽章，如官方认证 */}
+                                <span className="px-2.5 py-1 rounded-md text-xs font-bold tracking-widest uppercase border bg-blue-500/10 text-blue-400 border-blue-500/25">
                                     {isOfficial ? "Official" : "Community"}
                                 </span>
                             </div>
-                            <p className="text-lg text-slate-400 leading-relaxed max-w-2xl">
+
+                            <p className="text-lg text-slate-400 leading-relaxed max-w-2xl mt-6">
                                 {skill.description}
                             </p>
                         </div>
@@ -191,7 +211,7 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skillId, skill, isOffi
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-sm text-slate-300">Cost per Request</span>
                                 <div className="flex items-center gap-1">
-                                    <span className="text-xl font-black text-white">{meta.cost}</span>
+                                    <span className="text-xl font-black text-white">{skill.costPerCall ?? 0}</span>
                                     <span className="text-[10px] text-slate-500 ml-0.5 font-bold">CR</span>
                                 </div>
                             </div>
