@@ -12,80 +12,7 @@ import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
 /* ─── 技能数据定义 ─────────────────────────────────────────────────────────
    每个技能包含：名称、图标、描述、状态（Active/Beta）、每次调用消耗的 credits
    ─────────────────────────────────────────────────────────────────────── */
-const SKILLS = [
-    {
-        id: "search",
-        name: "Search",
-        emoji: "🔍",
-        gradientFrom: "from-blue-500",
-        gradientTo: "to-cyan-400",
-        borderColor: "hover:border-blue-500/40",
-        description: "AI-powered web search with semantic ranking. Returns structured results with titles, URLs, and summaries from across the web.",
-        status: "Active" as const,
-        costPerCall: 1,
-        plugin: "uniskill_search",
-    },
-    {
-        id: "scrape",
-        name: "Scrape",
-        emoji: "🕷️",
-        gradientFrom: "from-purple-500",
-        gradientTo: "to-violet-400",
-        borderColor: "hover:border-purple-500/40",
-        description: "Extract full-page content from any URL. Handles JavaScript-rendered pages, returns clean markdown-formatted text.",
-        status: "Active" as const,
-        costPerCall: 2,
-        plugin: "uniskill_scrape",
-    },
-    {
-        id: "news",
-        name: "News",
-        emoji: "📰",
-        gradientFrom: "from-cyan-500",
-        gradientTo: "to-teal-400",
-        borderColor: "hover:border-cyan-500/40",
-        description: "Real-time news aggregation from 50,000+ sources. Filter by topic, region, and recency. Results include sentiment scores.",
-        status: "Active" as const,
-        costPerCall: 1,
-        plugin: "uniskill_news",
-    },
-    {
-        id: "social",
-        name: "Social",
-        emoji: "💬",
-        gradientFrom: "from-green-500",
-        gradientTo: "to-emerald-400",
-        borderColor: "hover:border-green-500/40",
-        description: "Monitor social media trends across Twitter/X, Reddit, and HN. Extract insights, track mentions, and analyze engagement.",
-        status: "Beta" as const,
-        costPerCall: 3,
-        plugin: "uniskill_social",
-    },
-    {
-        id: "extract",
-        name: "Extract",
-        emoji: "🗂️",
-        gradientFrom: "from-yellow-500",
-        gradientTo: "to-amber-400",
-        borderColor: "hover:border-yellow-500/40",
-        description: "Structured data extraction from documents, PDFs, and web pages. Output clean JSON matching your defined schema.",
-        status: "Active" as const,
-        costPerCall: 2,
-        plugin: "uniskill_extract",
-    },
-    {
-        id: "vision",
-        name: "Vision",
-        emoji: "👁️",
-        gradientFrom: "from-pink-500",
-        gradientTo: "to-rose-400",
-        borderColor: "hover:border-pink-500/40",
-        description: "Analyze images, screenshots, and charts with multimodal AI. Extract text, describe scenes, and answer visual questions.",
-        status: "Beta" as const,
-        costPerCall: 5,
-        plugin: "uniskill_vision",
-    },
-];
+const SKILLS: any[] = [];
 
 /* ─── 技能卡片组件 ─── */
 function SkillCard({ skill, index }: { skill: typeof SKILLS[0]; index: number }) {
@@ -330,7 +257,7 @@ export default function SkillsPage() {
                         transition={{ delay: 0.15, duration: 0.4 }}
                         className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4"
                     >
-                        {SKILLS.length} Available Skills
+                        My Skills
                     </motion.h2>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
