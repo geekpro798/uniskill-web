@@ -18,8 +18,9 @@ export default async function SkillPage({ params }: PageProps) {
 
     try {
         console.log(`[FRONTEND DEBUG] Loading Skill: ${skillId}`);
-        // 逻辑：兼容本地联调，优先使用环境变量中的 GATEWAY_URL
-        const gatewayUrl = process.env.GATEWAY_URL || 'https://api.uniskill.ai';
+        // 逻辑：兼容本地联调，优先使用环境变量中的 GATEWAY_URL，并去除可能自带的 /v1 尾巴
+        const rawGatewayUrl = process.env.GATEWAY_URL || 'https://api.uniskill.ai';
+        const gatewayUrl = rawGatewayUrl.replace(/\/v1\/?$/, '').replace(/\/+$/, '');
         console.log(`[FRONTEND DEBUG] Fetching from: ${gatewayUrl}/v1/skills/${skillId}`);
 
         const res = await fetch(`${gatewayUrl}/v1/skills/${skillId}`, {

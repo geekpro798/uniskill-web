@@ -53,8 +53,8 @@ function SkillCard({ skill, index }: { skill: DynamicSkill; index: number }) {
                 </div>
                 {/* 逻辑：根据是否为官方技能，动态渲染徽章状态 */}
                 <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${skill.isOfficial
-                        ? "bg-green-500/10 text-green-400 border-green-500/25"
-                        : "bg-blue-500/10 text-blue-400 border-blue-500/25"
+                    ? "bg-green-500/10 text-green-400 border-green-500/25"
+                    : "bg-blue-500/10 text-blue-400 border-blue-500/25"
                     }`}>
                     {skill.isOfficial ? "Official" : "Community"}
                 </span>
@@ -102,8 +102,9 @@ export default function SkillsPage() {
     useEffect(() => {
         async function fetchSkills() {
             try {
-                // 注意：使用环境变量或真实网关域名
-                const gatewayUrl = process.env.NEXT_PUBLIC_GATEWAY_URL || 'https://api.uniskill.ai';
+                // 注意：使用环境变量或真实网关域名，并去除可能自带的 /v1 尾巴
+                const rawGatewayUrl = process.env.NEXT_PUBLIC_GATEWAY_URL || 'https://api.uniskill.ai';
+                const gatewayUrl = rawGatewayUrl.replace(/\/v1\/?$/, '').replace(/\/+$/, '');
                 const res = await fetch(`${gatewayUrl}/v1/skills`);
                 const json = await res.json();
                 if (json.success) {
