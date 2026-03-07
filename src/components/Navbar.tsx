@@ -1,8 +1,10 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "framer-motion";
+import { useState, useRef, useEffect } from "react";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 
 /* ─── Navbar 组件：固定在顶部的导航栏 ──────────────────────────────────
    功能：随滚动增强背景模糊效果，Logo 在左，Sign In 按钮在右
@@ -125,35 +127,122 @@ export default function Navbar() {
 
 /* ─── NavbarAuthButton：根据登录状态显示不同按钮 ────────────────────────
    - 未登录：显示 Sign in with GitHub 按钮
-   - 已登录：显示 Dashboard 链接 + 用户头像（Skills 链接已移至公共区域）
+   - 已登录：显示用户头像及其下拉菜单（包含 Dashboard 等）
    ─────────────────────────────────────────────────────────────────────── */
 function NavbarAuthButton() {
     const { data: session, status } = useSession();
+    const pathname = usePathname();
+    const user = session?.user;
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    const isActive = (path: string) => pathname === path;
+
+    // 点击外部关闭菜单
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsMenuOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     if (status === "loading") {
         return <div className="w-32 h-8 rounded-lg bg-slate-700/50 animate-pulse" />;
     }
 
-    if (session?.user) {
+    if (user) {
         return (
-            <div className="flex items-center gap-2">
-                <motion.a
-                    href="/dashboard"
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-500/15 border border-blue-500/40 text-blue-400 hover:bg-blue-500/25 transition-all"
+            <div
+                className="relative"
+                ref={menuRef}
+                onMouseEnter={() => setIsMenuOpen(true)}
+                onMouseLeave={() => setIsMenuOpen(false)}
+            >
+                <button
+                    className={`flex items-center gap-2 p-1.5 rounded-xl transition-all outline-none group border ${isMenuOpen ? "border-blue-500/30 bg-white/5" : "border-transparent"
+                        } hover:border-blue-500/30 hover:bg-white/5`}
                 >
-                    Dashboard
-                </motion.a>
-                {session.user.image && (
-                    <button onClick={() => signOut({ callbackUrl: "/" })} title="Sign Out">
+                    {/* 用户头像 */}
+                    {user.image ? (
                         <img
-                            src={session.user.image}
-                            alt={session.user.name ?? "User"}
-                            className="w-8 h-8 rounded-full border border-slate-700 hover:border-slate-500 transition-colors"
+                            src={user.image}
+                            alt={user.name ?? "User"}
+                            className="w-8 h-8 rounded-full border border-white/10 group-hover:border-white/20 transition-colors"
                         />
-                    </button>
-                )}
+                    ) : (
+                        <div className="w-8 h-8 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-500">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                <circle cx="12" cy="7" r="4" />
+                            </svg>
+                        </div>
+                    )}
+
+                    {/* 用户名与展开图标 */}
+                    <span className="hidden md:block text-xs font-medium text-slate-300 group-hover:text-white transition-colors">
+                        {user.name ?? "Account"}
+                    </span>
+                    <svg
+                        width="12" height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className={`text-slate-500 transition-transform duration-200 ${isMenuOpen ? "rotate-180" : ""}`}
+                    >
+                        <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                </button>
+
+                {/* 下拉列表内容 */}
+                <AnimatePresence>
+                    {isMenuOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 4, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute right-0 mt-1 w-48 py-1.5 glass-card border border-white/10 shadow-2xl z-[60] bg-[#0a0f1e]/95 backdrop-blur-xl rounded-xl"
+                        >
+                            {/* Dashboard 链接 */}
+                            <Link
+                                href="/dashboard"
+                                onClick={() => setIsMenuOpen(false)}
+                                className={`flex items-center gap-2.5 px-4 py-2 text-xs font-medium transition-colors ${isActive("/dashboard")
+                                    ? "text-blue-400 bg-blue-500/10"
+                                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                                    }`}
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                                </svg>
+                                Dashboard
+                            </Link>
+
+                            {/* 分割线 */}
+                            <div className="my-1 h-[1px] bg-white/5" />
+
+                            {/* 登出按钮 */}
+                            <button
+                                onClick={() => signOut({ callbackUrl: "/" })}
+                                className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-red-400/80 hover:text-red-400 hover:bg-red-500/5 transition-colors"
+                            >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                    <polyline points="16 17 21 12 16 7" />
+                                    <line x1="21" y1="12" x2="9" y2="12" />
+                                </svg>
+                                Sign Out
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         );
     }
