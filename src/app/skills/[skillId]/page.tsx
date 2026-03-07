@@ -46,8 +46,9 @@ export default async function SkillPage({ params }: PageProps) {
 
         // 逻辑：将拉取到的核心规范和权限标识传递给统一的客户端 UI 组件
         return (
-            <main className="min-h-screen bg-gray-50 py-10">
+            <main className="min-h-screen bg-[#0a0f1e]">
                 <SkillDetail
+                    skillId={skillId}
                     skill={data.spec}
                     isOfficial={data.is_official}
                     isOwner={data.is_owner}
