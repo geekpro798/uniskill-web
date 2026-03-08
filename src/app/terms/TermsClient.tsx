@@ -31,7 +31,7 @@ export default function TermsClient() {
             content: "You agree NOT to use UniSkill to:",
             list: [
                 "Illegal Activity: Scrape or search for content that violates any local, state, or international laws.",
-                "Abuse: Attempt to bypass our rate limits (30 RPM for Starter / 60+ RPM for higher tiers) or execute DDoS attacks against our gateway.",
+                "Abuse: Attempt to bypass our rate limits (30 RPM for Free / 60+ RPM for higher tiers) or execute DDoS attacks against our gateway.",
                 "Reselling: Sub-license or resell access to your UniSkill API Key without explicit written consent.",
             ],
         },

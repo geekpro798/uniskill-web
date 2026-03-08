@@ -19,6 +19,7 @@ const plans = [
         labelColor: "text-slate-400",
         features: [
             "500 credits one-time",
+            "30 RPM limit",
             "All skill types included",
             "Community support",
             "API access",
@@ -41,6 +42,7 @@ const plans = [
         labelColor: "",
         features: [
             "10,000 credits / month",
+            "60 RPM limit",
             "All skill types included",
             "Email support",
             "API access",
@@ -64,6 +66,7 @@ const plans = [
         labelColor: "text-blue-400",
         features: [
             "35,000 credits / month",
+            "300 RPM limit",
             "All skill types included",
             "Priority support",
             "API access",
@@ -87,6 +90,7 @@ const plans = [
         labelColor: "",
         features: [
             "150,000 credits / month",
+            "1,000 RPM limit",
             "All skill types included",
             "Dedicated support",
             "API access",

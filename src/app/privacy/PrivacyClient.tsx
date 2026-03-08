@@ -22,7 +22,7 @@ export default function PrivacyClient() {
             list: [
                 "Service Provision: To execute the \"skills\" your agent requests, such as retrieving search results or scraping web content.",
                 "Credit Management: To track and deduct credits from your account (including the initial 500 free credits provided upon registration).",
-                "Rate Limiting & Security: To enforce our 30/60 RPM limits and protect our infrastructure from malicious activity.",
+                "Rate Limiting & Security: To enforce our tier-based RPM limits (30 - 1000 RPM) and protect our infrastructure from malicious activity.",
                 "Communication: To send important updates regarding your account, billing, or significant changes to our \"Skill Layer\" infrastructure.",
             ],
         },
