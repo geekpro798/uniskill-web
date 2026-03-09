@@ -18,20 +18,21 @@ Get the latest global news headlines, summaries, and metadata across various cat
 ## Parameters
 ```json
 {
-  "query": {
-    "type": "string",
-    "description": "Search keyword for specific news topics.",
-    "required": false
-  },
-  "category": {
-    "type": "string",
-    "description": "News category: 'business', 'technology', 'sports', etc.",
-    "required": false
-  },
-  "max_results": {
-    "type": "integer",
-    "description": "Number of articles to return.",
-    "default": 8
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "Search keyword for specific news topics."
+    },
+    "category": {
+      "type": "string",
+      "description": "News category: 'business', 'technology', 'sports', etc."
+    },
+    "max_results": {
+      "type": "integer",
+      "description": "Number of articles to return.",
+      "default": 8
+    }
   }
 }
 ```
