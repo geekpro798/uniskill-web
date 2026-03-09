@@ -47,7 +47,7 @@ method: "POST"
 
 # Logic: Mapping internal credentials
 # 逻辑：映射内部凭证
-api_key: "{{NEWS_API_KEY}}"
+api_key: "{{TAVILY_API_KEY}}"
 
 # Logic: Mapping AI-generated arguments to the API payload
 # 逻辑：将 AI 生成的参数映射到 API 请求体
