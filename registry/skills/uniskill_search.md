@@ -18,27 +18,30 @@ Real-time web search for news, stocks, and trends. Powered by Tavily.
 ## Parameters
 ```json
 {
-  "query": {
-    "type": "string",
-    "description": "The specific query string to search on the web.",
-    "required": true
+  "type": "object",
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "The specific query string to search on the web."
+    },
+    "search_depth": {
+      "type": "string",
+      "description": "Depth of the search: 'basic' or 'advanced'.",
+      "enum": ["basic", "advanced"],
+      "default": "basic"
+    },
+    "max_results": {
+      "type": "integer",
+      "description": "Maximum number of results to return.",
+      "default": 5
+    },
+    "include_answer": {
+      "type": "boolean",
+      "description": "Include a short LLM-generated answer based on results.",
+      "default": false
+    }
   },
-  "search_depth": {
-    "type": "string",
-    "description": "Depth of the search: 'basic' or 'advanced'.",
-    "enum": ["basic", "advanced"],
-    "default": "basic"
-  },
-  "max_results": {
-    "type": "integer",
-    "description": "Maximum number of results to return.",
-    "default": 5
-  },
-  "include_answer": {
-    "type": "boolean",
-    "description": "Include a short LLM-generated answer based on results.",
-    "default": false
-  }
+  "required": ["query"]
 }
 ```
 

@@ -66,6 +66,10 @@ async function syncSkillsToKV() {
             const descMatch = content.match(/## Description\n([\s\S]*?)(?=\n##|$)/);
             const description = descMatch ? descMatch[1].trim() : "";
 
+            // 逻辑：正则提取 Parameters JSON，用于 MCP Schema 和前端表单生成
+            const paramMatch = content.match(/## Parameters\n```json\n([\s\S]*?)```/);
+            const parameters = paramMatch ? JSON.parse(paramMatch[1]) : { type: "object", properties: {} };
+
             // 逻辑：正则提取 Implementation YAML，用于 Gateway 底层执行
             const implMatch = content.match(/## Implementation YAML\n```yaml\n([\s\S]*?)```/);
             if (!implMatch) throw new Error("Missing '## Implementation YAML' block");
@@ -83,7 +87,8 @@ async function syncSkillsToKV() {
                     emoji: frontmatter.emoji || "🧩",
                     cost: frontmatter.costPerCall || 0,
                     category: frontmatter.category || "utilities",
-                    tags: frontmatter.tags || []
+                    tags: frontmatter.tags || [],
+                    parameters: parameters
                 },
                 config: implementationJson,
                 docs: {

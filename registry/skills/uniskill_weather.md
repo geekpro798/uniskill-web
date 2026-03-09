@@ -18,11 +18,14 @@ Get real-time weather conditions and forecasts for any city in the world. Powere
 ## Parameters
 ```json
 {
-  "location": {
-    "type": "string",
-    "description": "The city or region name (e.g., 'London', 'Beijing', '30.27,120.15').",
-    "required": true
-  }
+  "type": "object",
+  "properties": {
+    "location": {
+      "type": "string",
+      "description": "The city or region name (e.g., 'London', 'Beijing', '30.27,120.15')."
+    }
+  },
+  "required": ["location"]
 }
 ```
 

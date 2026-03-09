@@ -18,11 +18,14 @@ Extract clean, LLM-friendly Markdown content from any website URL. Powered by Ji
 ## Parameters
 ```json
 {
-  "url": {
-    "type": "string",
-    "description": "The URL of the webpage to scrape.",
-    "required": true
-  }
+  "type": "object",
+  "properties": {
+    "url": {
+      "type": "string",
+      "description": "The URL of the webpage to scrape."
+    }
+  },
+  "required": ["url"]
 }
 ```
 
