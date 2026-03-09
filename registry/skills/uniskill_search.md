@@ -3,7 +3,7 @@ id: "uniskill_search"
 name: "Web Search"
 emoji: "🌐"
 status: "Official"
-costPerCall: 10
+costPerCall: 5
 category: "web_search"
 tags: ["search", "real-time", "tavily"]
 gradientFrom: "from-blue-500"
