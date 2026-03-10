@@ -3,7 +3,7 @@ id: "uniskill_news"
 name: "Global News"
 emoji: "📰"
 status: "Official"
-costPerCall: 10
+costPerCall: 5
 category: "web_search"
 tags: ["news", "summary", "headlines"]
 gradientFrom: "from-indigo-500"
@@ -40,24 +40,20 @@ Get the latest global news headlines, summaries, and metadata across various cat
 ## Implementation YAML
 ```yaml
 # Logic: Identification for applying UniSkill official optimizations
-# 逻辑：标识符，用于应用 UniSkill 官方深度优化
 type: official_optimized
-endpoint: "https://api.uniskill.ai/v1/news"
+endpoint: "https://api.tavily.com/search"
 method: "POST"
 
 # Logic: Mapping internal credentials
-# 逻辑：映射内部凭证
 api_key: "{{TAVILY_API_KEY}}"
 
 # Logic: Mapping AI-generated arguments to the API payload
-# 逻辑：将 AI 生成的参数映射到 API 请求体
 payload:
-  q: "{{query}}"
-  category: "{{category}}"
-  limit: "{{max_results}}"
+  query: "{{query}}"
+  topic: "news"
+  max_results: "{{max_results}}"
 
 # Logic: Hook to trigger the data cleaning plugin
-# 逻辑：触发数据清洗插件的钩子
 plugin_hook: "NEWS_AGGREGATOR_FORMATTER"
 ```
 
