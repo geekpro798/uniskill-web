@@ -39,14 +39,14 @@ const QuickstartCard = () => {
         },
         windows: {
             label: "Windows",
-            cmd: `irm https://uniskill.ai/install.ps1 | iex`,
+            cmd: `irm https://uniskill.ai/connect.ps1 | iex`,
             rendered: (
                 <div className="flex items-start gap-2">
                     <span className="text-slate-600 select-none shrink-0">&gt;</span>
                     <span className="leading-relaxed">
                         <span className="text-blue-400">irm</span>
                         <span className="text-slate-400"> </span>
-                        <span className="text-green-400">https://uniskill.ai/install.ps1</span>
+                        <span className="text-green-400">https://uniskill.ai/connect.ps1</span>
                         <span className="text-slate-400"> | </span>
                         <span className="text-blue-400">iex</span>
                     </span>
@@ -87,8 +87,8 @@ const QuickstartCard = () => {
                             key={tab}
                             onClick={() => setOs(tab)}
                             className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${os === tab
-                                    ? "bg-indigo-600 text-white shadow-sm"
-                                    : "text-slate-400 hover:text-slate-200"
+                                ? "bg-indigo-600 text-white shadow-sm"
+                                : "text-slate-400 hover:text-slate-200"
                                 }`}
                         >
                             {tab === "mac" ? <Apple size={12} /> : <Monitor size={12} />}
@@ -111,8 +111,8 @@ const QuickstartCard = () => {
                         whileTap={{ scale: 0.95 }}
                         onClick={copyToClipboard}
                         className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold border transition-all shrink-0 mb-0.5 ${copied
-                                ? "bg-green-500/15 text-green-400 border-green-500/30"
-                                : "bg-indigo-500/10 text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/20 hover:border-indigo-400/50"
+                            ? "bg-green-500/15 text-green-400 border-green-500/30"
+                            : "bg-indigo-500/10 text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/20 hover:border-indigo-400/50"
                             }`}
                         title="Copy to clipboard"
                     >

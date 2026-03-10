@@ -49,7 +49,7 @@ export default function IntegrationCard({ rawKey }: IntegrationCardProps) {
         },
         windows: {
             label: "Windows",
-            cmd: `$env:UNISKILL_KEY="${displayKey}"; irm https://uniskill.ai/install.ps1 | iex`,
+            cmd: `$env:UNISKILL_KEY="${displayKey}"; irm https://uniskill.ai/connect.ps1 | iex`,
             rendered: (
                 <code className="break-all block">
                     <span className="text-slate-500">&gt; </span>
@@ -61,7 +61,7 @@ export default function IntegrationCard({ rawKey }: IntegrationCardProps) {
                     <span className="text-slate-400">&quot;; </span>
                     <span className="text-blue-400">irm</span>
                     <span className="text-slate-400"> </span>
-                    <span className="text-green-400">https://uniskill.ai/install.ps1</span>
+                    <span className="text-green-400">https://uniskill.ai/connect.ps1</span>
                     <span className="text-slate-400"> | </span>
                     <span className="text-blue-400">iex</span>
                 </code>
