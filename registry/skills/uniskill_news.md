@@ -42,7 +42,7 @@ Get the latest global news headlines, summaries, and metadata across various cat
 # Logic: Identification for applying UniSkill official optimizations
 # 逻辑：标识符，用于应用 UniSkill 官方深度优化
 type: official_optimized
-endpoint: "https://api.uniskill.ai/news/aggregate"
+endpoint: "https://api.uniskill.ai/v1/news"
 method: "POST"
 
 # Logic: Mapping internal credentials
