@@ -158,13 +158,13 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skillId, skill, isOffi
                             <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-6">Parameters Specification</h3>
                             {parameterList.length > 0 ? (
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-left">
+                                    <table className="w-full text-left table-fixed">
                                         <thead>
                                             <tr className="border-b border-slate-800 text-[10px] text-slate-600 uppercase">
-                                                <th className="pb-4 font-semibold">Name</th>
-                                                <th className="pb-4 font-semibold">Type</th>
-                                                <th className="pb-4 font-semibold">Required</th>
-                                                <th className="pb-4 font-semibold">Description</th>
+                                                <th className="pb-4 font-semibold w-[20%]">Name</th>
+                                                <th className="pb-4 font-semibold w-[15%]">Type</th>
+                                                <th className="pb-4 font-semibold w-[15%]">Required</th>
+                                                <th className="pb-4 font-semibold w-[50%]">Description</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-800/60">
