@@ -49,31 +49,33 @@ export async function POST(req: Request) {
         }
 
         // 3. 写入 credit_events 表（供 Dashboard Recent Activity 消费）
-        // 需要 github_id，从 profiles 查询结果中取得
         if (skillName && amount !== undefined && data && data.length > 0) {
             const githubId = (data[0] as { github_id: number | string }).github_id;
+            console.log(`[Webhook] Found github_id: ${githubId}, preparing credit_event...`);
             if (githubId) {
                 const { error: evtError } = await supabase
                     .from('credit_events')
                     .insert({
-                        github_id: Number(githubId),
+                        github_id: githubId.toString(), // 保持为字符串以配合数据库字段类型
                         skill_name: skillName,
-                        amount,          // 负数表示扣减（如 -1）
+                        amount,
                         created_at: new Date().toISOString(),
                     });
                 if (evtError) {
-                    // credit_events 写入失败不影响主流程，仅记录日志
                     console.error("[Webhook] Failed to insert credit_event:", evtError);
+                    return NextResponse.json({ success: true, warning: "Balance updated, but event log failed", details: evtError }, { status: 200 });
                 } else {
                     console.log(`[Webhook] credit_events row inserted: github_id=${githubId} skill=${skillName} amount=${amount}`);
                 }
             }
+        } else {
+            console.log("[Webhook] Skipping credit_event insert. Missing fields or user not found.", { skillName, amount, userFound: data?.length > 0 });
         }
 
         console.log("[Webhook] Successfully updated database. Data:", data);
         return NextResponse.json({ success: true, data });
-    } catch (err) {
+    } catch (err: any) {
         console.error("[Webhook] Sync failed with exception:", err);
-        return NextResponse.json({ error: "Sync failed" }, { status: 500 });
+        return NextResponse.json({ error: "Sync failed", details: err.message || err }, { status: 500 });
     }
 }

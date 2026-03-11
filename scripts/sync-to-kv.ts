@@ -16,22 +16,22 @@ const NAMESPACE_ID = process.env.CLOUDFLARE_KV_NAMESPACE_ID;
 
 const SKILLS_DIR = path.join(process.cwd(), "registry", "skills");
 
-// 逻辑：Cloudflare KV REST API 基础写入函数
-async function putToKV(key: string, value: string, contentType: string = "application/json") {
-    const url = `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/storage/kv/namespaces/${NAMESPACE_ID}/values/${key}`;
+// 逻辑：使用 wrangler CLI 写入 KV，此方法最稳健，自动处理 Auth
+import { execSync } from "child_process";
 
-    const response = await fetch(url, {
-        method: "PUT",
-        headers: {
-            "Authorization": `Bearer ${API_TOKEN}`,
-            "Content-Type": contentType
-        },
-        body: value
-    });
-
-    if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`KV API Error on key [${key}]: ${errorData}`);
+async function putToKV(key: string, value: string) {
+    try {
+        // 使用 temporary 文件避免命令行长度限制或特殊字符转义问题
+        const tmpFile = path.join("/tmp", `kv_${key.replace(/:/g, "_")}.json`);
+        fs.writeFileSync(tmpFile, value);
+        
+        execSync(`npx wrangler kv key put --namespace-id ${NAMESPACE_ID} "${key}" --path "${tmpFile}"`, {
+            stdio: "inherit"
+        });
+        
+        fs.unlinkSync(tmpFile);
+    } catch (err: any) {
+        throw new Error(`Wrangler KV Put failed for [${key}]: ${err.message}`);
     }
 }
 
@@ -62,20 +62,21 @@ async function syncSkillsToKV() {
 
             if (!skillId) throw new Error("Missing 'id' in frontmatter");
 
-            // 逻辑：正则提取 Description 正文，用于 UI 展示
-            const descMatch = content.match(/## Description\n([\s\S]*?)(?=\n##|$)/);
+            // 逻辑：正则提取 Description 正文，提高容错性
+            const descMatch = content.match(/## Description\s+([\s\S]*?)(?=\n##|$)/i);
             const description = descMatch ? descMatch[1].trim() : "";
 
-            // 逻辑：正则提取 Parameters JSON，用于 MCP Schema 和前端表单生成
-            const paramMatch = content.match(/## Parameters\n```json\n([\s\S]*?)```/);
+            // 逻辑：正则提取 Parameters JSON
+            const paramMatch = content.match(/## Parameters\s+```json\s+([\s\S]*?)```/i);
             const parameters = paramMatch ? JSON.parse(paramMatch[1]) : { type: "object", properties: {} };
 
-            // 逻辑：正则提取 Implementation YAML，用于 Gateway 底层执行
-            const implMatch = content.match(/## Implementation YAML\n```yaml\n([\s\S]*?)```/);
+            // 逻辑：正则提取 Implementation YAML
+            const implMatch = content.match(/## Implementation YAML\s+```yaml\s+([\s\S]*?)```/i);
             if (!implMatch) throw new Error("Missing '## Implementation YAML' block");
 
-            // 逻辑：将 YAML 字符串直接转为 JSON，让 Gateway 读取时性能最大化
             const implementationJson = yaml.load(implMatch[1]);
+
+            console.log(`🔍 Processing skill: ${skillId} (from ${file})`);
 
             // 逻辑 1：构建大一统 JSON 结构 (Unified Skill Object)
             const status = (frontmatter.status || "Official").toLowerCase();
@@ -85,7 +86,7 @@ async function syncSkillsToKV() {
                 meta: {
                     name: frontmatter.name || skillId,
                     emoji: frontmatter.emoji || "🧩",
-                    cost: frontmatter.costPerCall || 0,
+                    cost: frontmatter.costPerCall !== undefined ? frontmatter.costPerCall : 0,
                     category: frontmatter.category || "utilities",
                     tags: frontmatter.tags || [],
                     parameters: parameters
@@ -97,17 +98,15 @@ async function syncSkillsToKV() {
                 }
             };
 
-            // 逻辑 2：同步到网关要求的统一路径 (彻底取代碎文件)
+            // 逻辑 2：同步到网关要求的统一路径
             let gatewayKey = `skill:official:${skillId}`;
             if (status === "market") {
                 gatewayKey = `skill:market:${skillId}`;
             }
 
-            await putToKV(gatewayKey, JSON.stringify(unifiedSkill), "application/json");
-            console.log(`✅ Success: Pushed Unified JSON -> ${gatewayKey}`);
-
-            await putToKV(gatewayKey, JSON.stringify(unifiedSkill), "application/json");
-            console.log(`✅ Success: Pushed Unified JSON -> ${gatewayKey}`);
+            console.log(`📡 Uploading to KV: ${gatewayKey} (Cost: ${unifiedSkill.meta.cost})`);
+            await putToKV(gatewayKey, JSON.stringify(unifiedSkill));
+            console.log(`✅ Success: ${gatewayKey}`);
 
         } catch (error: any) {
             console.error(`❌ Failed to parse/sync [${file}]:`, error.message);
@@ -117,4 +116,7 @@ async function syncSkillsToKV() {
     console.log("\n🎉 Sync Complete! All skills are live on Cloudflare Edge.");
 }
 
-syncSkillsToKV();
+syncSkillsToKV().catch(err => {
+    console.error("❌ Fatal Sync Error:", err);
+    process.exit(1);
+});

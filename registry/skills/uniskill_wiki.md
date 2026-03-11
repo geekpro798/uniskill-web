@@ -3,7 +3,7 @@ id: "uniskill_wiki"
 name: "Wikipedia Engine"
 emoji: "📚"
 status: "Official"
-costPerCall: 0
+costPerCall: 1
 category: "web_search"
 tags: ["wikipedia", "encyclopedia", "knowledge"]
 gradientFrom: "from-slate-300"

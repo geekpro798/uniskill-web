@@ -3,7 +3,7 @@ id: "uniskill_scholar"
 name: "Semantic Scholar"
 emoji: "🎓"
 status: "Official"
-costPerCall: 0
+costPerCall: 1
 category: "web_search"
 tags: ["paper", "academic", "research", "semantic-scholar"]
 gradientFrom: "from-sky-600"
