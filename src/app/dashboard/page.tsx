@@ -132,14 +132,11 @@ function CreditsBar({ credits, total = 500 }: { credits?: number; total?: number
                                 <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
                             </svg>
                         </div>
-                        <span className="text-sm font-semibold text-slate-300">Credits Remaining</span>
+                        <span className="text-sm font-semibold text-slate-300">Credits</span>
                     </div>
                     <div className="w-16 h-7 rounded bg-slate-700/50 animate-pulse" />
                 </div>
-                <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full w-1/2 rounded-full bg-slate-700/50 animate-pulse" />
-                </div>
-                <p className="text-xs text-slate-600 mt-2">Each API call consumes 1 credit · <a href="#" className="text-blue-500 hover:underline">Upgrade plan</a></p>
+                <p className="text-xs text-slate-600 mt-2">Credit cost varies by skill · <a href="#" className="text-blue-500 hover:underline">Buy Credits</a></p>
             </div>
         );
     }
@@ -156,28 +153,12 @@ function CreditsBar({ credits, total = 500 }: { credits?: number; total?: number
                             <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
                         </svg>
                     </div>
-                    <span className="text-sm font-semibold text-slate-300">Credits Remaining</span>
+                    <span className="text-sm font-semibold text-slate-300">Credits</span>
                 </div>
-                <span className="text-2xl font-black text-white">{credits}<span className="text-sm text-slate-500 font-normal ml-1">/ {total}</span></span>
+                <span className="text-2xl font-black text-white">{credits}</span>
             </div>
-            {/* 进度条 */}
-            <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${pct}%` }}
-                    transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
-                    className={`h-full rounded-full bg-gradient-to-r ${color}`}
-                />
-            </div>
-            <div className="mt-3 flex items-center justify-between">
-                <p className="text-xs text-slate-600">Each API call consumes 1 credit · <a href="#" className="text-blue-500 hover:underline">Upgrade plan</a></p>
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-green-500/10 border border-green-500/20">
-                    <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                    </span>
-                    <span className="text-[10px] font-medium text-green-400 uppercase tracking-wider">Live: Sync Active</span>
-                </div>
+            <div className="mt-3">
+                <p className="text-xs text-slate-600">Credit cost varies by skill · <a href="#" className="text-blue-500 hover:underline">Buy Credits</a></p>
             </div>
         </div>
     );

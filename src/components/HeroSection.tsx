@@ -1,6 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useSession, signIn } from "next-auth/react";
+import Link from "next/link";
 import QuickstartCard from "./QuickstartCard";
 
 /* ─── 动画配置常量 ───────────────────────────────────────────────────────
@@ -94,17 +96,8 @@ export default function HeroSection() {
                             custom={0.3}
                             className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4"
                         >
-                            {/* 主 CTA：Get Started */}
-                            <motion.button
-                                whileHover={{ scale: 1.04, y: -2 }}
-                                whileTap={{ scale: 0.97 }}
-                                className="btn-primary w-full sm:w-auto px-8 py-3.5 text-base flex items-center justify-center gap-2"
-                            >
-                                <span>Get Started</span>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                    <path d="M5 12h14M12 5l7 7-7 7" />
-                                </svg>
-                            </motion.button>
+                            {/* 主 CTA：根据登录状态跳转或授权 */}
+                            <HeroCTA />
 
                             {/* 次级 CTA：View Docs */}
                             <motion.a
@@ -137,5 +130,47 @@ export default function HeroSection() {
                 </div>
             </div>
         </section>
+    );
+}
+
+/* ─── HeroCTA 组件：根据登录状态渲染不同的主按钮 ────────────────────────── */
+function HeroCTA() {
+    const { data: session, status } = useSession();
+
+    if (status === "loading") {
+        return (
+            <div className="w-full sm:w-[160px] h-[52px] rounded-xl bg-slate-800 animate-pulse" />
+        );
+    }
+
+    if (session) {
+        return (
+            <Link href="/dashboard" className="w-full sm:w-auto">
+                <motion.button
+                    whileHover={{ scale: 1.04, y: -2 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="btn-primary w-full px-8 py-3.5 text-base flex items-center justify-center gap-2"
+                >
+                    <span>Go to Dashboard</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </motion.button>
+            </Link>
+        );
+    }
+
+    return (
+        <motion.button
+            onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
+            whileHover={{ scale: 1.04, y: -2 }}
+            whileTap={{ scale: 0.97 }}
+            className="btn-primary w-full sm:w-auto px-8 py-3.5 text-base flex items-center justify-center gap-2"
+        >
+            <span>Get Started</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+        </motion.button>
     );
 }

@@ -68,8 +68,6 @@ export default function DashboardNavbar({ credits, totalCredits = 500 }: Dashboa
                                 <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
                             </svg>
                             <span className="text-blue-400">{credits}</span>
-                            <span className="text-slate-600">/</span>
-                            <span className="text-slate-500">{totalCredits}</span>
                         </motion.div>
                     )}
 

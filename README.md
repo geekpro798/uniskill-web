@@ -1,86 +1,76 @@
-# UniSkill: The Universal Skill Layer for AI Agents
+# UniSkill: The Universal Tool Layer for AI Agents 🚀
 
 **Empower your AI agents with real-time intelligence and universal connectivity through a single, managed infrastructure.**
 
-[UniSkill](https://www.google.com/search?q=https://uniskill.ai) is a core skills layer designed for the next generation of AI agents. It standardizes how agents interact with the web, providing high-performance tools for searching, scraping, and connecting to any API with centralized billing and security.
+[UniSkill](https://uniskill.ai) is a Registry-driven tool execution layer for AI agents. It standardizes how agents interact with the web, providing high-performance tools (searching, scraping, math, etc.) with centralized billing, security, and data formatting.
 
 ---
 
-## ⚡️ Quickstart: Initialize in 30 Seconds
+## ⚡️ Quickstart: Unified Tool Execution
 
-The fastest way to prepare your environment is using our automated setup script.
+UniSkill standardizes every tool call into a single, billable protocol. No more managing 10+ disparate API keys.
 
-```bash
-# Get your API Key at uniskill.ai and execute the setup
-curl -fsSL https://uniskill.ai/connect.sh | bash -s -- your_api_key
-
-```
-
-*This command automatically configures your `UNISKILL_KEY` environment variable in your shell profile (`.zshrc` or `.bashrc`).*
-
----
-
-## ✨ Core Skills
-
-UniSkill provides a standardized catalog of skills optimized for LLM context windows:
-
-* **`uniskill_search`**: Real-time web search that returns clean, agent-friendly Markdown content.
-* **`uniskill_scrape`**: Converts any URL into structured Markdown, stripping away ads, scripts, and navigation noise.
-* **`uniskill_connect`**: A basic API connector for proxying standard REST APIs with centralized authentication (1 credit per call).
-
----
-
-## 🛠 Usage Example (Python)
-
-Once your environment is initialized, you can trigger any skill with a simple POST request.
+### 1. Simple Search Execution (Python)
 
 ```python
-import os
 import requests
 
-# Logic: Retrieve the API key from the environment set by connect.sh
-api_key = os.getenv("UNISKILL_KEY")
+# Unified UniSkill Gateway endpoint
+URL = "https://api.uniskill.ai/v1/execute"
+HEADERS = {"Authorization": "Bearer us-xxxx"}
 
-def trigger_search_skill(query):
-    # Logic: Unified UniSkill Gateway endpoint for intelligence skills
-    url = "https://api.uniskill.ai/v1/search"
-    
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
+payload = {
+    "skill_name": "uniskill_search",
+    "params": {
+        "query": "Latest breakthroughs in agentic AI"
     }
-    
-    # Logic: Configure the request payload for optimized LLM context
-    payload = {
-        "query": query,
-        "count": 5
-    }
+}
 
-    # Logic: Execute the skill call through the global gateway
-    response = requests.post(url, json=payload, headers=headers)
-    return response.json()
+response = requests.post(URL, json=payload, headers=HEADERS)
+print(response.json())
+```
 
-# Empower your agent with real-time knowledge
-print(trigger_search_skill("Latest breakthroughs in autonomous AI agents 2026"))
-
+### 2. Standardized Metadata Response
+Every skill returns a consistent structure, including transparent usage metadata for agents:
+```json
+{
+  "success": true,
+  "articles": [...],
+  "_uniskill": {
+    "cost": 5.0,
+    "remaining": 495.0,
+    "request_id": "...",
+    "version": "v1.0.0"
+  }
+}
 ```
 
 ---
 
-## 🚀 Why UniSkill?
+## ✨ Core Concepts
 
-* **Markdown-First**: We believe agents process Markdown better. All our outputs are pre-formatted for maximum reasoning efficiency.
-* **Unified Billing**: Forget managing 10+ subscriptions. Use one balance for all search, scrape, and proxy needs.
-* **Extreme Performance**: Built on a KV-first architecture using Cloudflare Workers for sub-millisecond credit validation and reliability.
-* **Instant Start**: Authenticate via GitHub OAuth and receive **500 free credits** to start building immediately.
+*   **Registry-Driven Architecture**: AI tools (Skills) are defined in the central `registry/` directory. Metadata defines the pricing, parameters, and cleaning logic.
+*   **Markdown-First Data**: LLM agents iterate faster on Markdown. All UniSkill outputs are pre-formatted for maximum reasoning efficiency.
+*   **Unified Edge Billing**: One balance for all search, scrape, and utility needs. Deductions are handled at the edge with sub-millisecond latency.
+*   **Plugin Hooks**: Automated data cleaning to strip HTML noise and compress token usage before data reaches your agent.
 
 ---
 
 ## 📂 Repository Structure
 
-* `uniskill-web`: Next.js dashboard for key management, billing, and usage analytics.
-* `uniskill-gateway`: The high-performance Cloudflare Workers gateway for skill distribution.
-* `uniskill-docs`: Technical documentation and API references for all available skills.
+*   `uniskill-web`: This repository. Contains the dashboard, community registry, and billing management.
+*   `uniskill-gateway`: High-performance Cloudflare Workers gateway for secure skill execution.
+*   `registry/skills`: The "Source of Truth" for all available AI tools.
+
+---
+
+## 🛠 Adding New Skills
+
+Adding a tool is as simple as adding a Markdown file:
+
+1.  Create `registry/skills/custom_tool.md`.
+2.  Define implementation YAML (endpoint, headers, cost).
+3.  Deploy. The gateway instantly provides a `/v1/execute/custom_tool` route.
 
 ---
 
