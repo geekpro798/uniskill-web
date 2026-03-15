@@ -1,13 +1,17 @@
 ---
-skill_name: "uniskill_weather"
-display_name: "Global Weather"
-emoji: "🌤️"
-status: "Official"
-cost_per_call: 1
-category: "utilities"
-tags: ["weather", "wttr", "forecast"]
-gradientFrom: "from-blue-400"
-gradientTo: "to-cyan-400"
+skill_name: uniskill_weather
+display_name: Global Weather
+emoji: "\U0001F324️"
+status: Official
+category: utilities
+tags:
+  - weather
+  - wttr
+  - forecast
+gradientFrom: from-blue-400
+gradientTo: to-cyan-400
+credits_per_call: 1
+usd_per_call: 0.001
 ---
 
 # uniskill_weather

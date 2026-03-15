@@ -1,13 +1,19 @@
 ---
-skill_name: "uniskill_crypto_util"
-display_name: "Crypto & Encoding"
-emoji: "🔐"
-status: "Official"
-cost_per_call: 0
-category: "utilities"
-tags: ["crypto", "hash", "base64", "uuid", "native"]
-gradientFrom: "from-slate-700"
-gradientTo: "to-gray-900"
+skill_name: uniskill_crypto_util
+display_name: Crypto & Encoding
+emoji: "\U0001F510"
+status: Official
+category: utilities
+tags:
+  - crypto
+  - hash
+  - base64
+  - uuid
+  - native
+gradientFrom: from-slate-700
+gradientTo: to-gray-900
+credits_per_call: 0
+usd_per_call: 0.001
 ---
 
 # Crypto & Encoding Toolkit

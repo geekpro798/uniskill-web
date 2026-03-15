@@ -1,13 +1,17 @@
 ---
-skill_name: "uniskill_news"
-display_name: "Global News"
-emoji: "📰"
-status: "Official"
-cost_per_call: 5
-category: "web_search"
-tags: ["news", "summary", "headlines"]
-gradientFrom: "from-indigo-500"
-gradientTo: "to-blue-400"
+skill_name: uniskill_news
+display_name: Global News
+emoji: "\U0001F4F0"
+status: Official
+category: web_search
+tags:
+  - news
+  - summary
+  - headlines
+gradientFrom: from-indigo-500
+gradientTo: to-blue-400
+credits_per_call: 5
+usd_per_call: 0.005
 ---
 
 # uniskill_news

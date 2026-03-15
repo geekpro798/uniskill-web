@@ -12,7 +12,9 @@ export interface SkillData {
     display_name: string;
     emoji: string;
     status: string;
-    cost_per_call: number;
+    credits_per_call: number; // Renamed from cost_per_call
+    usd_per_call: number;     // New field
+    payment_type: 'credits' | 'usd'; // New field
     category: string;
     tags: string[];
     description: string;
@@ -49,7 +51,9 @@ export function parseSkillFile(skillId: string): SkillData | null {
         display_name: frontmatter.display_name || skillId,
         emoji: frontmatter.emoji || "🧩",
         status: frontmatter.status || "Official",
-        cost_per_call: frontmatter.cost_per_call || 0,
+        credits_per_call: frontmatter.credits_per_call ?? frontmatter.cost_per_call ?? 0,
+        usd_per_call: frontmatter.usd_per_call || 0,
+        payment_type: frontmatter.payment_type || 'credits',
         category: frontmatter.category || "utilities",
         tags: frontmatter.tags || [],
         description: description,

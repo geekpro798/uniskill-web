@@ -1,13 +1,18 @@
 ---
-skill_name: "uniskill_scholar"
-display_name: "Semantic Scholar"
-emoji: "🎓"
-status: "Official"
-cost_per_call: 10
-category: "web_search"
-tags: ["paper", "academic", "research", "semantic-scholar"]
-gradientFrom: "from-sky-600"
-gradientTo: "to-indigo-600"
+skill_name: uniskill_scholar
+display_name: Semantic Scholar
+emoji: "\U0001F393"
+status: Official
+category: web_search
+tags:
+  - paper
+  - academic
+  - research
+  - semantic-scholar
+gradientFrom: from-sky-600
+gradientTo: to-indigo-600
+credits_per_call: 10
+usd_per_call: 0.001
 ---
 
 # Semantic Scholar Academic Engine

@@ -1,13 +1,17 @@
 ---
-skill_name: "uniskill_wiki"
-display_name: "Wikipedia Engine"
-emoji: "📚"
-status: "Official"
-cost_per_call: 2
-category: "web_search"
-tags: ["wikipedia", "encyclopedia", "knowledge"]
-gradientFrom: "from-slate-300"
-gradientTo: "to-gray-500"
+skill_name: uniskill_wiki
+display_name: Wikipedia Engine
+emoji: "\U0001F4DA"
+status: Official
+category: web_search
+tags:
+  - wikipedia
+  - encyclopedia
+  - knowledge
+gradientFrom: from-slate-300
+gradientTo: to-gray-500
+credits_per_call: 2
+usd_per_call: 0.001
 ---
 
 # Wikipedia Knowledge Engine

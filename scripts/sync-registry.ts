@@ -75,7 +75,9 @@ async function syncRegistry() {
             if (!skill_name) throw new Error("Missing 'skill_name' in frontmatter");
 
             const display_name = frontmatter.display_name || frontmatter.name || skill_name;
-            const cost_per_call = frontmatter.cost_per_call !== undefined ? frontmatter.cost_per_call : (frontmatter.costPerCall || 0);
+            // Support both old (cost_per_call) and new (credits_per_call) field names
+            const credits_per_call = frontmatter.credits_per_call ?? frontmatter.cost_per_call ?? 0;
+            const usd_per_call = Math.max(frontmatter.usd_per_call ?? 0.001, 0.001); // Enforce minimum
             const tags = frontmatter.tags || [];
             const category = frontmatter.category || "utilities";
             const status = (frontmatter.status || "Official").toLowerCase();
@@ -102,14 +104,18 @@ async function syncRegistry() {
                 meta: {
                     display_name,
                     emoji: frontmatter.emoji || "🧩",
-                    cost: cost_per_call,
+                    cost: credits_per_call,
+                    credits_per_call,
+                    usd_per_call,
                     category: category,
                     tags: tags,
                     parameters: parameters
                 },
                 // Flattening for direct access
                 display_name,
-                cost_per_call,
+                credits_per_call,
+                cost_per_call: credits_per_call, // backward compat
+                usd_per_call,
                 config: implementationJson,
                 docs: {
                     short: description,
@@ -133,9 +139,10 @@ async function syncRegistry() {
                     emoji: frontmatter.emoji || "🧩",
                     description: description,
                     tags: tags,
-                    cost_per_call: cost_per_call,
-                    category: category, // Functional category (web_search, utilities, etc)
-                    status: frontmatter.status || "Official", // Identity badge (Official, Community)
+                    credits_per_call: credits_per_call,
+                    usd_per_call: usd_per_call,
+                    category: category,
+                    status: frontmatter.status || "Official",
                     gradient_from: frontmatter.gradientFrom || "from-slate-600",
                     gradient_to: frontmatter.gradientTo || "from-slate-400",
                     parameters: parameters, 

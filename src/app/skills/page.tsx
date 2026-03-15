@@ -172,11 +172,19 @@ export default function SkillsStorePage() {
 
                                         <div className="flex items-center justify-between pt-4 border-t border-slate-700/50 mt-auto">
                                             <code className="text-[10px] text-slate-500 bg-[#050810] px-2 py-1 rounded font-mono border border-slate-800">{skill.skill_name}</code>
-                                            <div className="flex items-center gap-1">
-                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2">
-                                                    <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
-                                                </svg>
-                                                <span className="text-xs font-bold text-purple-400">{skill.cost_per_call ?? 1} CR</span>
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-1">
+                                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2">
+                                                        <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
+                                                    </svg>
+                                                    <span className="text-xs font-bold text-purple-400">
+                                                        {skill.credits_per_call ?? skill.cost_per_call ?? 1} CR
+                                                    </span>
+                                                </div>
+                                                <span className="text-slate-700 font-bold text-[10px]">|</span>
+                                                <span className="text-xs font-bold text-emerald-400">
+                                                    {skill.usd_per_call || 0} $
+                                                </span>
                                             </div>
                                         </div>
                                     </motion.a>

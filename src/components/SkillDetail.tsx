@@ -14,7 +14,10 @@ import Navbar from "@/components/Navbar";
 export interface SkillSpec {
     display_name: string;
     description: string;
-    cost_per_call?: number; // 👈 补全定价字段
+    cost_per_call?: number; 
+    credits_per_call?: number;
+    usd_per_call?: number;
+    payment_type?: 'credits' | 'usd';
     parameters: Record<string, any>;
     returns?: Record<string, any> | null;
     implementation: Record<string, any>;
@@ -216,12 +219,16 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skill_name, skill, isO
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Pricing</p>
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-sm text-slate-300">Cost per Request</span>
-                                <div className="flex items-center gap-1">
-                                    <span className="text-xl font-black text-white">{skill.cost_per_call ?? 0}</span>
-                                    <span className="text-[10px] text-slate-500 ml-0.5 font-bold">CR</span>
-                                </div>
+                                <div className="flex items-center gap-3 text-right">
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-xl font-black text-white">{skill.credits_per_call ?? skill.cost_per_call ?? 0}</span>
+                                        <span className="text-[10px] text-slate-500 font-bold uppercase">CR</span>
+                                     </div>
+                                     <span className="text-slate-700 font-bold">|</span>
+                                     <span className="text-xl font-black text-emerald-400 font-mono">{skill.usd_per_call ?? 0} $</span>
+                                 </div>
                             </div>
-                            <p className="text-[11px] text-slate-600 italic">Credits deducted per API call.</p>
+                            <p className="text-[11px] text-slate-600 italic">Billable in Credits or USD based on execution settings.</p>
                         </motion.div>
 
                         <motion.div className="p-5 border border-slate-800/80 rounded-xl bg-[#0a0f1e]">

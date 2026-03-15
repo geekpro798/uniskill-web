@@ -1,13 +1,18 @@
 ---
-skill_name: "uniskill_math"
-display_name: "Math Engine"
-emoji: "🧮"
-status: "Official"
-cost_per_call: 0
-category: "utilities"
-tags: ["math", "calculation", "native", "no-hallucination"]
-gradientFrom: "from-fuchsia-500"
-gradientTo: "to-purple-600"
+skill_name: uniskill_math
+display_name: Math Engine
+emoji: "\U0001F9EE"
+status: Official
+category: utilities
+tags:
+  - math
+  - calculation
+  - native
+  - no-hallucination
+gradientFrom: from-fuchsia-500
+gradientTo: to-purple-600
+credits_per_call: 0
+usd_per_call: 0.001
 ---
 
 # Uniskill Math Engine

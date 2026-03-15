@@ -1,13 +1,17 @@
 ---
-skill_name: "uniskill_search"
-display_name: "Web Search"
-emoji: "🌐"
-status: "Official"
-cost_per_call: 5
-category: "web_search"
-tags: ["search", "real-time", "tavily"]
-gradientFrom: "from-blue-500"
-gradientTo: "to-cyan-400"
+skill_name: uniskill_search
+display_name: Web Search
+emoji: "\U0001F310"
+status: Official
+category: web_search
+tags:
+  - search
+  - real-time
+  - tavily
+gradientFrom: from-blue-500
+gradientTo: to-cyan-400
+credits_per_call: 5
+usd_per_call: 0.001
 ---
 
 # uniskill_search

@@ -1,13 +1,18 @@
 ---
-skill_name: "uniskill_time"
-display_name: "Time & Timezone Engine"
-emoji: "🕒"
-status: "Official"
-cost_per_call: 0
-category: "utilities"
-tags: ["time", "timezone", "native", "no-hallucination"]
-gradientFrom: "from-orange-500"
-gradientTo: "to-amber-500"
+skill_name: uniskill_time
+display_name: Time & Timezone Engine
+emoji: "\U0001F552"
+status: Official
+category: utilities
+tags:
+  - time
+  - timezone
+  - native
+  - no-hallucination
+gradientFrom: from-orange-500
+gradientTo: to-amber-500
+credits_per_call: 0
+usd_per_call: 0.001
 ---
 
 # Time Engine

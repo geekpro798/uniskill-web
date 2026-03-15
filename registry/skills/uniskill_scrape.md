@@ -1,13 +1,17 @@
 ---
-skill_name: "uniskill_scrape"
-display_name: "Web Scraper"
-emoji: "🕷️"
-status: "Official"
-cost_per_call: 15
-category: "web_search"
-tags: ["scrape", "extraction", "data"]
-gradientFrom: "from-emerald-500"
-gradientTo: "to-teal-400"
+skill_name: uniskill_scrape
+display_name: Web Scraper
+emoji: "\U0001F577️"
+status: Official
+category: web_search
+tags:
+  - scrape
+  - extraction
+  - data
+gradientFrom: from-emerald-500
+gradientTo: to-teal-400
+credits_per_call: 15
+usd_per_call: 0.001
 ---
 
 # uniskill_scrape

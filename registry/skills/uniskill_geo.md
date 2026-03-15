@@ -1,13 +1,19 @@
 ---
-skill_name: "uniskill_geo"
-display_name: "Location & Map Engine"
-emoji: "🗺️"
-status: "Official"
-cost_per_call: 2
-category: "utility"
-tags: ["geo", "map", "location", "timezone", "geocoding"]
-gradientFrom: "from-emerald-500"
-gradientTo: "to-teal-700"
+skill_name: uniskill_geo
+display_name: Location & Map Engine
+emoji: "\U0001F5FA️"
+status: Official
+category: utility
+tags:
+  - geo
+  - map
+  - location
+  - timezone
+  - geocoding
+gradientFrom: from-emerald-500
+gradientTo: to-teal-700
+credits_per_call: 2
+usd_per_call: 0.001
 ---
 
 # Location & Map Context Engine

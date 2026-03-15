@@ -44,13 +44,19 @@ export async function GET(request: NextRequest) {
             meta: {
                 display_name: skillData.display_name,
                 emoji: skillData.emoji,
-                cost: skillData.cost_per_call,
+                cost: skillData.credits_per_call, // Main cost field is credits for now
+                credits_per_call: skillData.credits_per_call,
+                usd_per_call: skillData.usd_per_call,
+                payment_type: skillData.payment_type,
                 category: skillData.category,
                 tags: skillData.tags
             },
-            // Maintain backward compatibility with top-level fields for the gateway's direct config parsing
+            // Maintain backward compatibility for the gateway
             display_name: skillData.display_name,
-            cost_per_call: skillData.cost_per_call,
+            cost_per_call: skillData.credits_per_call, 
+            credits_per_call: skillData.credits_per_call,
+            usd_per_call: skillData.usd_per_call,
+            payment_type: skillData.payment_type,
             config: typeof skillData.implementation === 'string'
                 ? yaml.load(skillData.implementation)
                 : skillData.implementation,
