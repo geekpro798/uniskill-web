@@ -5,6 +5,7 @@
 API_KEY=$1
 MCP_SSE_URL="https://api.uniskill.ai/v1/mcp/sse"
 DASHBOARD_URL="https://uniskill.ai/dashboard"
+GATEWAY_URL="https://gateway.uniskill.ai/v1/execute"
 
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -34,10 +35,12 @@ HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 8 \
   -X GET -H "Authorization: Bearer $API_KEY" \
   "${MCP_SSE_URL%/sse*}/../../auth/verify") 2>/dev/null
 
-# Fallback:直接 ping verify 端点
-HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 8 \
-  -X GET -H "Authorization: Bearer $API_KEY" \
-  "https://api.uniskill.ai/v1/auth/verify") 2>/dev/null
+# Fallback
+if [ "$HTTP_STATUS" != "200" ]; then
+  HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 8 \
+    -X GET -H "Authorization: Bearer $API_KEY" \
+    "https://api.uniskill.ai/v1/auth/verify") 2>/dev/null
+fi
 
 if [ "$HTTP_STATUS" == "401" ] || [ "$HTTP_STATUS" == "403" ]; then
   echo -e "${RED}FAILED ❌${NC}"
@@ -49,6 +52,67 @@ elif [ "$HTTP_STATUS" == "000" ]; then
 else
   echo -e "${GREEN}SUCCESS ✅${NC}"
 fi
+
+# ── Environment Detection (云端与桌面端嗅探逻辑) ───────────────────────────
+echo -e "\n🔍 Scanning environment..."
+IS_DESKTOP=false
+
+# 检查是否存在图形界面环境变量 (Check for Display server - common on desktops)
+if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
+  IS_DESKTOP=true
+fi
+
+# 检查操作系统类型 (macOS / Darwin 绝大部分是本地开发机)
+if [ "$(uname -s)" = "Darwin" ]; then
+  IS_DESKTOP=true
+fi
+
+# ============================================================================
+# 🌿 Branch A: Cloud / Headless Server (云端无头服务器逻辑)
+# ============================================================================
+if [ "$IS_DESKTOP" = false ]; then
+  echo -e "  ${CYAN}☁️  Cloud / Headless environment detected.${NC}"
+  echo -e "  ${YELLOW}ℹ️  Notice: Desktop clients (Claude/Cursor) are not typically available here.${NC}\n"
+  
+  echo -e "${CYAN}══════════════════════════════════════════════════════${NC}"
+  echo -e "${BOLD}🤖 CLOUD AGENT QUICK START (API Integration)${NC}"
+  echo -e "${CYAN}══════════════════════════════════════════════════════${NC}"
+  echo -e "Since you are running in a cloud environment (like OpenClaw or AutoGPT),"
+  echo -e "you should call the UniSkill Gateway directly via HTTP POST.\n"
+  
+  echo -e "${GREEN}Example (Node.js):${NC}"
+  cat <<EOF
+const fetch = require('node-fetch');
+
+async function callUniSkill() {
+  const response = await fetch('${GATEWAY_URL}', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ${API_KEY}'
+    },
+    body: JSON.stringify({
+      skill: 'uniskill_github_tracker',
+      params: { timeWindow: 'daily' }
+    })
+  });
+  
+  const intelligence = await response.json();
+  console.log(intelligence);
+}
+
+callUniSkill();
+EOF
+  echo -e "\n${GREEN}✅ Your API Key '${MASKED_KEY}' is embedded and ready to use.${NC}"
+  echo -e "📊 Dashboard: ${BLUE}${DASHBOARD_URL}${NC}"
+  echo -e "${CYAN}══════════════════════════════════════════════════════${NC}\n"
+  exit 0
+fi
+
+# ============================================================================
+# 💻 Branch B: Local Desktop (本地桌面端注入逻辑)
+# ============================================================================
+echo -e "  ${CYAN}💻 Desktop environment detected.${NC}\n"
 
 # ── Build JSON config block ──────────────────────────────────────────────────
 MCP_JSON=$(cat <<EOF
@@ -75,11 +139,11 @@ inject_config() {
   mkdir -p "$CONFIG_DIR"
 
   if [ ! -f "$CONFIG_FILE" ]; then
-    # New file: write full config
+    # New file: write full config (如果文件不存在，直接写入新配置)
     echo "$MCP_JSON" > "$CONFIG_FILE"
     echo -e "   ${GREEN}✔ Created: ${CONFIG_FILE}${NC}"
   else
-    # Existing file: merge mcpServers.uniskill key using Python (available on all macOS)
+    # Existing file: merge mcpServers.uniskill key using Python (使用 Python 深度合并已有配置)
     python3 - <<PYEOF
 import json, sys
 
@@ -106,7 +170,6 @@ PYEOF
 }
 
 # ── Client Detection & Injection ─────────────────────────────────────────────
-echo -e "\n🔍 Scanning for AI clients...\n"
 INJECTED=false
 
 # Claude Desktop (macOS)
@@ -134,7 +197,7 @@ fi
 ZED_CFG="$HOME/.config/zed/settings.json"
 if [ -d "$HOME/.config/zed" ] || command -v zed &> /dev/null; then
   echo -e "  ${CYAN}→ Zed detected${NC}"
-  # Zed uses a different key: "context_servers"
+  # Zed uses a different key: "context_servers" (Zed 使用特殊的键名)
   python3 - <<PYEOF
 import json
 

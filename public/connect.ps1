@@ -55,20 +55,21 @@ $mcpEntry = @{
     headers = @{ Authorization = "Bearer $ApiKey" }
 }
 
-function Merge-McpConfig($ConfigPath) {
+# Added $RootKey parameter to support Zed's "context_servers" 
+function Merge-McpConfig($ConfigPath, $RootKey = "mcpServers") {
     $dir = Split-Path $ConfigPath -Parent
     if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
 
     if (-not (Test-Path $ConfigPath)) {
-        $cfg = @{ mcpServers = @{ uniskill = $mcpEntry } }
+        $cfg = @{ $RootKey = @{ uniskill = $mcpEntry } }
     } else {
         try {
             $cfg = Get-Content $ConfigPath -Raw | ConvertFrom-Json -AsHashtable
         } catch {
             $cfg = @{}
         }
-        if (-not $cfg.ContainsKey("mcpServers")) { $cfg["mcpServers"] = @{} }
-        $cfg["mcpServers"]["uniskill"] = $mcpEntry
+        if (-not $cfg.ContainsKey($RootKey)) { $cfg[$RootKey] = @{} }
+        $cfg[$RootKey]["uniskill"] = $mcpEntry
     }
 
     $cfg | ConvertTo-Json -Depth 10 | Set-Content $ConfigPath -Encoding UTF8
@@ -82,25 +83,33 @@ Write-Host "🔍 Scanning for AI clients..."
 Write-Host ""
 $injected = $false
 
-# Claude Desktop
+# 1. Claude Desktop
 $claudeConfig = "$env:APPDATA\Claude\claude_desktop_config.json"
 if (Test-Path "$env:APPDATA\Claude") {
     Write-Color "  → Claude Desktop detected" "Cyan"
     $injected = Merge-McpConfig $claudeConfig
 }
 
-# Cursor
+# 2. Cursor
 $cursorConfig = "$env:USERPROFILE\.cursor\mcp.json"
 if (Test-Path "$env:USERPROFILE\.cursor") {
     Write-Color "  → Cursor detected" "Cyan"
     $injected = Merge-McpConfig $cursorConfig
 }
 
-# Windsurf
+# 3. Windsurf
 $windsurfConfig = "$env:APPDATA\Codeium\windsurf\mcp_config.json"
 if (Test-Path "$env:APPDATA\Codeium\windsurf") {
     Write-Color "  → Windsurf detected" "Cyan"
     $injected = Merge-McpConfig $windsurfConfig
+}
+
+# 4. Zed (Windows Data Path)
+$zedConfig = "$env:LOCALAPPDATA\Zed\settings.json"
+if (Test-Path "$env:LOCALAPPDATA\Zed") {
+    Write-Color "  → Zed detected" "Cyan"
+    # Note: Pass "context_servers" as the root key for Zed
+    $injected = Merge-McpConfig $zedConfig "context_servers"
 }
 
 # Fallback: write .env in current directory
@@ -116,7 +125,7 @@ Write-Host ""
 Write-Color "✅  UniSkill Superbrain is now connected!" "Green"
 Write-Host ""
 Write-Color "🚀 NEXT STEPS:" "Yellow"
-Write-Host "  1. Restart your AI client (Claude / Cursor / Windsurf etc.)."
+Write-Host "  1. Restart your AI client (Claude / Cursor / Windsurf / Zed)."
 Write-Host '  2. Ask it: "What is the real-time weather in Tokyo?"'
 Write-Host "  3. Watch UniSkill tools appear automatically."
 Write-Host ""

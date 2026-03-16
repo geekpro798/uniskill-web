@@ -32,7 +32,7 @@ async function putToKV(key: string, value: string) {
         const tmpFile = path.join("/tmp", `kv_${key.replace(/:/g, "_")}.json`);
         fs.writeFileSync(tmpFile, value);
         
-        execSync(`npx wrangler kv key put --namespace-id ${NAMESPACE_ID} "${key}" --path "${tmpFile}"`, {
+        execSync(`npx -y wrangler kv key put --namespace-id ${NAMESPACE_ID} "${key}" --path "${tmpFile}"`, {
             stdio: "inherit"
         });
         
@@ -79,7 +79,11 @@ async function syncRegistry() {
             const credits_per_call = frontmatter.credits_per_call ?? frontmatter.cost_per_call ?? 0;
             const usd_per_call = Math.max(frontmatter.usd_per_call ?? 0.001, 0.001); // Enforce minimum
             const tags = frontmatter.tags || [];
-            const category = frontmatter.category || "utilities";
+            const category = (frontmatter.category || "utilities")
+                .toLowerCase()
+                .trim()
+                .replace(/\s+/g, "_")
+                .replace(/&/g, "and");
             const status = (frontmatter.status || "Official").toLowerCase();
 
             // Extract Description
