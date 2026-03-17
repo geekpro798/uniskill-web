@@ -12,6 +12,7 @@ import { formatDateTime } from "@/lib/utils";
 
 interface CreditEvent {
     id: string;
+    request_id: string;
     skill_name: string;
     amount: number;
     created_at: string;
@@ -193,12 +194,12 @@ export default function BillingPage() {
                                         <span
                                             className="text-[10px] font-mono text-slate-500 truncate cursor-pointer hover:text-indigo-400 flex items-center gap-1 group/id transition-colors"
                                             onClick={() => {
-                                                navigator.clipboard.writeText(evt.id);
+                                                navigator.clipboard.writeText(evt.request_id || evt.id);
                                                 // Optional: provide visual feedback
                                             }}
                                             title="Click to copy Request ID"
                                         >
-                                            {evt.id}
+                                            {evt.request_id || evt.id}
                                             <svg className="opacity-0 group-hover/id:opacity-100 transition-opacity" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                                             </svg>

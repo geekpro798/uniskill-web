@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 export interface CreditEvent {
     id: string;
+    request_id: string;
     skill_name: string;
     amount: number;        // negative = deduction (rose-400), positive = addition (green-400)
     created_at: string;    // ISO 8601 timestamp
@@ -37,7 +38,7 @@ export async function GET(req: Request) {
         // 3. 查询 credit_events 表
         const { data, error } = await supabase
             .from("credit_events")
-            .select("id, skill_name, amount, created_at")
+            .select("id, request_id, skill_name, amount, created_at")
             .eq("user_uid", session.user.userUid)
             .order("created_at", { ascending: false })
             .limit(limit);
