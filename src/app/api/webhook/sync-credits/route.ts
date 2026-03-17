@@ -50,13 +50,14 @@ export async function POST(req: Request) {
 
         // 3. 写入 credit_events 表（供 Dashboard Recent Activity 消费）
         if (skillName && amount !== undefined && data && data.length > 0) {
-            const githubId = (data[0] as { github_id: number | string }).github_id;
+            const userData = data[0] as { github_id: number | string, user_uid: string };
+            const githubId = userData.github_id;
             console.log(`[Webhook] Found github_id: ${githubId}, preparing credit_event...`);
             if (githubId) {
                 const { error: evtError } = await supabase
                     .from('credit_events')
                     .insert({
-                        github_id: githubId.toString(), // 保持为字符串以配合数据库字段类型
+                        user_uid: userData.user_uid,
                         skill_name: skillName,
                         amount,
                         created_at: new Date().toISOString(),

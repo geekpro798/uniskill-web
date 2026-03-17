@@ -19,7 +19,7 @@ export interface CreditEvent {
 export async function GET(req: Request) {
     // 1. 验证登录态
     const session = await getServerSession(authOptions as any) as Session | null;
-    if (!session?.user?.githubId) {
+    if (!session?.user?.userUid) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -34,11 +34,11 @@ export async function GET(req: Request) {
     const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get("limit") ?? "5", 10)));
 
     try {
-        // 3. 查询 credit_events 表：github_id 是 bigint，需转为数字
+        // 3. 查询 credit_events 表
         const { data, error } = await supabase
             .from("credit_events")
             .select("id, skill_name, amount, created_at")
-            .eq("github_id", Number(session.user.githubId))
+            .eq("user_uid", session.user.userUid)
             .order("created_at", { ascending: false })
             .limit(limit);
 

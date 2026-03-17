@@ -35,7 +35,7 @@ async function putToKV(key: string, value: string) {
         const tmpFile = path.join("/tmp", `kv_${key.replace(/:/g, "_")}.json`);
         fs.writeFileSync(tmpFile, value);
         
-        execSync(`npx -y wrangler kv key put --namespace-id ${NAMESPACE_ID} "${key}" --path "${tmpFile}"`, {
+        execSync(`npx -y wrangler kv key put --namespace-id ${NAMESPACE_ID} "${key}" --path "${tmpFile}" --remote`, {
             stdio: "inherit"
         });
         
@@ -65,6 +65,8 @@ async function syncRegistry() {
 
     const files = fs.readdirSync(SKILLS_DIR).filter(file => file.endsWith(".md"));
     console.log(`📦 Found ${files.length} skill files to sync.\n`);
+
+    const allTools: any[] = [];
 
     for (const file of files) {
         const filePath = path.join(SKILLS_DIR, file);
@@ -101,6 +103,12 @@ async function syncRegistry() {
             const implMatch = content.match(/## Implementation YAML\s+```yaml\s+([\s\S]*?)```/i);
             if (!implMatch) throw new Error("Missing '## Implementation YAML' block");
             const implementationJson = yaml.load(implMatch[1]);
+
+            allTools.push({
+                name: skill_name,
+                description: description,
+                inputSchema: parameters
+            });
 
             console.log(`🔍 Processing: ${skill_name} (${display_name})`);
 
@@ -168,6 +176,9 @@ async function syncRegistry() {
             console.error(`❌ Failed to sync [${file}]:`, error.message);
         }
     }
+
+    console.log(`📡 [KV] Bundling entire menu into single cache key...`);
+    await putToKV("mcp_registry:tools_cache", JSON.stringify(allTools));
 
     console.log("\n🎉 Unified Sync Complete!");
 }

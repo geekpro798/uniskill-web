@@ -13,6 +13,8 @@ declare module "next-auth" {
             image?: string | null;
             // 首次登录时才有值，用于前端一次性展示给用户
             rawKey?: string;
+            // 全局唯一标识符
+            userUid?: string;
             // 用户当前剩余调用配额
             credits?: number;
         };
@@ -29,6 +31,7 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
     interface JWT {
         githubId?: string;
+        userUid?: string;
         rawKey?: string;
         credits?: number;
     }

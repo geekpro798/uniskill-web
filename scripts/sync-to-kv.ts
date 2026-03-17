@@ -25,7 +25,7 @@ async function putToKV(key: string, value: string) {
         const tmpFile = path.join("/tmp", `kv_${key.replace(/:/g, "_")}.json`);
         fs.writeFileSync(tmpFile, value);
         
-        execSync(`npx wrangler kv key put --namespace-id ${NAMESPACE_ID} "${key}" --path "${tmpFile}"`, {
+        execSync(`npx wrangler kv key put --namespace-id ${NAMESPACE_ID} "${key}" --path "${tmpFile}" --remote`, {
             stdio: "inherit"
         });
         
@@ -51,6 +51,8 @@ async function syncSkillsToKV() {
     const files = fs.readdirSync(SKILLS_DIR).filter(file => file.endsWith(".md"));
     console.log(`📦 Found ${files.length} skill files to sync.\n`);
 
+    const allTools: any[] = [];
+
     for (const file of files) {
         const filePath = path.join(SKILLS_DIR, file);
         const fileContent = fs.readFileSync(filePath, "utf-8");
@@ -58,9 +60,9 @@ async function syncSkillsToKV() {
         try {
             // 逻辑：使用 gray-matter 剥离 Frontmatter 和 Markdown 正文
             const { data: frontmatter, content } = matter(fileContent);
-            const skillId = frontmatter.id;
+            const skillId = frontmatter.skill_name || frontmatter.id;
 
-            if (!skillId) throw new Error("Missing 'id' in frontmatter");
+            if (!skillId) throw new Error("Missing 'skill_name' or 'id' in frontmatter");
 
             // 逻辑：正则提取 Description 正文，提高容错性
             const descMatch = content.match(/## Description\s+([\s\S]*?)(?=\n##|$)/i);
@@ -75,6 +77,12 @@ async function syncSkillsToKV() {
             if (!implMatch) throw new Error("Missing '## Implementation YAML' block");
 
             const implementationJson = yaml.load(implMatch[1]);
+
+            allTools.push({
+                name: frontmatter.name || skillId,
+                description: description,
+                inputSchema: parameters
+            });
 
             console.log(`🔍 Processing skill: ${skillId} (from ${file})`);
 
@@ -112,6 +120,9 @@ async function syncSkillsToKV() {
             console.error(`❌ Failed to parse/sync [${file}]:`, error.message);
         }
     }
+
+    console.log(`📡 [KV] Bundling entire menu into single cache key...`);
+    await putToKV("mcp_registry:tools_cache", JSON.stringify(allTools));
 
     console.log("\n🎉 Sync Complete! All skills are live on Cloudflare Edge.");
 }

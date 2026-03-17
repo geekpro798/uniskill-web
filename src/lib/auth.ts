@@ -8,7 +8,8 @@ import crypto from "crypto";
 
 /* ─── 用户 Profile 类型定义 ─────────────────────────────────────────── */
 export interface UserProfile {
-    id: string;
+    id: string;      // Supabase internal ID
+    user_uid: string; // Global stable UID
     github_id: string;
     email: string | null;
     name: string | null;
@@ -98,7 +99,7 @@ export async function handleUserRegistration(
         const { error: eventError } = await supabaseAdmin
             .from("credit_events")
             .insert({
-                github_id: Number(githubId),   // bigint 列，转为数字
+                user_uid: newProfile.user_uid,
                 skill_name: "Welcome Bonus",
                 amount: 500,
             });
