@@ -9,8 +9,11 @@ import yaml from "js-yaml";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import { execSync } from "child_process";
+import { fileURLToPath } from "url";
 
 // 1. Load environment variables
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const SCRIPT_DIR = __dirname;
 dotenv.config({ path: path.join(SCRIPT_DIR, "..", ".env.local") });
 
