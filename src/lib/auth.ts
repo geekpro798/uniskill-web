@@ -70,7 +70,7 @@ export async function handleUserRegistration(
 
     // 1. Generate the raw API key and its unique hash ONCE
     const rawKey = `us-${crypto.randomUUID()}`;
-    const tokenHash = crypto.createHash("sha256").update(rawKey).digest("hex");
+    const keyHash = crypto.createHash("sha256").update(rawKey).digest("hex");
 
     // 2. Insert into Supabase (using Admin client)
     const { data: newProfile, error: dbError } = await supabaseAdmin
@@ -80,7 +80,7 @@ export async function handleUserRegistration(
             email: githubProfile.email ?? null,
             name: githubProfile.name ?? null,
             avatar_url: githubProfile.image ?? null,
-            key_hash: tokenHash,
+            key_hash: keyHash,
             credits: 500,
         })
         .select()
@@ -125,7 +125,12 @@ export async function handleUserRegistration(
                     "Authorization": `Bearer ${process.env.ADMIN_KEY}`,
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ hash: tokenHash, credits: 500 }),
+                body: JSON.stringify({ 
+                    user_uid: newProfile.user_uid, 
+                    key_hash: keyHash, 
+                    credits: 500,
+                    tier: "FREE" 
+                }),
             });
 
             if (!syncRes.ok) {
