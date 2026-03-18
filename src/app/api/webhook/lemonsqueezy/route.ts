@@ -19,13 +19,13 @@ const TIER_WEIGHTS: Record<string, number> = {
 // ── 商品映射配置 (Product Mapping) ──
 const PRODUCT_MAP: Record<string, { type: 'tier' | 'topup', credits: number, targetTier?: string }> = {
     // 等级包 (Tier Packages) - 包含等级提升 + 积分
-    "e1cb85d2-ee60-444d-9400-a4e06a3d7852": { type: 'tier', credits: 10000, targetTier: 'starter' },
-    "76565e2c-265d-487f-a148-a0525e372fe1": { type: 'tier', credits: 35000, targetTier: 'pro' },
-    "842bc7aa-02cd-4035-a125-99364215fd30": { type: 'tier', credits: 150000, targetTier: 'scale' },
+    "1363205": { type: 'tier', credits: 10000, targetTier: 'starter' },
+    "1363220": { type: 'tier', credits: 35000, targetTier: 'pro' },
+    "1363223": { type: 'tier', credits: 150000, targetTier: 'scale' },
     
     // 纯充值包 (Top-up Packages) - 仅包含积分
-    "40c7ab57-66ec-4433-9aee-9980130e568d": { type: 'topup', credits: 10000 },
-    "aeff7387-f0cb-4621-8e46-5b0aff77d5de": { type: 'topup', credits: 50000 },
+    "1418079": { type: 'topup', credits: 10000 },
+    "1418251": { type: 'topup', credits: 50000 },
 };
 
 export async function POST(req: Request) {
