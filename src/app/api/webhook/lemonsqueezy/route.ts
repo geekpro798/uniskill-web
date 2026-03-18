@@ -44,7 +44,11 @@ export async function POST(req: Request) {
 
     try {
         const payload = JSON.parse(rawBody);
-        const eventName = payload.meta.event_name;
+        
+        // --- 核心调试日志：打印收到原始数据 ---
+        console.log("[LS Webhook] Received payload meta:", JSON.stringify(payload.meta, null, 2));
+
+        const eventName = payload.meta?.event_name;
         
         // 仅处理订单创建成功事件
         if (eventName !== 'order_created') {
@@ -52,10 +56,21 @@ export async function POST(req: Request) {
         }
 
         const data = payload.data;
-        const variantId = data.attributes.variant_id.toString();
+        if (!data || !data.attributes) {
+            console.error("[LS Webhook] Invalid payload structure: data or attributes missing");
+            return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+        }
+
+        // 兼容性获取 Variant ID (根据 LS 文档，有时在 attributes 下，有时在 first_order_item 下)
+        const variantId = (data.attributes.variant_id || data.attributes.first_order_item?.variant_id)?.toString();
         const orderId = data.id; // LS Order ID
         const customData = payload.meta.custom_data || {};
         const userUid = customData.user_uid;
+
+        if (!variantId) {
+            console.error("[LS Webhook] Missing variant_id in payload:", JSON.stringify(data.attributes, null, 2));
+            return NextResponse.json({ error: "Missing variant_id" }, { status: 400 });
+        }
 
         if (!userUid) {
             console.error("[LS Webhook] Missing user_uid in custom_data");
@@ -64,7 +79,7 @@ export async function POST(req: Request) {
 
         const productInfo = PRODUCT_MAP[variantId];
         if (!productInfo) {
-            console.warn(`[LS Webhook] Variant ${variantId} not recognized.`);
+            console.warn(`[LS Webhook] Variant ${variantId} not recognized. Current PRODUCT_MAP keys:`, Object.keys(PRODUCT_MAP));
             return NextResponse.json({ error: "Unknown variant" }, { status: 400 });
         }
 
