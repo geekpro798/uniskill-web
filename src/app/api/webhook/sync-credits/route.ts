@@ -48,30 +48,8 @@ export async function POST(req: Request) {
             throw error;
         }
 
-        // 3. 写入 credit_events 表（供 Dashboard Recent Activity 消费）
-        if (skillName && amount !== undefined && data && data.length > 0) {
-            const userData = data[0] as { github_id: number | string, user_uid: string };
-            const githubId = userData.github_id;
-            console.log(`[Webhook] Found github_id: ${githubId}, preparing credit_event...`);
-            if (githubId) {
-                const { error: evtError } = await supabase
-                    .from('credit_events')
-                    .insert({
-                        user_uid: userData.user_uid,
-                        skill_name: skillName,
-                        amount,
-                        created_at: new Date().toISOString(),
-                    });
-                if (evtError) {
-                    console.error("[Webhook] Failed to insert credit_event:", evtError);
-                    return NextResponse.json({ success: true, warning: "Balance updated, but event log failed", details: evtError }, { status: 200 });
-                } else {
-                    console.log(`[Webhook] credit_events row inserted: github_id=${githubId} skill=${skillName} amount=${amount}`);
-                }
-            }
-        } else {
-            console.log("[Webhook] Skipping credit_event insert. Missing fields or user not found.", { skillName, amount, userFound: data?.length > 0 });
-        }
+        // 3. Skip credit_events (handled by unified record_skill_usage RPC in Gateway)
+        console.log("[Webhook] Balance sync completed via legacy route.");
 
         console.log("[Webhook] Successfully updated database. Data:", data);
         return NextResponse.json({ success: true, data });
