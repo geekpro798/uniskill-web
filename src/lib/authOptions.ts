@@ -28,6 +28,7 @@ export const authOptions: NextAuthOptions = {
                 });
                 (user as any).rawKey = result.rawKey;
                 (user as any).credits = result.profile.credits;
+                (user as any).tier = result.profile.tier;
                 (user as any).userUid = result.profile.user_uid;
                 (user as any).githubId = (profile?.id ?? "").toString();
                 return true;
@@ -42,6 +43,7 @@ export const authOptions: NextAuthOptions = {
                 token.userUid = (user as any).userUid;
                 token.rawKey = (user as any).rawKey;
                 token.credits = (user as any).credits;
+                token.tier = (user as any).tier;
             }
             return token;
         },
@@ -52,6 +54,7 @@ export const authOptions: NextAuthOptions = {
                 session.user.githubId = token.githubId as string | undefined;
                 session.user.rawKey = token.rawKey as string | undefined;
                 session.user.credits = token.credits as number | undefined;
+                session.user.tier = token.tier as string | undefined;
             }
             return session;
         },

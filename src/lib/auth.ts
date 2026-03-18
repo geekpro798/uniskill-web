@@ -16,6 +16,7 @@ export interface UserProfile {
     avatar_url: string | null;
     key_hash: string;
     credits: number;
+    tier: string;
     created_at: string;
 }
 

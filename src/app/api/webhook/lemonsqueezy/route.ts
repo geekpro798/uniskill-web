@@ -146,20 +146,31 @@ export async function POST(req: Request) {
 
         // --- Step E: Notify Gateway (KV Sync) ---
         // 只有当等级发生变化时，才传递 tier 参数给 Gateway 以更新 KV
-        const gatewayRes = await fetch(`${process.env.GATEWAY_URL}/v1/admin/topup`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.ADMIN_KEY}`
-            },
-            body: JSON.stringify({
-                user_uid: userUid,
-                credits_to_add: addedCredits,
-                tier: finalTier !== profile.tier ? finalTier : undefined
-            })
-        });
+        const gatewayUrl = process.env.GATEWAY_URL?.replace(/\/$/, ""); // 移除末尾斜杠
+        if (gatewayUrl) {
+            console.log(`[LS Webhook] Syncing to Gateway: ${gatewayUrl}/v1/admin/topup`);
+            const gatewayRes = await fetch(`${gatewayUrl}/v1/admin/topup`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${process.env.ADMIN_KEY}`
+                },
+                body: JSON.stringify({
+                    user_uid: userUid,
+                    credits_to_add: addedCredits,
+                    tier: finalTier !== profile.tier ? finalTier : undefined
+                })
+            });
 
-        console.log(`[LS Webhook] Success for ${userUid}. Added ${addedCredits}, Tier: ${finalTier}`);
+            if (!gatewayRes.ok) {
+                const errorText = await gatewayRes.text();
+                console.error(`[LS Webhook] Gateway Sync Failed [${gatewayRes.status}]:`, errorText);
+            } else {
+                console.log(`[LS Webhook] Gateway Sync Successful!`);
+            }
+        } else {
+            console.error("[LS Webhook] GATEWAY_URL is not configured in environment variables.");
+        }
         return NextResponse.json({ success: true, userUid, newBalance });
 
     } catch (err: any) {

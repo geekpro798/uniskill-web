@@ -17,6 +17,8 @@ declare module "next-auth" {
             userUid?: string;
             // 用户当前剩余调用配额
             credits?: number;
+            // 用户当前等级 (Tier)
+            tier?: string;
         };
     }
 
@@ -34,5 +36,6 @@ declare module "next-auth/jwt" {
         userUid?: string;
         rawKey?: string;
         credits?: number;
+        tier?: string;
     }
 }
