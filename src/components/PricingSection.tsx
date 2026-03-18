@@ -1,8 +1,16 @@
 "use client";
 
 import { motion, useInView } from "framer-motion";
-import { useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRef, useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useSession, signIn } from "next-auth/react";
+
+/* ─── Lemon Squeezy 静态跳转链接 ──────────────────────── */
+const LEMON_SQUEEZY_LINKS = {
+    starter: "https://uniskill.lemonsqueezy.com/checkout/buy/e1cb85d2-ee60-444d-9400-a4e06a3d7852",
+    pro: "https://uniskill.lemonsqueezy.com/checkout/buy/76565e2c-265d-487f-a148-a0525e372fe1",
+    scale: "https://uniskill.lemonsqueezy.com/checkout/buy/842bc7aa-02cd-4035-a125-99364215fd30",
+};
 
 /* ─── 定价方案数据：4 个层级，price=0 代表免费 ──────────────────────────
    checkoutUrl 为 null 时按钮跳转 /register，否则跳转 Lemon Squeezy 结算页
@@ -25,84 +33,84 @@ const plans = [
             "API access",
             "Usage analytics",
         ],
-        checkoutUrl: null, // 免费计划 → 跳转注册页
+        checkoutUrl: null,
         highlighted: false,
         gradient: "from-slate-600 to-slate-700",
         borderClass: "border-white/10",
         badgeText: null,
+        buttonText: "Get Started Free",
     },
     {
         id: "starter",
         name: "Starter",
         price: 9.9,
         priceDisplay: "$9.90",
-        period: "/mo",
+        period: "",
         credits: "10,000 Credits",
         label: "",
         labelColor: "",
         features: [
-            "10,000 credits / month",
-            "60 RPM limit",
+            "10,000 lifetime credits",
+            "60 RPM limit (Account Upgrade)",
             "All skill types included",
             "Email support",
             "API access",
-            "Usage analytics",
             "7-day Basic History",
         ],
-        checkoutUrl: "https://uniskill.lemonsqueezy.com/checkout/starter", // Lemon Squeezy 结算链接
+        checkoutUrl: LEMON_SQUEEZY_LINKS.starter,
         highlighted: false,
         gradient: "from-blue-600 to-blue-700",
         borderClass: "border-blue-500/20",
         badgeText: null,
+        buttonText: "Buy Starter Pack",
     },
     {
         id: "pro",
         name: "Pro",
         price: 29.9,
         priceDisplay: "$29.90",
-        period: "/mo",
+        period: "",
         credits: "35,000 Credits",
         label: "Most Popular",
         labelColor: "text-blue-400",
         features: [
-            "35,000 credits / month",
-            "300 RPM limit",
+            "35,000 lifetime credits",
+            "300 RPM limit (Account Upgrade)",
             "All skill types included",
             "Priority support",
             "API access",
-            "Usage analytics",
             "30-day Deep Audit Logs",
         ],
-        checkoutUrl: "https://uniskill.lemonsqueezy.com/checkout/pro", // Lemon Squeezy 结算链接
-        highlighted: true, // Pro 卡片高亮，使用 ring-2 ring-blue-500
+        checkoutUrl: LEMON_SQUEEZY_LINKS.pro,
+        highlighted: true,
         gradient: "from-blue-500 to-purple-600",
         borderClass: "border-blue-500/50",
         badgeText: "Most Popular",
+        buttonText: "Buy Pro Pack",
     },
     {
         id: "scale",
         name: "Scale",
         price: 99.9,
         priceDisplay: "$99.90",
-        period: "/mo",
+        period: "",
         credits: "150,000 Credits",
         label: "",
         labelColor: "",
         features: [
-            "150,000 credits / month",
-            "1,000 RPM limit",
+            "150,000 lifetime credits",
+            "1,000 RPM limit (Account Upgrade)",
             "All skill types included",
             "Dedicated support",
             "API access",
-            "Usage analytics",
-            "Early Beta Access",
             "90-day Full Compliance Logs",
         ],
-        checkoutUrl: "https://uniskill.lemonsqueezy.com/checkout/scale", // Lemon Squeezy 结算链接
+        checkoutUrl: LEMON_SQUEEZY_LINKS.scale,
         highlighted: false,
         gradient: "from-purple-600 to-pink-600",
         borderClass: "border-purple-500/20",
         badgeText: null,
+        buttonText: "Buy Scale Pack",
     },
 ];
 
@@ -140,22 +148,87 @@ const consumptionWeights = [
     },
 ];
 
-/* ─── PricingSection 组件：主页定价区块 ─────────────────────────────────
-   响应式布局：移动端 1 列 → 平板 2 列 → 桌面 4 列
-   ────────────────────────────────────────────────────────────────────── */
-export default function PricingSection() {
+/* ─── 封装内容组件以使用 useSearchParams（需配合 Suspense）─── */
+function PricingContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const { data: session, status } = useSession();
+
     const sectionRef = useRef<HTMLElement>(null);
     const isInView = useInView(sectionRef, { once: true, amount: 0.05 });
 
-    /* ─── 按钮点击处理：免费计划跳注册，付费计划跳 Lemon Squeezy ─── */
-    function handlePlanClick(plan: (typeof plans)[number]) {
-        if (!plan.checkoutUrl) {
-            router.push("/register");
-        } else {
-            window.open(plan.checkoutUrl, "_blank", "noopener,noreferrer");
+    // 当前正在进行的跳转状态 (Loading state for redirection)
+    const [loadingTier, setLoadingTier] = useState<string | null>(null);
+
+    // ─── 核心逻辑： handleCheckout 处理三段式跳转 ───
+    const handleCheckout = async (tierId: string) => {
+        setLoadingTier(tierId);
+
+        // 分支 1：未登录 — 拦截并跳转 GitHub (Zero-step OAuth)
+        if (status === "unauthenticated") {
+            const currentUrl = window.location.origin + window.location.pathname;
+            // 携带意图参数回跳，实现登录后自动触发
+            await signIn("github", {
+                callbackUrl: `${currentUrl}?buy=${tierId}#pricing`,
+            });
+            return;
         }
-    }
+
+        // 分支 2：已登录
+        const user = session?.user;
+        const plan = plans.find((p) => p.id === tierId);
+
+        if (!plan) {
+            setLoadingTier(null);
+            return;
+        }
+
+        // 如果是免费档，直接跳转控制台
+        if (plan.price === 0) {
+            router.push("/dashboard");
+            return;
+        }
+
+        // 分支 3：付费档 — 动态注入 Lemon Squeezy 传参
+        try {
+            const baseUrl = plan.checkoutUrl;
+            if (!baseUrl) return;
+
+            const urlObj = new URL(baseUrl);
+
+            // 1. 注入用户 Email
+            urlObj.searchParams.append("checkout[email]", user?.email || "");
+
+            // 2. 注入关键的 Supabase UID（用于 Webhook 自动发货）
+            urlObj.searchParams.append("checkout[custom][user_uid]", (user as any)?.userUid || "");
+
+            // 3. 注入支付成功后的回跳地址（LS 结束后自动返回 dashboard）
+            urlObj.searchParams.append("embed", "0");
+            urlObj.searchParams.append("locale", "en"); // 强制使用英文界面，防止语种识别错误
+
+            // 跳转前清理当前 URL 的意图参数，防止后退时反复跳转
+            if (searchParams.get("buy")) {
+                const newParams = new URLSearchParams(searchParams.toString());
+                newParams.delete("buy");
+                router.replace(`${window.location.pathname}?${newParams.toString()}${window.location.hash}`, { scroll: false });
+            }
+
+            // 执行外部跳转
+            window.location.href = urlObj.toString();
+        } catch (err) {
+            console.error("Failed to construct checkout URL", err);
+            setLoadingTier(null);
+        }
+    };
+
+    // ─── 自动触发：授权回来后检测 buy 参数并自动拉起 ───
+    useEffect(() => {
+        const buyIntent = searchParams.get("buy");
+        if (buyIntent && status === "authenticated") {
+            // 让用户感知到授权已成功，稍微延迟拉起支付
+            handleCheckout(buyIntent);
+        }
+    }, [searchParams, status]);
 
     return (
         <section
@@ -185,7 +258,7 @@ export default function PricingSection() {
                         Simple, <span className="gradient-text">Credit-Based</span> Pricing
                     </h2>
                     <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-                        Pay only for what your agents use. Scale up or down as your needs evolve.
+                        Top up on demand and unlock powerful account capabilities.
                     </p>
                     <p className="text-blue-400/80 text-sm font-medium mt-2">
                         Fair pricing with lifetime credits.
@@ -286,22 +359,26 @@ export default function PricingSection() {
 
                                 {/* CTA 按钮：Pro 使用主色，其余使用描边样式 */}
                                 <button
-                                    onClick={() => handlePlanClick(plan)}
+                                    onClick={() => handleCheckout(plan.id)}
+                                    disabled={loadingTier !== null}
                                     className={`
-                    w-full py-3 rounded-xl text-sm font-semibold transition-all duration-300
+                    w-full py-3 rounded-xl text-sm font-semibold transition-all duration-300 relative overflow-hidden
                     ${plan.highlighted
-                                            ? "btn-primary"
-                                            : "btn-outline hover:border-blue-500/40"}
-                  `}
+                                            ? "btn-primary text-white"
+                                            : "btn-outline border-blue-500/30 text-blue-400 hover:border-blue-500/60"}
+                    ${loadingTier !== null ? "opacity-70 cursor-not-allowed" : "hover:-translate-y-0.5"}
+                `}
                                 >
-                                    {plan.highlighted ? (
-                                        <span className="relative z-10">
-                                            {plan.price === 0 ? "Get Started Free" : `Get ${plan.name}`}
-                                        </span>
-                                    ) : plan.price === 0 ? (
-                                        "Get Started Free"
+                                    {loadingTier === plan.id ? (
+                                        <div className="flex items-center justify-center gap-2">
+                                            <svg className="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            <span>Processing...</span>
+                                        </div>
                                     ) : (
-                                        `Get ${plan.name}`
+                                        <span>{plan.buttonText}</span>
                                     )}
                                 </button>
                             </div>
@@ -378,5 +455,24 @@ export default function PricingSection() {
                 </motion.div>
             </div>
         </section>
+    );
+}
+
+/* ─── 导出主组件：注入 Suspense 边界 ─── */
+export default function PricingSection() {
+    return (
+        <Suspense fallback={
+            <div className="py-28 text-center">
+                <div className="animate-pulse flex flex-col items-center">
+                    <div className="h-4 w-24 bg-slate-800 rounded mb-4"></div>
+                    <div className="h-10 w-64 bg-slate-800 rounded mb-8"></div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 w-full max-w-7xl px-8">
+                        {[1, 2, 3, 4].map(i => <div key={i} className="h-96 bg-slate-800/50 rounded-2xl"></div>)}
+                    </div>
+                </div>
+            </div>
+        }>
+            <PricingContent />
+        </Suspense>
     );
 }
