@@ -62,7 +62,7 @@ const plans = [
         gradient: "from-blue-600 to-blue-700",
         borderClass: "border-blue-500/20",
         badgeText: null,
-        buttonText: "Buy Starter Pack",
+        buttonText: "Unlock Starter Tier",
     },
     {
         id: "pro",
@@ -86,7 +86,7 @@ const plans = [
         gradient: "from-blue-500 to-purple-600",
         borderClass: "border-blue-500/50",
         badgeText: "Most Popular",
-        buttonText: "Buy Pro Pack",
+        buttonText: "Unlock Pro Tier",
     },
     {
         id: "scale",
@@ -110,7 +110,7 @@ const plans = [
         gradient: "from-purple-600 to-pink-600",
         borderClass: "border-purple-500/20",
         badgeText: null,
-        buttonText: "Buy Scale Pack",
+        buttonText: "Unlock Scale Tier",
     },
 ];
 
@@ -148,11 +148,23 @@ const consumptionWeights = [
     },
 ];
 
+/* ─── 等级权重定义：用于高水位线逻辑 (Tier Weights) ─── */
+const TIER_WEIGHTS: Record<string, number> = {
+    free: 0,
+    starter: 1,
+    pro: 2,
+    scale: 3,
+};
+
 /* ─── 封装内容组件以使用 useSearchParams（需配合 Suspense）─── */
 function PricingContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { data: session, status } = useSession();
+
+    // 获取当前用户等级并映射权重
+    const currentUserTier = (session?.user as any)?.tier?.toLowerCase() || "free";
+    const currentWeight = TIER_WEIGHTS[currentUserTier] || 0;
 
     const sectionRef = useRef<HTMLElement>(null);
     const isInView = useInView(sectionRef, { once: true, amount: 0.05 });
@@ -204,6 +216,7 @@ function PricingContent() {
 
             // 3. 注入支付成功后的回跳地址（LS 结束后自动返回 dashboard）
             urlObj.searchParams.append("embed", "0");
+            urlObj.searchParams.append("redirect_url", `${window.location.origin}/dashboard`);
             urlObj.searchParams.append("locale", "en"); // 强制使用英文界面，防止语种识别错误
 
             // 跳转前清理当前 URL 的意图参数，防止后退时反复跳转
@@ -269,121 +282,124 @@ function PricingContent() {
             使用 responsive grid 实现响应式断点控制
             ────────────────────────────────────────────────────────────── */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-                    {plans.map((plan, index) => (
-                        <motion.div
-                            key={plan.id}
-                            initial={{ opacity: 0, y: 40 }}
-                            animate={isInView ? { opacity: 1, y: 0 } : {}}
-                            transition={{
-                                duration: 0.6,
-                                delay: 0.1 + index * 0.12,
-                                ease: [0.25, 0.46, 0.45, 0.94] as const,
-                            }}
-                            className="relative"
-                        >
-                            {/* Pro 卡片高亮标签 "Most Popular" */}
-                            {plan.badgeText && (
-                                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20">
-                                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg">
-                                        {plan.badgeText}
-                                    </span>
-                                </div>
-                            )}
+                    {plans.map((plan, index) => {
+                        const targetWeight = TIER_WEIGHTS[plan.id] || 0;
+                        const isCurrentTier = currentUserTier === plan.id;
+                        const isLowerTier = currentWeight > targetWeight && plan.id !== "free";
+                        const isDisabled = (isCurrentTier || isLowerTier) && status === "authenticated";
 
-                            {/* ─── 卡片主体 ───
-                  Pro 计划使用 ring-2 ring-blue-500 实现蓝色高亮边框
-                  ──────────────── */}
-                            <div
-                                className={`
-                  glass-card h-full flex flex-col p-7 ${plan.borderClass}
-                  transition-all duration-300 hover:-translate-y-1
-                  ${plan.highlighted
-                                        ? "ring-2 ring-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.2)]"
-                                        : "hover:border-white/20"}
-                `}
+                        // 动态按钮文案
+                        let buttonLabel = plan.buttonText;
+                        if (status === "authenticated") {
+                            if (isCurrentTier) buttonLabel = "Current Plan";
+                            else if (isLowerTier) buttonLabel = "Included";
+                            else if (targetWeight > currentWeight) buttonLabel = `Unlock ${plan.name} Tier`;
+                        }
+
+                        return (
+                            <motion.div
+                                key={plan.id}
+                                initial={{ opacity: 0, y: 40 }}
+                                animate={isInView ? { opacity: 1, y: 0 } : {}}
+                                transition={{
+                                    duration: 0.6,
+                                    delay: 0.1 + index * 0.12,
+                                    ease: [0.25, 0.46, 0.45, 0.94] as const,
+                                }}
+                                className="relative"
                             >
-                                {/* 顶部：计划名称 + 图标渐变条 */}
-                                <div className={`w-10 h-1.5 rounded-full bg-gradient-to-r ${plan.gradient} mb-5`} />
-
-                                <h3 className="text-lg font-bold text-white mb-1">{plan.name}</h3>
-
-                                {/* 副标签（如 Most Popular / Welcome Gift）*/}
-                                {plan.label && (
-                                    <p className={`text-xs font-medium mb-4 ${plan.labelColor}`}>
-                                        {plan.label}
-                                    </p>
+                                {/* Pro 卡片高亮标签 */}
+                                {plan.badgeText && (
+                                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20">
+                                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg">
+                                            {plan.badgeText}
+                                        </span>
+                                    </div>
                                 )}
-                                {!plan.label && <div className="mb-4" />}
 
-                                {/* 价格展示 */}
-                                <div className="mb-5">
-                                    <span className="text-4xl font-black text-white">
-                                        {plan.priceDisplay}
-                                    </span>
-                                    {plan.period && (
-                                        <span className="text-slate-500 text-sm ml-1">{plan.period}</span>
-                                    )}
-                                </div>
-
-                                {/* 积分额度 */}
                                 <div
                                     className={`
+                  glass-card h-full flex flex-col p-7 ${plan.borderClass}
+                  transition-all duration-300 ${!isDisabled ? "hover:-translate-y-1" : ""}
+                  ${plan.highlighted && !isDisabled
+                                            ? "ring-2 ring-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.2)]"
+                                            : "hover:border-white/20"}
+                  ${isDisabled ? "opacity-80 grayscale-[0.5]" : ""}
+                `}
+                                >
+                                    <div className={`w-10 h-1.5 rounded-full bg-gradient-to-r ${plan.gradient} mb-5`} />
+                                    <h3 className="text-lg font-bold text-white mb-1">{plan.name}</h3>
+
+                                    {plan.label && (
+                                        <p className={`text-xs font-medium mb-4 ${plan.labelColor}`}>
+                                            {plan.label}
+                                        </p>
+                                    )}
+                                    {!plan.label && <div className="mb-4" />}
+
+                                    <div className="mb-5">
+                                        <span className="text-4xl font-black text-white">
+                                            {plan.priceDisplay}
+                                        </span>
+                                    </div>
+
+                                    <div
+                                        className={`
                     px-3 py-2 rounded-lg text-sm font-semibold mb-6
                     bg-gradient-to-r ${plan.gradient} bg-opacity-10
                     text-white border border-white/10
                   `}
-                                >
-                                    ✦ {plan.credits}
-                                </div>
+                                    >
+                                        ✦ {plan.credits}
+                                    </div>
 
-                                {/* 功能列表 */}
-                                <ul className="space-y-2.5 mb-8 flex-1">
-                                    {plan.features.map((feat) => (
-                                        <li
-                                            key={feat}
-                                            className="flex items-start gap-2 text-sm text-slate-400"
-                                        >
-                                            <svg
-                                                className="w-4 h-4 mt-0.5 text-blue-400 flex-shrink-0"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="2.5"
-                                            >
-                                                <polyline points="20,6 9,17 4,12" />
-                                            </svg>
-                                            {feat}
-                                        </li>
-                                    ))}
-                                </ul>
+                                    <ul className="space-y-2.5 mb-8 flex-1">
+                                        {plan.features.map((feat) => (
+                                            <li key={feat} className="flex items-start gap-2 text-sm text-slate-400">
+                                                <svg className="w-4 h-4 mt-0.5 text-blue-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                    <polyline points="20,6 9,17 4,12" />
+                                                </svg>
+                                                {feat}
+                                            </li>
+                                        ))}
+                                    </ul>
 
-                                {/* CTA 按钮：Pro 使用主色，其余使用描边样式 */}
-                                <button
-                                    onClick={() => handleCheckout(plan.id)}
-                                    disabled={loadingTier !== null}
-                                    className={`
+                                    <button
+                                        onClick={() => handleCheckout(plan.id)}
+                                        disabled={loadingTier !== null || isDisabled}
+                                        className={`
                     w-full py-3 rounded-xl text-sm font-semibold transition-all duration-300 relative overflow-hidden
-                    ${plan.highlighted
-                                            ? "btn-primary text-white"
-                                            : "btn-outline border-blue-500/30 text-blue-400 hover:border-blue-500/60"}
-                    ${loadingTier !== null ? "opacity-70 cursor-not-allowed" : "hover:-translate-y-0.5"}
+                    ${isDisabled
+                                                ? "bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5"
+                                                : plan.highlighted
+                                                    ? "btn-primary text-white"
+                                                    : "btn-outline border-blue-500/30 text-blue-400 hover:border-blue-500/60"}
+                    ${loadingTier !== null ? "opacity-70 cursor-not-allowed" : !isDisabled ? "hover:-translate-y-0.5" : ""}
                 `}
-                                >
-                                    {loadingTier === plan.id ? (
-                                        <div className="flex items-center justify-center gap-2">
-                                            <svg className="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            <span>Processing...</span>
-                                        </div>
-                                    ) : (
-                                        <span>{plan.buttonText}</span>
-                                    )}
-                                </button>
-                            </div>
-                        </motion.div>
-                    ))}
+                                    >
+                                        {loadingTier === plan.id ? (
+                                            <div className="flex items-center justify-center gap-2">
+                                                <svg className="animate-spin h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                <span>Processing...</span>
+                                            </div>
+                                        ) : (
+                                            <span>{buttonLabel}</span>
+                                        )}
+                                    </button>
+                                </div>
+                            </motion.div>
+                        );
+                    })}
+                </div>
+
+                {/* 底部补充说明 */}
+                <div className="mt-12 text-center">
+                    <p className="text-slate-500 text-sm">
+                        Need more credits? <a href="/dashboard" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">Go to Dashboard to top up</a>
+                    </p>
                 </div>
 
                 {/* ─── 计费权重说明表格 ─── */}

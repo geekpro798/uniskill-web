@@ -11,6 +11,7 @@ import Link from "next/link";
 import IntegrationCard from "@/components/Dashboard/IntegrationCard";
 import QuickActivity from "@/components/Dashboard/QuickActivity";
 import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
+import TopUpModal from "@/components/Dashboard/TopUpModal";
 
 /* ─── Key 展示卡片组件 ────────────────────────────────────────────────
    首次登录时显示原始 Key，用户必须立即复制保存，刷新后不可再查
@@ -120,7 +121,15 @@ function KeyCard({ rawKey }: { rawKey?: string }) {
 }
 
 /* ─── 配额进度条组件 ─────────────────────────────────────────────────── */
-function CreditsBar({ credits, total = 500 }: { credits?: number; total?: number }) {
+function CreditsBar({ 
+    credits, 
+    total = 500, 
+    onBuyCredits 
+}: { 
+    credits?: number; 
+    total?: number; 
+    onBuyCredits: () => void 
+}) {
     /* credits 未确定时显示骨架，避免 session 加载前误显示默认值 500 */
     if (credits === undefined) {
         return (
@@ -136,7 +145,15 @@ function CreditsBar({ credits, total = 500 }: { credits?: number; total?: number
                     </div>
                     <div className="w-16 h-7 rounded bg-slate-700/50 animate-pulse" />
                 </div>
-                <p className="text-xs text-slate-600 mt-2">Credit cost varies by skill · <a href="#" className="text-blue-500 hover:underline">Buy Credits</a></p>
+                <p className="text-xs text-slate-600 mt-2">
+                    Credit cost varies by skill · 
+                    <button 
+                        onClick={onBuyCredits}
+                        className="text-blue-500 hover:underline ml-1"
+                    >
+                        Buy Credits
+                    </button>
+                </p>
             </div>
         );
     }
@@ -158,7 +175,15 @@ function CreditsBar({ credits, total = 500 }: { credits?: number; total?: number
                 <span className="text-2xl font-black text-white">{credits}</span>
             </div>
             <div className="mt-3">
-                <p className="text-xs text-slate-600">Credit cost varies by skill · <a href="#" className="text-blue-500 hover:underline">Buy Credits</a></p>
+                <p className="text-xs text-slate-600">
+                    Credit cost varies by skill · 
+                    <button 
+                        onClick={onBuyCredits}
+                        className="text-blue-500 hover:underline ml-1"
+                    >
+                        Buy Credits
+                    </button>
+                </p>
             </div>
         </div>
     );
@@ -170,6 +195,9 @@ function CreditsBar({ credits, total = 500 }: { credits?: number; total?: number
    ─────────────────────────────────────────────────────────────────────── */
 export default function DashboardPage() {
     const { data: session, status } = useSession();
+
+    // 控制充值弹窗状态
+    const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
 
     // liveCredits 初始化为 undefined，避免 session 尚未加载时错误 fallback 到 500
     const [liveCredits, setLiveCredits] = useState<number | undefined>(undefined);
@@ -308,7 +336,11 @@ export default function DashboardPage() {
                         transition={{ delay: 0.2, duration: 0.5 }}
                     >
                         {/* 配额卡片 */}
-                        <CreditsBar credits={credits} total={500} />
+                        <CreditsBar 
+                            credits={credits} 
+                            total={500} 
+                            onBuyCredits={() => setIsTopUpModalOpen(true)}
+                        />
                         {/* Recent Activity：flex-1 让它填满左列剩余高度，与右列等高 */}
                         <div className="flex-1">
                             <QuickActivity />
@@ -365,6 +397,16 @@ export default function DashboardPage() {
                     </div>
                 </motion.div>
             </main>
+
+            {/* 充值弹窗组件 */}
+            <TopUpModal 
+                isOpen={isTopUpModalOpen}
+                onClose={() => setIsTopUpModalOpen(false)}
+                user={{
+                    userUid: user?.userUid,
+                    email: user?.email || undefined
+                }}
+            />
         </div>
     );
 }
