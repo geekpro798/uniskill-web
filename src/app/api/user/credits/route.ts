@@ -21,11 +21,11 @@ export async function GET() {
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // 3. 根据 github_id 查询最新积分
+    // 3. 根据 github_id 查询最新积分和等级
     try {
         const { data, error } = await supabase
             .from("profiles")
-            .select("credits")
+            .select("credits, tier")
             .eq("github_id", session.user.githubId)
             .single();
 
@@ -34,7 +34,10 @@ export async function GET() {
             throw error;
         }
 
-        return NextResponse.json({ credits: data?.credits ?? 0 });
+        return NextResponse.json({ 
+            credits: data?.credits ?? 0,
+            tier: data?.tier || "FREE"
+        });
     } catch (err) {
         return NextResponse.json({ error: "Failed to fetch credits" }, { status: 500 });
     }

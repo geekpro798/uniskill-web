@@ -29,6 +29,9 @@ const PRODUCT_MAP: Record<string, { type: 'tier' | 'topup', credits: number, tar
 };
 
 export async function POST(req: Request) {
+    // 0. Bootstrap Log (v1.2.1 - 2026-03-19)
+    console.log(`[LS Webhook] >>> NEW REQUEST RECEIVED (v1.2.1) <<<`);
+
     const webhookSecret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET || "";
     const signature = req.headers.get('X-Signature') || "";
     const rawBody = await req.text();
@@ -144,12 +147,57 @@ export async function POST(req: Request) {
 
         if (updateError) throw updateError;
 
-        // --- Step E: Notify Gateway (KV Sync) ---
-        // 只有当等级发生变化时，才传递 tier 参数给 Gateway 以更新 KV
-        const gatewayUrl = process.env.GATEWAY_URL?.replace(/\/$/, ""); // 移除末尾斜杠
+        // --- Step E: Direct Cloudflare KV Sync (Robust Fallback) ---
+        // 直接通过 Cloudflare API 同步到 KV，不依赖 Gateway 是否在线
+        const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+        const cfNamespaceId = process.env.CLOUDFLARE_KV_NAMESPACE_ID;
+        const cfToken = process.env.CLOUDFLARE_API_TOKEN;
+
+        if (cfAccountId && cfNamespaceId && cfToken) {
+            console.log(`[LS Webhook] >>> Initiating direct KV sync to production...`);
+            try {
+                // 1. 同步积分 (Sync Credits)
+                const creditsRes = await fetch(
+                    `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/storage/kv/namespaces/${cfNamespaceId}/values/user:credits:${userUid}`,
+                    {
+                        method: 'PUT',
+                        headers: { 'Authorization': `Bearer ${cfToken}` },
+                        body: String(newBalance)
+                    }
+                );
+
+                // 2. 同步等级 (Sync Tier)
+                const tierRes = await fetch(
+                    `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/storage/kv/namespaces/${cfNamespaceId}/values/tier:${userUid}`,
+                    {
+                        method: 'PUT',
+                        headers: { 'Authorization': `Bearer ${cfToken}` },
+                        body: finalTier
+                    }
+                );
+                if (creditsRes.ok && tierRes.ok) {
+                    console.log(`[LS Webhook] >>> Direct KV sync SUCCESSFUL (v1.2)`);
+                } else {
+                    console.error(`[LS Webhook] >>> Direct KV sync partially failed. Credits Status: ${creditsRes.status}, Tier Status: ${tierRes.status}`);
+                }
+            } catch (kvErr: any) {
+                console.error("[LS Webhook] >>> Direct KV sync FATAL ERROR:", kvErr.message);
+            }
+        }
+
+        // --- Step F: Notify Gateway (Internal Sync) ---
+        // 修正 URL 拼接逻辑，防止重复的 /v1
+        let gatewayUrl = process.env.GATEWAY_URL?.replace(/\/$/, "") || "";
         if (gatewayUrl) {
-            console.log(`[LS Webhook] Syncing to Gateway: ${gatewayUrl}/v1/admin/topup`);
-            const gatewayRes = await fetch(`${gatewayUrl}/v1/admin/topup`, {
+            // 如果 URL 已经包含 /v1，先剥离掉，统一由下方添加
+            if (gatewayUrl.endsWith("/v1")) {
+                gatewayUrl = gatewayUrl.substring(0, gatewayUrl.length - 3);
+            }
+            
+            const targetUrl = `${gatewayUrl}/v1/admin/topup`;
+            console.log(`[LS Webhook] Notifying Gateway: ${targetUrl}`);
+            
+            fetch(targetUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -160,17 +208,9 @@ export async function POST(req: Request) {
                     credits_to_add: addedCredits,
                     tier: finalTier !== profile.tier ? finalTier : undefined
                 })
-            });
-
-            if (!gatewayRes.ok) {
-                const errorText = await gatewayRes.text();
-                console.error(`[LS Webhook] Gateway Sync Failed [${gatewayRes.status}]:`, errorText);
-            } else {
-                console.log(`[LS Webhook] Gateway Sync Successful!`);
-            }
-        } else {
-            console.error("[LS Webhook] GATEWAY_URL is not configured in environment variables.");
+            }).catch(e => console.warn("[LS Webhook] Gateway notification skipped/failed (expected if local)"));
         }
+
         return NextResponse.json({ success: true, userUid, newBalance });
 
     } catch (err: any) {

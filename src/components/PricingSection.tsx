@@ -162,9 +162,38 @@ function PricingContent() {
     const searchParams = useSearchParams();
     const { data: session, status } = useSession();
 
-    // 获取当前用户等级并映射权重
-    const currentUserTier = (session?.user as any)?.tier?.toLowerCase() || "free";
+    const [liveData, setLiveData] = useState<{ credits?: number; tier?: string }>({});
+
+    useEffect(() => {
+        if (status === "authenticated") {
+            const fetchLatestData = async () => {
+                try {
+                    const res = await fetch("/api/user/credits", { cache: "no-store" });
+                    const data = await res.json();
+                    if (data.tier) {
+                        setLiveData(data);
+                        console.log("[Pricing] Applied Live Tier:", data.tier);
+                    }
+                } catch (err) {
+                    console.error("[Pricing] Live fetch failed", err);
+                }
+            };
+            fetchLatestData();
+        }
+    }, [status]);
+
+    // 获取当前用户等级并映射权重 (优先使用实时获取的 liveData.tier)
+    const rawTier = liveData.tier || (session?.user as any)?.tier || "free";
+    const currentUserTier = rawTier.toLowerCase();
     const currentWeight = TIER_WEIGHTS[currentUserTier] || 0;
+
+    useEffect(() => {
+        if (status === "authenticated") {
+            console.log("[Pricing] Status: Authenticated");
+            console.log("[Pricing] Raw Tier Value:", rawTier);
+            console.log("[Pricing] Computed CurrentTier:", currentUserTier, "Weight:", currentWeight);
+        }
+    }, [status, rawTier, currentUserTier, currentWeight]);
 
     const sectionRef = useRef<HTMLElement>(null);
     const isInView = useInView(sectionRef, { once: true, amount: 0.05 });
@@ -285,7 +314,7 @@ function PricingContent() {
                     {plans.map((plan, index) => {
                         const targetWeight = TIER_WEIGHTS[plan.id] || 0;
                         const isCurrentTier = currentUserTier === plan.id;
-                        const isLowerTier = currentWeight > targetWeight && plan.id !== "free";
+                        const isLowerTier = currentWeight > targetWeight;
                         const isDisabled = (isCurrentTier || isLowerTier) && status === "authenticated";
 
                         // 动态按钮文案
@@ -376,7 +405,7 @@ function PricingContent() {
                                                     : "bg-white/10 text-white border border-white/20 hover:bg-white/20 hover:scale-[1.02] active:scale-[0.98]"
                                         } ${loadingTier === plan.id ? "opacity-70 cursor-wait" : ""}`}
                                     >
-                                        {(isCurrentTier || isLowerTier) && status === "authenticated" && (
+                                        {isCurrentTier && status === "authenticated" && (
                                             <svg className="w-5 h-5 text-cyan-400" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                             </svg>
