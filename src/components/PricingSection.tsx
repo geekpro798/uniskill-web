@@ -367,7 +367,7 @@ function PricingContent() {
                                         onClick={() => handleCheckout(plan.id)}
                                         disabled={isDisabled || loadingTier === plan.id}
                                         className={`w-full py-4 px-6 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
-                                            plan.popular
+                                            plan.highlighted
                                                 ? isDisabled 
                                                     ? "bg-slate-800/50 text-slate-400 border border-slate-700 cursor-not-allowed"
                                                     : "bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:scale-[1.02] hover:shadow-xl hover:shadow-blue-500/20 active:scale-[0.98]"
