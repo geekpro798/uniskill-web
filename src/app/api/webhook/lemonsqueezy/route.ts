@@ -5,6 +5,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { dispatchPaymentNotification } from '@/utils/notifications/notifier';
 
 export const dynamic = 'force-dynamic';
 
@@ -152,6 +153,7 @@ export async function POST(req: Request) {
 
         // --- Step F: Push Final State to Gateway Cache (Sync) ---
         let gatewayUrl = process.env.GATEWAY_URL?.replace(/\/$/, "") || "";
+        let isGatewaySynced = false;
         if (gatewayUrl) {
             // Ensure URL ends with /v1
             if (!gatewayUrl.endsWith("/v1")) {
@@ -180,16 +182,30 @@ export async function POST(req: Request) {
                     console.error(`[LS Webhook] Gateway sync FAILED [Status ${syncRes.status}]: ${errText}`);
                 } else {
                     console.log(`[LS Webhook] Gateway sync successful!`);
+                    isGatewaySynced = true;
                 }
             } catch (e: any) {
                 console.error("[LS Webhook] Gateway sync notification failed:", e.message);
             }
         }
 
-        return NextResponse.json({ success: true, userUid, newBalance });
+        // --- Step G: Dispatch Asynchronous Notification (Fire-and-Forget) ---
+        // 旁路异步通知，不阻塞主流程
+        dispatchPaymentNotification({
+            userUid,
+            orderId,
+            type: productInfo.type === 'tier' ? 'tier_upgrade' : 'top_up',
+            addedCredits,
+            newBalance,       // 数据库更新后的最新余额
+            finalTier,        // 数据库更新后的最终等级
+            isGatewaySynced
+        });
+
+        // 极速响应：主线跑完，立刻返回 200
+        return new Response('Success', { status: 200 });
 
     } catch (err: any) {
         console.error("[LS Webhook] Processing failed:", err);
-        return NextResponse.json({ error: "Internal Server Error", message: err.message }, { status: 500 });
+        return new Response(`Error: ${err.message}`, { status: 500 });
     }
 }
