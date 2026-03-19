@@ -17,6 +17,18 @@ export interface PaymentNotificationPayload {
 }
 
 /**
+ * 通用的新账号创建通知负载接口
+ * (Generic account creation notification payload interface)
+ */
+export interface AccountCreatedPayload {
+    userUid: string;
+    githubId: string;
+    name: string | null;
+    email: string | null;
+    initialCredits: number;
+}
+
+/**
  * 飞书适配器实现：负责将通用负载转换为飞书互动卡片并发送
  * (Feishu adapter: converts generic payload to Feishu interactive card and sends it)
  */
@@ -122,6 +134,91 @@ async function sendToFeishu(payload: PaymentNotificationPayload): Promise<void> 
 }
 
 /**
+ * 飞书适配器实现：负责发送新账号创建通知
+ * (Feishu adapter: sends account creation notification)
+ */
+async function sendAccountCreatedToFeishu(payload: AccountCreatedPayload): Promise<void> {
+    const feishuUrl = process.env.FEISHU_WEBHOOK_URL;
+    if (!feishuUrl) return;
+
+    const { userUid, githubId, name, email, initialCredits } = payload;
+
+    const feishuData = {
+        msg_type: "interactive",
+        card: {
+            header: {
+                title: {
+                    content: "🆕 UniSkill 新用户注册通知",
+                    tag: "plain_text"
+                },
+                template: "violet"
+            },
+            elements: [
+                {
+                    tag: "div",
+                    fields: [
+                        {
+                            is_short: true,
+                            text: { content: `**用户姓名:**\n${name || '未知'}`, tag: "lark_md" }
+                        },
+                        {
+                            is_short: true,
+                            text: { content: `**GitHub ID:**\n${githubId}`, tag: "lark_md" }
+                        }
+                    ]
+                },
+                {
+                    tag: "div",
+                    fields: [
+                        {
+                            is_short: false,
+                            text: { content: `**邮箱地址:**\n${email || '未提供'}`, tag: "lark_md" }
+                        }
+                    ]
+                },
+                {
+                    tag: "div",
+                    fields: [
+                        {
+                            is_short: true,
+                            text: { content: `**用户 UID:**\n${userUid}`, tag: "lark_md" }
+                        },
+                        {
+                            is_short: true,
+                            text: { content: `**初始积分:**\n${initialCredits.toLocaleString()} Credits`, tag: "lark_md" }
+                        }
+                    ]
+                },
+                {
+                    tag: "hr"
+                },
+                {
+                    tag: "div",
+                    text: {
+                        content: `✨ 欢迎新用户加入 UniSkill 家族！\n⏰ **注册时间:** ${new Date().toISOString()}`,
+                        tag: "lark_md"
+                    }
+                }
+            ]
+        }
+    };
+
+    try {
+        const response = await fetch(feishuUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(feishuData)
+        });
+        if (!response.ok) {
+            const errText = await response.text();
+            console.error(`[Notifier] Feishu AccountCreated failed [${response.status}]: ${errText}`);
+        }
+    } catch (error) {
+        console.error('[Notifier] Error sending AccountCreated to Feishu:', error);
+    }
+}
+
+/**
  * 对外暴露的唯一调度入口 (Fire-and-Forget 异步派发)
  * (The single exposed dispatcher entry point - Fire-and-Forget)
  */
@@ -142,4 +239,14 @@ export function dispatchPaymentNotification(payload: PaymentNotificationPayload)
     // sendEmailReceipt(payload).catch(console.error);
     
     process.stdout.write(`[Notifier] Payment notification dispatched for Order ${payload.orderId}\n`);
+}
+
+/**
+ * 对外暴露的唯一账号创建调度入口 (Fire-and-Forget)
+ */
+export function dispatchAccountCreatedNotification(payload: AccountCreatedPayload): void {
+    sendAccountCreatedToFeishu(payload).catch(err => {
+        console.error('[Notifier] AccountCreated dispatch background error:', err);
+    });
+    process.stdout.write(`[Notifier] Account created notification dispatched for UID ${payload.userUid}\n`);
 }

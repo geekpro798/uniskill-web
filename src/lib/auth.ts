@@ -5,6 +5,7 @@
 import { supabase } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import { dispatchAccountCreatedNotification } from "@/utils/notifications/notifier";
 
 /* ─── 用户 Profile 类型定义 ─────────────────────────────────────────── */
 export interface UserProfile {
@@ -90,6 +91,17 @@ export async function handleUserRegistration(
     if (dbError) {
         console.error("[auth] Failed to insert user (dbError):", dbError);
         throw new Error(`Database insert failed: ${dbError.message}`);
+    }
+
+    // --- Step 2b: Dispatch Account Created Notification (Fire-and-Forget) ---
+    if (newProfile) {
+        dispatchAccountCreatedNotification({
+            userUid: newProfile.user_uid,
+            githubId: newProfile.github_id,
+            name: newProfile.name,
+            email: newProfile.email,
+            initialCredits: 500
+        });
     }
 
 

@@ -2,7 +2,7 @@
 // Quick script to verify Feishu notification connectivity and card formatting
 // (用于快速验证飞书通知连通性及卡片样式的测试脚本)
 
-import { dispatchPaymentNotification } from '../src/utils/notifications/notifier';
+import { dispatchPaymentNotification, dispatchAccountCreatedNotification } from '../src/utils/notifications/notifier';
 import dotenv from 'dotenv';
 import path from 'path';
 
@@ -17,7 +17,8 @@ if (!process.env.FEISHU_WEBHOOK_URL) {
     process.exit(1);
 }
 
-// Trigger the dispatcher (Fire-and-Forget)
+// 1. Test Payment Notification
+console.log('--- Testing Payment Notification ---');
 dispatchPaymentNotification({
     userUid: "us-test-88888",
     orderId: "TEST_ORDER_LARK_001",
@@ -26,6 +27,16 @@ dispatchPaymentNotification({
     newBalance: 10500,
     finalTier: "PRO",
     isGatewaySynced: true
+});
+
+// 2. Test Account Creation Notification
+console.log('--- Testing Account Creation Notification ---');
+dispatchAccountCreatedNotification({
+    userUid: "us-new-user-777",
+    githubId: "999888777",
+    name: "测试新同学 (Test User)",
+    email: "welcome@uniskill.ai",
+    initialCredits: 500
 });
 
 console.log('✅ [Test] Dispatch command sent! Please check your Feishu group.');
