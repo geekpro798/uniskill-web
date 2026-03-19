@@ -22,7 +22,7 @@ export default function ScrollProgress() {
       // origin-left: 确保动画是从左向右生长 (Ensure animation grows from left to right)
       // h-[3px]: 稍微增加一点厚度，深色模式下更显眼 (Slightly thicker for dark mode visibility)
       // z-[100]: 确保盖住 Navbar (Ensure it covers the Navbar)
-      className="fixed top-0 left-0 right-0 h-[3px] z-[100] origin-left 
+      className="fixed top-0 left-0 right-0 h-[2px] z-[100] origin-left 
                  bg-blue-600 
                  dark:bg-gradient-to-r dark:from-cyan-400 dark:via-blue-500 dark:to-emerald-400 
                  dark:shadow-[0_0_12px_rgba(34,211,238,0.9)]"
