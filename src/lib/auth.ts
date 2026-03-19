@@ -120,7 +120,7 @@ export async function handleUserRegistration(
             const gatewayUrl = process.env.GATEWAY_URL ?? "https://your-gateway.workers.dev";
             console.log(`[auth] Initiating KV sync to ${gatewayUrl}/admin/provision...`);
 
-            const syncRes = await fetch(`${gatewayUrl}/admin/provision`, {
+            const syncRes = await fetch(`${gatewayUrl}/v1/admin/sync_cache`, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${process.env.ADMIN_KEY}`,
@@ -128,9 +128,9 @@ export async function handleUserRegistration(
                 },
                 body: JSON.stringify({ 
                     user_uid: newProfile.user_uid, 
-                    key_hash: keyHash, 
-                    credits: 500,
-                    tier: "FREE" 
+                    total_credits: 500,
+                    new_tier: "FREE",
+                    key_hash: keyHash
                 }),
             });
 

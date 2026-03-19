@@ -147,55 +147,19 @@ export async function POST(req: Request) {
 
         if (updateError) throw updateError;
 
-        // --- Step E: Direct Cloudflare KV Sync (Robust Fallback) ---
-        // 直接通过 Cloudflare API 同步到 KV，不依赖 Gateway 是否在线
-        const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-        const cfNamespaceId = process.env.CLOUDFLARE_KV_NAMESPACE_ID;
-        const cfToken = process.env.CLOUDFLARE_API_TOKEN;
+        // --- Step E: Direct Cloudflare KV Sync (REMOVED) ---
+        // We now strictly use the Gateway's sync_cache endpoint to manage its own cache.
 
-        if (cfAccountId && cfNamespaceId && cfToken) {
-            console.log(`[LS Webhook] >>> Initiating direct KV sync to production...`);
-            try {
-                // 1. 同步积分 (Sync Credits)
-                const creditsRes = await fetch(
-                    `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/storage/kv/namespaces/${cfNamespaceId}/values/user:credits:${userUid}`,
-                    {
-                        method: 'PUT',
-                        headers: { 'Authorization': `Bearer ${cfToken}` },
-                        body: String(newBalance)
-                    }
-                );
-
-                // 2. 同步等级 (Sync Tier)
-                const tierRes = await fetch(
-                    `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/storage/kv/namespaces/${cfNamespaceId}/values/tier:${userUid}`,
-                    {
-                        method: 'PUT',
-                        headers: { 'Authorization': `Bearer ${cfToken}` },
-                        body: finalTier
-                    }
-                );
-                if (creditsRes.ok && tierRes.ok) {
-                    console.log(`[LS Webhook] >>> Direct KV sync SUCCESSFUL (v1.2)`);
-                } else {
-                    console.error(`[LS Webhook] >>> Direct KV sync partially failed. Credits Status: ${creditsRes.status}, Tier Status: ${tierRes.status}`);
-                }
-            } catch (kvErr: any) {
-                console.error("[LS Webhook] >>> Direct KV sync FATAL ERROR:", kvErr.message);
-            }
-        }
-
-        // --- Step F: Notify Gateway (Internal Sync) ---
-        // 修正 URL 拼接逻辑，防止重复的 /v1
+        // --- Step F: Push Final State to Gateway Cache (Sync) ---
         let gatewayUrl = process.env.GATEWAY_URL?.replace(/\/$/, "") || "";
         if (gatewayUrl) {
-            // 如果 URL 已经包含 /v1，先剥离掉，统一由下方添加
-            if (gatewayUrl.endsWith("/v1")) {
-                gatewayUrl = gatewayUrl.substring(0, gatewayUrl.length - 3);
+            // Ensure URL ends with /v1
+            if (!gatewayUrl.endsWith("/v1")) {
+                gatewayUrl += "/v1";
             }
             
-            const targetUrl = `${gatewayUrl}/v1/admin/topup`;
-            console.log(`[LS Webhook] Notifying Gateway: ${targetUrl}`);
+            const targetUrl = `${gatewayUrl}/admin/sync_cache`;
+            console.log(`[LS Webhook] Syncing Gateway Cache: ${targetUrl}`);
             
             fetch(targetUrl, {
                 method: 'POST',
@@ -205,10 +169,10 @@ export async function POST(req: Request) {
                 },
                 body: JSON.stringify({
                     user_uid: userUid,
-                    credits_to_add: addedCredits,
-                    tier: finalTier !== profile.tier ? finalTier : undefined
+                    total_credits: newBalance,
+                    new_tier: finalTier
                 })
-            }).catch(e => console.warn("[LS Webhook] Gateway notification skipped/failed (expected if local)"));
+            }).catch(e => console.warn("[LS Webhook] Gateway sync notification failed:", e.message));
         }
 
         return NextResponse.json({ success: true, userUid, newBalance });
