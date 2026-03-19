@@ -16,6 +16,7 @@ export interface UserProfile {
     name: string | null;
     avatar_url: string | null;
     key_hash: string;
+    key_preview: string | null; // Added: key preview (first 4 and last 4 chars)
     credits: number;
     tier: string;
     created_at: string;
@@ -73,6 +74,13 @@ export async function handleUserRegistration(
     // 1. Generate the raw API key and its unique hash ONCE
     const rawKey = `us-${crypto.randomUUID()}`;
     const keyHash = crypto.createHash("sha256").update(rawKey).digest("hex");
+    
+    // 生成预览字符串: us-[前4位]...[后4位]
+    // (Example: us-2e43...4r45)
+    // rawKey 格式类似 "us-38b4d834-..."
+    const keyParts = rawKey.split('-'); // ["us", "uuid..."]
+    const uuidPart = keyParts[1];
+    const keyPreview = `us-${uuidPart.substring(0, 4)}••••••••${rawKey.substring(rawKey.length - 4)}`;
 
     // 2. Insert into Supabase (using Admin client)
     const { data: newProfile, error: dbError } = await supabaseAdmin
@@ -83,6 +91,7 @@ export async function handleUserRegistration(
             name: githubProfile.name ?? null,
             avatar_url: githubProfile.image ?? null,
             key_hash: keyHash,
+            key_preview: keyPreview, // Store the preview
             credits: 500,
         })
         .select()
@@ -92,18 +101,6 @@ export async function handleUserRegistration(
         console.error("[auth] Failed to insert user (dbError):", dbError);
         throw new Error(`Database insert failed: ${dbError.message}`);
     }
-
-    // --- Step 2b: Dispatch Account Created Notification (Fire-and-Forget) ---
-    if (newProfile) {
-        dispatchAccountCreatedNotification({
-            userUid: newProfile.user_uid,
-            githubId: newProfile.github_id,
-            name: newProfile.name,
-            email: newProfile.email,
-            initialCredits: 500
-        });
-    }
-
 
     console.log("[auth] Inserted new profile successfully. Profile ID:", newProfile?.id);
 
@@ -125,40 +122,47 @@ export async function handleUserRegistration(
         console.warn("[auth] credit_events insert exception:", e);
     }
 
-    // 3. Sync to Cloudflare KV
-    // 同步到 Cloudflare KV
-    if (!dbError) {
-        try {
-            const gatewayUrl = process.env.GATEWAY_URL ?? "https://your-gateway.workers.dev";
-            console.log(`[auth] Initiating KV sync: URL=${gatewayUrl}/v1/admin/sync_cache, UID=${newProfile.user_uid}`);
+    // 3. Sync to Cloudflare KV (至关重要：确保新用户的 Key 立即生效)
+    try {
+        const gatewayUrl = process.env.GATEWAY_URL ?? "http://localhost:8787";
+        console.log(`[auth] [KV Sync] Attempting to sync new user: ${newProfile.user_uid} to ${gatewayUrl}`);
 
-            const syncRes = await fetch(`${gatewayUrl}/v1/admin/sync_cache`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${process.env.ADMIN_KEY}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    user_uid: newProfile.user_uid,
-                    total_credits: 500,
-                    new_tier: "FREE",
-                    key_hash: keyHash
-                }),
-            });
+        const syncRes = await fetch(`${gatewayUrl}/v1/admin/sync_cache`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${process.env.ADMIN_KEY}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                user_uid: newProfile.user_uid,
+                total_credits: 500,
+                new_tier: "FREE",
+                key_hash: keyHash
+            }),
+        });
 
-            if (!syncRes.ok) {
-                const errText = await syncRes.text();
-                console.error(`[auth] KV sync FAILED [Status ${syncRes.status}]: ${errText}`);
-                console.error(`[auth] Auth Check: ADMIN_KEY length = ${process.env.ADMIN_KEY?.length || 0}`);
-                console.error(`[auth] Check if GATEWAY_URL (${gatewayUrl}) is correct and ADMIN_KEY is valid.`);
-            } else {
-                const resData = await syncRes.json();
-                console.log("[auth] Cloudflare KV sync successful!", resData);
-            }
-        } catch (kvError: any) {
-            console.error("[auth] KV sync FATAL ERROR (Connection Refused?):", kvError.message);
-            console.error(`[auth] Is the gateway running at ${process.env.GATEWAY_URL ?? "localhost:8787"}?`);
+        if (!syncRes.ok) {
+            const errText = await syncRes.text();
+            console.error(`[auth] [KV Sync] FAILED [Status ${syncRes.status}]: ${errText}`);
+        } else {
+            const resData = await syncRes.json();
+            console.log(`[auth] [KV Sync] SUCCESS for UID: ${newProfile.user_uid}`, resData);
         }
+    } catch (kvError: any) {
+        console.error("[auth] [KV Sync] FATAL ERROR:", kvError.message);
+        console.error(`[auth] [KV Sync] Target URL was: ${process.env.GATEWAY_URL}/v1/admin/sync_cache`);
+    }
+
+    // 4. Dispatch Account Created Notification (Fire-and-Forget)
+    // 放在最后，确保主流程（DB + KV）已完成
+    if (newProfile) {
+        dispatchAccountCreatedNotification({
+            userUid: newProfile.user_uid,
+            githubId: newProfile.github_id,
+            name: newProfile.name,
+            email: newProfile.email,
+            initialCredits: 500
+        });
     }
 
     // ─── Step 6: 返回结果，rawKey 仅此一次返回给前端展示 ───────────

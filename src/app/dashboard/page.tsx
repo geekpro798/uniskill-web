@@ -12,13 +12,23 @@ import IntegrationCard from "@/components/Dashboard/IntegrationCard";
 import QuickActivity from "@/components/Dashboard/QuickActivity";
 import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
 import TopUpModal from "@/components/Dashboard/TopUpModal";
+import ResetKeyModal from "@/components/Dashboard/ResetKeyModal";
 
 /* ─── Key 展示卡片组件 ────────────────────────────────────────────────
    首次登录时显示原始 Key，用户必须立即复制保存，刷新后不可再查
    ─────────────────────────────────────────────────────────────────────── */
-function KeyCard({ rawKey }: { rawKey?: string }) {
+function KeyCard({ 
+    rawKey, 
+    keyPreview, 
+    onReset 
+}: { 
+    rawKey?: string; 
+    keyPreview?: string; 
+    onReset: () => void 
+}) {
     const [copied, setCopied] = useState(false);
     const [revealed, setRevealed] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
 
     /* 复制 Key 到剪贴板 */
     const handleCopy = async (text: string) => {
@@ -27,24 +37,45 @@ function KeyCard({ rawKey }: { rawKey?: string }) {
         setTimeout(() => setCopied(false), 2000);
     };
 
+    const handleResetClick = async () => {
+        setIsResetting(true);
+        try {
+            await onReset();
+        } finally {
+            setIsResetting(false);
+        }
+    };
+
     if (!rawKey) {
-        /* 已有 Key（非首次登录） */
+        /* 已有 Key（非首次登录或重置后刷新） */
         return (
             <div className="glass-card p-6 border border-slate-700/50">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold text-slate-300">Your API Key</p>
+                            <p className="text-xs text-slate-500">Key is hidden — shown once at registration</p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-sm font-semibold text-slate-300">Your API Key</p>
-                        <p className="text-xs text-slate-500">Key is hidden for security — it was shown once at registration</p>
-                    </div>
+                    {/* 重置按钮 */}
+                    <button 
+                        onClick={handleResetClick}
+                        disabled={isResetting}
+                        className="text-xs text-slate-500 hover:text-red-400 border border-slate-700 hover:border-red-500/30 px-2 py-1 rounded transition-all disabled:opacity-50"
+                    >
+                        {isResetting ? "Resetting..." : "Reset Key"}
+                    </button>
                 </div>
                 <div className="code-block flex items-center justify-between gap-4">
-                    <span className="text-slate-500">us-••••••••-••••-••••-••••-••••••••••••</span>
+                    <span className="text-slate-500 font-mono text-sm tracking-wider">
+                        {keyPreview || "us-••••••••-••••-••••-••••-••••••••••••"}
+                    </span>
                     <span className="text-xs text-slate-600 border border-slate-700 px-2 py-1 rounded">Hidden</span>
                 </div>
             </div>
@@ -196,11 +227,16 @@ function CreditsBar({
 export default function DashboardPage() {
     const { data: session, status } = useSession();
 
-    // 控制充值弹窗状态
+    // 控制弹窗状态
     const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
+    const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
     // liveCredits 初始化为 undefined，避免 session 尚未加载时错误 fallback 到 500
     const [liveCredits, setLiveCredits] = useState<number | undefined>(undefined);
+    
+    // API Key 重置后的临时明文及预览状态
+    const [resetRawKey, setResetRawKey] = useState<string | undefined>(undefined);
+    const [resetKeyPreview, setResetKeyPreview] = useState<string | undefined>(undefined);
 
     const fetchLiveCredits = async () => {
         if (!session?.user?.id) return;
@@ -217,15 +253,42 @@ export default function DashboardPage() {
         }
     };
 
+    const handleResetKey = () => {
+        setIsResetModalOpen(true);
+    };
+
+    const handleConfirmReset = async () => {
+        try {
+            const res = await fetch("/api/user/reset-key", { method: "POST" });
+            if (res.ok) {
+                const data = await res.json();
+                setResetRawKey(data.rawKey);
+                setResetKeyPreview(data.keyPreview);
+            } else {
+                throw new Error("Failed to reset key");
+            }
+        } catch (e) {
+            console.error("Failed to reset key", e);
+            alert("Error resetting key. Please try again.");
+            throw e;
+        }
+    };
+
     useEffect(() => {
         if (status !== "authenticated") return;
-        // 先用 session JWT 缓存展示（少有延迟，避免骨架闪烁），西同时发起真实值请求
+        // 先用 session JWT 缓存展示（少量延迟，避免骨架闪烁），同时发起真实值请求
         setLiveCredits(session.user.credits ?? 500);
         fetchLiveCredits();
         window.addEventListener("focus", fetchLiveCredits);
         return () => window.removeEventListener("focus", fetchLiveCredits);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [status]);
+
+    /* 提取业务数据 (放在 return 之前) */
+    const user = session?.user;
+    const credits = liveCredits !== undefined ? liveCredits : user?.credits;
+    const finalRawKey = resetRawKey || user?.rawKey;
+    const finalKeyPreview = resetKeyPreview || user?.keyPreview;
 
     /* 未认证：显示登录提示 */
     if (status === "unauthenticated") {
@@ -272,10 +335,6 @@ export default function DashboardPage() {
     }
 
     /* 已登录：渲染 Dashboard */
-    /* 已登录：渲染 Dashboard */
-    const user = session?.user;
-    const rawKey = user?.rawKey;
-    const credits = liveCredits;
 
     return (
         <div className="min-h-screen bg-[#0a0f1e] bg-grid">
@@ -299,7 +358,7 @@ export default function DashboardPage() {
 
                 {/* 首次登录一次性 Toast 提醒 */}
                 <AnimatePresence>
-                    {rawKey && (
+                    {finalRawKey && (
                         <motion.div
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -308,8 +367,8 @@ export default function DashboardPage() {
                         >
                             <span className="text-green-400 text-lg">🎉</span>
                             <div>
-                                <p className="text-sm font-semibold text-green-400">Account created successfully!</p>
-                                <p className="text-xs text-slate-400">Your API key has been provisioned with 500 free credits</p>
+                                <p className="text-sm font-semibold text-green-400">Account successfully updated!</p>
+                                <p className="text-xs text-slate-400">Your API key is shown below — please save it now.</p>
                             </div>
                         </motion.div>
                     )}
@@ -324,7 +383,11 @@ export default function DashboardPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 1.1, duration: 0.5 }}
                     >
-                        <KeyCard rawKey={rawKey} />
+                        <KeyCard 
+                            rawKey={finalRawKey} 
+                            keyPreview={finalKeyPreview}
+                            onReset={handleResetKey}
+                        />
                     </motion.div>
 
                     {/* ── 左列：Credits 卡片 + Recent Activity（flex-1 填满剩余高度）── */}
@@ -354,7 +417,7 @@ export default function DashboardPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3, duration: 0.5 }}
                     >
-                        <IntegrationCard rawKey={rawKey} />
+                        <IntegrationCard rawKey={finalRawKey} />
                     </motion.div>
                 </div>
 
@@ -397,6 +460,13 @@ export default function DashboardPage() {
                     </div>
                 </motion.div>
             </main>
+
+            {/* 重置 Key 确认弹窗 */}
+            <ResetKeyModal 
+                isOpen={isResetModalOpen}
+                onClose={() => setIsResetModalOpen(false)}
+                onConfirm={handleConfirmReset}
+            />
 
             {/* 充值弹窗组件 */}
             <TopUpModal 

@@ -20,8 +20,9 @@ export const authOptions: NextAuthOptions = {
         async signIn({ user, account, profile }) {
             if (account?.provider !== "github") return false;
             try {
+                const profileObj = profile as any;
                 const result = await handleUserRegistration({
-                    id: profile?.id ?? user.id,
+                    id: profileObj?.id ?? user.id,
                     email: user.email,
                     name: user.name,
                     image: user.image,
@@ -30,7 +31,8 @@ export const authOptions: NextAuthOptions = {
                 (user as any).credits = result.profile.credits;
                 (user as any).tier = result.profile.tier;
                 (user as any).userUid = result.profile.user_uid;
-                (user as any).githubId = (profile?.id ?? "").toString();
+                (user as any).keyPreview = result.profile.key_preview; // New: Sync preview
+                (user as any).githubId = (profileObj?.id ?? "").toString();
                 return true;
             } catch (error) {
                 console.error("[NextAuth] signIn error:", error);
@@ -42,6 +44,7 @@ export const authOptions: NextAuthOptions = {
                 token.githubId = (user as any).githubId;
                 token.userUid = (user as any).userUid;
                 token.rawKey = (user as any).rawKey;
+                token.keyPreview = (user as any).keyPreview; // New
                 token.credits = (user as any).credits;
                 token.tier = (user as any).tier;
             }
@@ -53,6 +56,7 @@ export const authOptions: NextAuthOptions = {
                 session.user.userUid = token.userUid as string | undefined;
                 session.user.githubId = token.githubId as string | undefined;
                 session.user.rawKey = token.rawKey as string | undefined;
+                session.user.keyPreview = token.keyPreview as string | undefined; // New
                 session.user.credits = token.credits as number | undefined;
                 session.user.tier = token.tier as string | undefined;
             }
