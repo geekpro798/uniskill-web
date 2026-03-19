@@ -34,26 +34,28 @@ export default function ResetKeyModal({ isOpen, onClose, onConfirm }: ResetKeyMo
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-[#070b14]/80 backdrop-blur-md"
+                        className="absolute inset-0 backdrop-blur-md transition-colors duration-500"
+                        style={{ backgroundColor: "var(--color-backdrop)" }}
                     />
 
-                    {/* Modal Content */}
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                        className="relative w-full max-w-md glass-card-heavy p-6 sm:p-8 border border-red-500/20 shadow-2xl"
+                        className="relative w-full max-w-md glass-card-heavy p-6 sm:p-8 shadow-2xl"
                     >
                         {/* Close button */}
                         <button
                             onClick={onClose}
-                            className="absolute top-4 right-4 p-2 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+                            className="absolute top-4 right-4 p-2 rounded-lg transition-all"
+                            style={{ color: "var(--color-text-secondary)" }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--color-toggle-bg)"}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
                         >
                             <X size={20} />
                         </button>
@@ -62,15 +64,15 @@ export default function ResetKeyModal({ isOpen, onClose, onConfirm }: ResetKeyMo
                             <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4 border border-red-500/20">
                                 <AlertTriangle size={32} className="text-red-500" />
                             </div>
-                            <h2 className="text-2xl font-black text-white mb-2">Reset API Key?</h2>
-                            <p className="text-sm text-slate-400 px-4">
-                                Your current API key will stop working <span className="text-red-400 font-bold underline">immediately</span>. This action cannot be undone.
+                            <h2 className="text-2xl font-black mb-2" style={{ color: "var(--color-text-primary)" }}>Reset API Key?</h2>
+                            <p className="text-sm px-4" style={{ color: "var(--color-text-secondary)" }}>
+                                Your current API key will stop working <span className="text-red-500 font-bold underline">immediately</span>. This action cannot be undone.
                             </p>
                         </div>
 
                         {/* Danger Box */}
                         <div className="bg-red-500/5 border border-red-500/10 rounded-xl p-4 mb-8">
-                            <ul className="text-xs text-slate-500 space-y-2 text-left">
+                            <ul className="text-xs space-y-2 text-left" style={{ color: "var(--color-text-secondary)" }}>
                                 <li className="flex gap-2">
                                     <span className="text-red-500 font-bold">•</span>
                                     Existing integrations using this key will fail.
@@ -111,7 +113,10 @@ export default function ResetKeyModal({ isOpen, onClose, onConfirm }: ResetKeyMo
                             <button
                                 onClick={onClose}
                                 disabled={isProcessing}
-                                className="w-full py-4 rounded-xl text-slate-400 font-bold text-sm uppercase tracking-widest hover:text-white transition-all"
+                                className="w-full py-4 rounded-xl font-bold text-sm uppercase tracking-widest transition-all"
+                                style={{ color: "var(--color-text-secondary)" }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = "var(--color-text-primary)"}
+                                onMouseLeave={(e) => e.currentTarget.style.color = "var(--color-text-secondary)"}
                             >
                                 Cancel
                             </button>

@@ -23,7 +23,7 @@ export default function Footer() {
     ];
 
     return (
-        <footer className="border-t border-white/5 bg-[#070b18]">
+        <footer className="border-t" style={{ backgroundColor: "var(--color-bg-secondary)", borderColor: "var(--color-border)" }}>
             <div className="max-w-7xl mx-auto px-6 lg:px-8 pt-12 pb-16">
 
                 {/* ─── 顶部：Logo + 链接网格 ─── */}
@@ -37,11 +37,11 @@ export default function Footer() {
                                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                                 </svg>
                             </div>
-                            <span className="font-bold text-white">
+                            <span className="font-bold" style={{ color: "var(--color-text-primary)" }}>
                                 UniSkill
                             </span>
                         </div>
-                        <p className="text-slate-500 text-sm leading-relaxed max-w-[200px]">
+                        <p className="text-sm leading-relaxed max-w-[200px]" style={{ color: "var(--color-text-secondary)" }}>
                             The universal skill layer for AI agents.
                         </p>
                     </div>
@@ -49,15 +49,16 @@ export default function Footer() {
                     {/* 链接分组 */}
                     {footerLinks.map((group) => (
                         <div key={group.group}>
-                            <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">
+                             <h4 className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: "var(--color-text-secondary)", opacity: 0.8 }}>
                                 {group.group}
                             </h4>
                             <ul className="space-y-2.5">
                                 {group.links.map((link) => (
                                     <li key={link.label}>
-                                        <a
+                                         <a
                                             href={link.href}
-                                            className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
+                                            className="text-sm transition-colors hover:text-blue-500"
+                                            style={{ color: "var(--color-text-secondary)" }}
                                         >
                                             {link.label}
                                         </a>
@@ -69,7 +70,10 @@ export default function Footer() {
                 </div>
 
                 {/* ─── 底部：版权信息与社交链接 ─── */}
-                <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div 
+                    className="pt-8 border-t flex flex-col md:flex-row items-center justify-between gap-4"
+                    style={{ borderColor: "var(--color-border)" }}
+                >
                     <p className="text-slate-600 text-sm">
                         © {currentYear} UniSkill — All rights reserved.
                     </p>

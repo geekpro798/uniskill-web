@@ -24,7 +24,7 @@ export default async function SkillPage({ params }: PageProps) {
     }
 
     return (
-        <main className="min-h-screen bg-[#0a0f1e]">
+        <main className="min-h-screen transition-colors duration-500" style={{ backgroundColor: "var(--color-bg-primary)" }}>
             {/* 逻辑：由于现在是直接读本地文件，我们将 data 结构对齐传递给客户端组件 */}
             <SkillDetail
                 skill_name={skillId}

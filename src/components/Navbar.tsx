@@ -5,6 +5,7 @@ import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import { useSession, signIn, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import ThemeToggle from "./ThemeToggle";
 
 /* ─── Navbar 组件：固定在顶部的导航栏 ──────────────────────────────────
    功能：随滚动增强背景模糊效果，Logo 在左，Sign In 按钮在右
@@ -18,7 +19,7 @@ export default function Navbar() {
     const navBg = useTransform(
         scrollY,
         [0, 80],
-        ["rgba(10, 15, 30, 0)", "rgba(10, 15, 30, 0.85)"]
+        ["transparent", "var(--color-nav-bg)"]
     );
     const navBorder = useTransform(
         scrollY,
@@ -59,8 +60,8 @@ export default function Navbar() {
                     </div>
 
                     {/* 品牌文字 */}
-                    <span className="text-lg font-bold tracking-tight">
-                        <span className="text-white">UniSkill</span>
+                    <span className="text-lg font-bold tracking-tight" style={{ color: "var(--color-text-primary)" }}>
+                        UniSkill
                     </span>
                 </motion.a>
 
@@ -78,8 +79,9 @@ export default function Navbar() {
                         whileTap={{ scale: 0.97 }}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${isSkillsActive
                             ? "text-indigo-400 bg-indigo-500/10 border border-indigo-500/25"
-                            : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
+                            : "hover:bg-slate-800/40"
                             }`}
+                        style={{ color: isSkillsActive ? "var(--color-purple)" : "var(--color-text-secondary)" }}
                     >
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
@@ -94,7 +96,8 @@ export default function Navbar() {
                         rel="noopener noreferrer"
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition-all"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-slate-800/40 transition-all"
+                        style={{ color: "var(--color-text-secondary)" }}
                     >
                         Docs
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
@@ -105,7 +108,8 @@ export default function Navbar() {
                     {/* Pricing 链接 */}
                     <a
                         href="/#pricing"
-                        className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition-all"
+                        className="px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-slate-800/40 transition-all"
+                        style={{ color: "var(--color-text-secondary)" }}
                     >
                         Pricing
                     </a>
@@ -118,6 +122,7 @@ export default function Navbar() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.5 }}
                 >
+                    <ThemeToggle />
                     <NavbarAuthButton />
                 </motion.div>
             </nav>
@@ -162,18 +167,28 @@ function NavbarAuthButton() {
                 onMouseLeave={() => setIsMenuOpen(false)}
             >
                 <button
-                    className={`flex items-center gap-2 p-1.5 rounded-xl transition-all outline-none group border ${isMenuOpen ? "border-blue-500/30 bg-white/5" : "border-transparent"
-                        } hover:border-blue-500/30 hover:bg-white/5`}
+                    className={`flex items-center gap-2 p-1.5 rounded-xl transition-all outline-none group border ${
+                        isMenuOpen 
+                        ? "border-blue-500/30" 
+                        : "border-transparent"
+                    } hover:border-blue-500/30`}
+                    style={{ backgroundColor: isMenuOpen ? "var(--color-toggle-bg)" : "transparent" }}
+                    onMouseEnter={(e) => {
+                        if(!isMenuOpen) e.currentTarget.style.backgroundColor = "var(--color-toggle-bg)";
+                    }}
+                    onMouseLeave={(e) => {
+                        if(!isMenuOpen) e.currentTarget.style.backgroundColor = "transparent";
+                    }}
                 >
                     {/* 用户头像 */}
                     {user.image ? (
                         <img
                             src={user.image}
                             alt={user.name ?? "User"}
-                            className="w-8 h-8 rounded-full border border-white/10 group-hover:border-white/20 transition-colors"
+                            className="w-8 h-8 rounded-xl border border-white/10 group-hover:border-white/20 transition-colors"
                         />
                     ) : (
-                        <div className="w-8 h-8 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-500">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                                 <circle cx="12" cy="7" r="4" />
@@ -182,7 +197,7 @@ function NavbarAuthButton() {
                     )}
 
                     {/* 用户名与展开图标 */}
-                    <span className="hidden md:block text-xs font-medium text-slate-300 group-hover:text-white transition-colors">
+                    <span className="hidden md:block text-xs font-medium transition-colors" style={{ color: "var(--color-text-secondary)" }}>
                         {user.name ?? "Account"}
                     </span>
                     <svg
@@ -191,7 +206,8 @@ function NavbarAuthButton() {
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
-                        className={`text-slate-500 transition-transform duration-200 ${isMenuOpen ? "rotate-180" : ""}`}
+                        className={`transition-transform duration-200 ${isMenuOpen ? "rotate-180" : ""}`}
+                        style={{ color: "var(--color-text-secondary)" }}
                     >
                         <polyline points="6 9 12 15 18 9" />
                     </svg>
@@ -205,16 +221,17 @@ function NavbarAuthButton() {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 4, scale: 0.98 }}
                             transition={{ duration: 0.15 }}
-                            className="absolute right-0 mt-1 w-48 py-1.5 glass-card border border-white/10 shadow-2xl z-[60] bg-[#0a0f1e]/95 backdrop-blur-xl rounded-xl"
+                            className="absolute right-0 mt-1 w-48 py-1.5 glass-card border border-slate-200 dark:border-white/10 shadow-2xl z-[60] bg-white/95 dark:bg-[#0a0f1e]/95 backdrop-blur-xl rounded-xl"
                         >
                             {/* Dashboard 链接 */}
                             <Link
                                 href="/dashboard"
                                 onClick={() => setIsMenuOpen(false)}
                                 className={`flex items-center gap-2.5 px-4 py-2 text-xs font-medium transition-colors ${isActive("/dashboard")
-                                    ? "text-blue-400 bg-blue-500/10"
-                                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                                    ? "text-blue-500 bg-blue-500/10"
+                                    : "hover:bg-[var(--color-menu-hover-bg)]"
                                     }`}
+                                style={{ color: isActive("/dashboard") ? "var(--color-blue)" : "var(--color-text-secondary)" }}
                             >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -231,7 +248,7 @@ function NavbarAuthButton() {
                             {/* 登出按钮 */}
                             <button
                                 onClick={() => signOut({ callbackUrl: "/" })}
-                                className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-red-400/80 hover:text-red-400 hover:bg-red-500/5 transition-colors"
+                                className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-red-500/80 hover:text-red-500 hover:bg-red-500/10 dark:hover:bg-red-500/15 transition-colors"
                             >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

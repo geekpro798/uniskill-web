@@ -23,7 +23,7 @@ const steps = [
         glowColor: "rgba(59, 130, 246, 0.2)",
         borderColor: "border-blue-500/20",
         snippet: 'key = "us-xxxx-xxxx"',
-        snippetColor: "text-blue-400",
+        snippetColor: "var(--color-code-keyword)",
         badge: "1 Key",
         badgeColor: "bg-blue-500/10 text-blue-400 border-blue-500/20",
     },
@@ -43,7 +43,7 @@ const steps = [
         glowColor: "rgba(139, 92, 246, 0.2)",
         borderColor: "border-purple-500/20",
         snippet: 'base_url = "api.uniskill.ai"',
-        snippetColor: "text-purple-400",
+        snippetColor: "var(--color-code-string)",
         badge: "Zero Config",
         badgeColor: "bg-purple-500/10 text-purple-400 border-purple-500/20",
     },
@@ -62,7 +62,7 @@ const steps = [
         glowColor: "rgba(6, 182, 212, 0.2)",
         borderColor: "border-cyan-500/20",
         snippet: "skills: [Search, Scrape, Social]",
-        snippetColor: "text-cyan-400",
+        snippetColor: "var(--color-code-keyword)",
         badge: "All Skills",
         badgeColor: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
     },
@@ -90,7 +90,8 @@ export default function HowItWorks() {
         <section
             ref={sectionRef}
             id="how-it-works"
-            className="relative pt-16 pb-6 px-6 lg:px-8 overflow-hidden"
+            className="relative py-24 overflow-hidden"
+            style={{ backgroundColor: "var(--color-bg-primary)" }}
         >
             {/* ─── 背景光晕装饰 ─── */}
             <div className="absolute inset-0 pointer-events-none">
@@ -111,13 +112,13 @@ export default function HowItWorks() {
                         How It Works
                     </span>
                     {/* 主标题 */}
-                    <h2 className="text-4xl md:text-5xl font-black text-white leading-tight mb-5 max-w-4xl mx-auto">
+                    <h2 className="text-4xl md:text-5xl font-black leading-tight mb-5 max-w-4xl mx-auto" style={{ color: "var(--color-text-primary)" }}>
                         From Zero to{" "}
                         <span className="gradient-text">Full Capability</span>{" "}
                         in 3 Steps
                     </h2>
                     {/* 副标题 */}
-                    <p className="text-slate-400 text-lg max-w-xl mx-auto">
+                    <p className="text-lg max-w-xl mx-auto" style={{ color: "var(--color-text-secondary)" }}>
                         No provider accounts. No credential rotation. No rate limit headaches.
                     </p>
                 </motion.div>
@@ -138,7 +139,7 @@ export default function HowItWorks() {
                         >
                             {/* 卡片主体 */}
                             <div
-                                className={`glass-card h-full p-8 ${step.borderColor} relative overflow-hidden transition-all duration-300 hover:-translate-y-1`}
+                                className={`glass-card h-full p-8 border-slate-200 dark:${step.borderColor} relative overflow-hidden transition-all duration-300 hover:-translate-y-1`}
                                 style={{
                                     boxShadow: `0 0 0 0 ${step.glowColor}`,
                                 }}
@@ -160,24 +161,23 @@ export default function HowItWorks() {
                                     </div>
 
                                     {/* 步骤编号 */}
-                                    <span className="text-6xl font-black text-white/5 font-mono leading-none">
+                                    <span className="text-6xl font-black text-slate-900/5 dark:text-white/5 font-mono leading-none">
                                         {step.number}
                                     </span>
                                 </div>
 
                                 {/* 步骤标题 */}
-                                <h3 className="text-xl font-bold text-white mb-1">{step.title}</h3>
+                                <h3 className="text-xl font-bold mb-1" style={{ color: "var(--color-text-primary)" }}>{step.title}</h3>
                                 <p className="text-sm font-medium text-slate-500 mb-3">{step.subtitle}</p>
 
                                 {/* 步骤描述 */}
-                                <p className="text-slate-400 text-sm leading-relaxed mb-5">
+                                <p className="text-sm leading-relaxed mb-5" style={{ color: "var(--color-text-secondary)" }}>
                                     {step.description}
                                 </p>
 
-                                {/* 代码片段展示 */}
-                                <div className="code-block mb-4">
-                                    <span className="text-slate-500">$ </span>
-                                    <span className={step.snippetColor}>{step.snippet}</span>
+                                <div className="code-block mb-4 font-bold text-[13px]">
+                                    <span style={{ color: "var(--color-code-flag)" }}>$ </span>
+                                    <span style={{ color: step.snippetColor }}>{step.snippet}</span>
                                 </div>
 
                                 {/* 功能徽章 */}

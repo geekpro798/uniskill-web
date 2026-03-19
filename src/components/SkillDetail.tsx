@@ -111,9 +111,7 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skill_name, skill, isO
   }'`;
 
     return (
-        <div className="min-h-screen bg-[#0a0f1e] text-slate-300 flex flex-col">
-            {/* 逻辑：强制全局覆盖，防止 Next.js 默认的 body 白色底色露出 */}
-            <style dangerouslySetInnerHTML={{ __html: `html, body { background-color: #0a0f1e !important; }` }} />
+        <div className="min-h-screen transition-colors duration-500 flex flex-col" style={{ backgroundColor: "var(--color-bg-primary)", color: "var(--color-text-secondary)" }}>
             <Navbar />
 
             <main className="max-w-6xl mx-auto px-6 pt-32 pb-20 w-full flex-grow">
@@ -134,22 +132,23 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skill_name, skill, isO
                                     )}
                                 </div>
                                 <div>
-                                    <h1 className="text-4xl font-extrabold text-white mb-1 tracking-tight">
+                                    <h1 className="text-4xl font-extrabold mb-1 tracking-tight" style={{ color: "var(--color-text-primary)" }}>
                                         {skill.display_name || skill_name}
                                     </h1>
                                     <div className="flex items-center gap-3">
                                         {/* 逻辑：副标题/徽章显示给机器执行用的严格 ID */}
-                                        <div className="group flex items-center gap-2 bg-[#050810]/80 border border-slate-700/80 px-3 py-1.5 rounded-lg backdrop-blur-sm cursor-pointer hover:border-blue-500/50 transition-colors"
+                                        <div className="group flex items-center gap-2 border px-3 py-1.5 rounded-lg backdrop-blur-sm cursor-pointer transition-colors"
+                                            style={{ backgroundColor: "var(--color-bg-secondary)", borderColor: "var(--color-border)" }}
                                             onClick={() => {
                                                 navigator.clipboard.writeText(skill_name);
                                             }}
                                             title="Click to copy Skill ID"
                                         >
-                                            <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">ID:</span>
-                                            <code className="text-blue-400 font-mono text-sm font-bold group-hover:text-blue-300 transition-colors">
+                                            <span className="text-xs font-mono uppercase tracking-wider" style={{ color: "var(--color-text-secondary)", opacity: 0.5 }}>ID:</span>
+                                            <code className="text-blue-400 font-mono text-sm font-bold group-hover:text-blue-500 transition-colors">
                                                 {skill_name}
                                             </code>
-                                            <svg className="w-4 h-4 text-slate-500 group-hover:text-blue-400 transition-colors ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <svg className="w-4 h-4 transition-colors ml-1" style={{ color: "var(--color-text-secondary)", opacity: 0.5 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                             </svg>
                                         </div>
@@ -160,61 +159,61 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skill_name, skill, isO
                                 </div>
                             </div>
 
-                            <p className="text-lg text-slate-400 leading-relaxed max-w-2xl mt-6">
+                            <p className="text-lg leading-relaxed max-w-2xl mt-6" style={{ color: "var(--color-text-secondary)" }}>
                                 {skill.description}
                             </p>
 
                         {/* 2. 参数表区域 */}
-                        <div className="border border-slate-800/80 rounded-xl p-6 bg-[#0a0f1e]">
-                            <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-6">Parameters Specification</h3>
+                        <div className="border rounded-xl p-6" style={{ backgroundColor: "var(--color-bg-primary)", borderColor: "var(--color-border)" }}>
+                            <h3 className="text-[11px] font-bold uppercase tracking-widest mb-6" style={{ color: "var(--color-text-secondary)", opacity: 0.6 }}>Parameters Specification</h3>
                             {parameterList.length > 0 ? (
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left table-fixed">
                                         <thead>
-                                            <tr className="border-b border-slate-800 text-[10px] text-slate-600 uppercase">
+                                            <tr className="border-b text-[10px] uppercase transition-colors duration-500" style={{ borderColor: "var(--color-border-subtle)", color: "var(--color-text-secondary)", opacity: 0.5 }}>
                                                 <th className="pb-4 font-semibold w-[20%]">Name</th>
                                                 <th className="pb-4 font-semibold w-[15%]">Type</th>
                                                 <th className="pb-4 font-semibold w-[15%]">Required</th>
                                                 <th className="pb-4 font-semibold w-[50%]">Description</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-800/60">
+                                        <tbody className="divide-y transition-colors duration-500" style={{ borderColor: "var(--color-border-subtle)" }}>
                                             {parameterList.map((p) => (
                                                 <tr key={p.name} className="hover:bg-white/[0.02] transition-colors">
                                                     <td className="py-4 font-mono text-sm text-cyan-400">{p.name}</td>
-                                                    <td className="py-4 text-xs text-slate-500">{p.type}</td>
+                                                    <td className="py-4 text-xs" style={{ color: "var(--color-text-secondary)", opacity: 0.6 }}>{p.type}</td>
                                                     <td className="py-4 text-xs">
-                                                        {p.required ? <span className="text-rose-500">Yes</span> : "No"}
+                                                        {p.required ? <span className="text-rose-500 font-bold">Yes</span> : "No"}
                                                     </td>
-                                                    <td className="py-4 text-sm text-slate-400 leading-relaxed pr-4">{p.description}</td>
+                                                    <td className="py-4 text-sm leading-relaxed pr-4" style={{ color: "var(--color-text-secondary)" }}>{p.description}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
                                 </div>
                             ) : (
-                                <p className="text-sm text-slate-500 italic py-4">No parameters required for this skill.</p>
+                                <p className="text-sm italic py-4" style={{ color: "var(--color-text-secondary)", opacity: 0.5 }}>No parameters required for this skill.</p>
                             )}
                         </div>
 
                         {/* 3. 返回结果示例 (NEW: Response Schema) */}
-                        <div className="border border-slate-800/80 rounded-xl p-6 bg-[#0a0f1e]">
-                            <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-6">Response Example</h3>
+                        <div className="border rounded-xl p-6" style={{ backgroundColor: "var(--color-bg-primary)", borderColor: "var(--color-border)" }}>
+                            <h3 className="text-[11px] font-bold uppercase tracking-widest mb-6" style={{ color: "var(--color-text-secondary)", opacity: 0.6 }}>Response Example</h3>
 
                             {/* 逻辑：只有当后端真正传来了内容，才渲染翠绿色代码块，否则显示提示信息 */}
                             {hasReturns ? (
                                 <>
-                                    <div className="bg-[#050810] border border-slate-800/50 rounded-lg p-5 overflow-x-auto">
-                                        <pre className="text-sm font-mono text-emerald-400 leading-relaxed">
+                                    <div className="border rounded-lg p-5 overflow-x-auto" style={{ backgroundColor: "var(--color-terminal-bg)", borderColor: "var(--color-border)" }}>
+                                        <pre className="text-sm font-mono leading-relaxed" style={{ color: "var(--color-code-string)" }}>
                                             <code>{JSON.stringify(finalReturns, null, 2)}</code>
                                         </pre>
                                     </div>
-                                    <p className="text-xs text-slate-500 mt-4 italic">
+                                    <p className="text-xs mt-4 italic" style={{ color: "var(--color-text-secondary)", opacity: 0.5 }}>
                                         * Output is heavily compressed by UniSkill formatter to save LLM context tokens.
                                     </p>
                                 </>
                             ) : (
-                                <div className="bg-[#050810] border border-slate-800/50 rounded-lg p-8 flex items-center justify-center">
+                                <div className="border rounded-lg p-8 flex items-center justify-center" style={{ backgroundColor: "var(--color-bg-secondary)", borderColor: "var(--color-border)" }}>
                                     <p className="text-sm text-slate-500 italic">Example response schema not provided by the developer.</p>
                                 </div>
                             )}
@@ -223,45 +222,45 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skill_name, skill, isO
 
                     {/* ── 右侧：统计与集成 (3/10) (维持原样) ── */}
                     <div className="lg:col-span-3 space-y-5">
-                        <motion.div className="p-5 border border-slate-800/80 rounded-xl bg-[#0a0f1e]">
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Pricing</p>
+                        <motion.div className="p-5 border rounded-xl" style={{ backgroundColor: "var(--color-bg-primary)", borderColor: "var(--color-border)" }}>
+                            <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: "var(--color-text-secondary)", opacity: 0.6 }}>Pricing</p>
                             <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm text-slate-300">Cost per Request</span>
+                                <span className="text-sm" style={{ color: "var(--color-text-secondary)" }}>Cost per Request</span>
                                 <div className="flex items-center gap-3 text-right">
                                     <div className="flex items-baseline gap-1">
-                                        <span className="text-xl font-black text-white">{skill.credits_per_call ?? skill.cost_per_call ?? 0}</span>
-                                        <span className="text-[10px] text-slate-500 font-bold uppercase">CR</span>
+                                        <span className="text-xl font-black" style={{ color: "var(--color-text-primary)" }}>{skill.credits_per_call ?? skill.cost_per_call ?? 0}</span>
+                                        <span className="text-[10px] font-bold uppercase" style={{ color: "var(--color-text-secondary)", opacity: 0.5 }}>CR</span>
                                      </div>
-                                     <span className="text-slate-700 font-bold">|</span>
-                                     <span className="text-xl font-black text-emerald-400 font-mono">{skill.usd_per_call ?? 0} $</span>
+                                     <span className="text-slate-700 font-bold opacity-30">|</span>
+                                     <span className="text-xl font-black font-mono text-emerald-500">{skill.usd_per_call ?? 0} $</span>
                                  </div>
                             </div>
-                            <p className="text-[11px] text-slate-600 italic">Billable in Credits or USD based on execution settings.</p>
+                            <p className="text-[11px] italic" style={{ color: "var(--color-text-secondary)", opacity: 0.4 }}>Billable in Credits or USD based on execution settings.</p>
                         </motion.div>
 
-                        <motion.div className="p-5 border border-slate-800/80 rounded-xl bg-[#0a0f1e]">
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Performance</p>
+                        <motion.div className="p-5 border rounded-xl" style={{ backgroundColor: "var(--color-bg-primary)", borderColor: "var(--color-border)" }}>
+                            <p className="text-[10px] font-bold uppercase tracking-widest mb-4" style={{ color: "var(--color-text-secondary)", opacity: 0.6 }}>Performance</p>
                             <div className="space-y-4 text-sm">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-slate-400">Latency</span>
+                                    <span style={{ color: "var(--color-text-secondary)" }}>Latency</span>
                                     <span className="font-bold text-cyan-400">{meta.latency}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-slate-400">Success Rate</span>
+                                    <span style={{ color: "var(--color-text-secondary)" }}>Success Rate</span>
                                     <span className="font-bold text-green-400">{meta.rate}</span>
                                 </div>
                             </div>
                         </motion.div>
 
-                        <motion.div className="p-5 border border-slate-800/80 rounded-xl bg-[#0a0f1e]">
+                        <motion.div className="p-5 border rounded-xl" style={{ backgroundColor: "var(--color-bg-primary)", borderColor: "var(--color-border)" }}>
                             <div className="flex items-center justify-between mb-4">
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Integration</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--color-text-secondary)", opacity: 0.6 }}>Integration</p>
                                 {hasRealKey && <CopyButton text={curlCommand} />}
                             </div>
-                            <div className="code-block text-[11px] font-mono overflow-x-auto bg-[#050810] border border-slate-800/50 p-4 rounded-lg leading-relaxed text-slate-300">
-                                <span className="text-blue-400">curl</span> -X POST https://api.uniskill.ai/v1/execute \
+                             <div className="code-block text-[11px] font-mono overflow-x-auto p-4 rounded-lg leading-relaxed" style={{ backgroundColor: "var(--color-terminal-bg)", borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}>
+                                <span className="text-blue-500">curl</span> -X POST https://api.uniskill.ai/v1/execute \
                                 <br /> -H "Authorization: Bearer <span className={hasRealKey ? "text-cyan-400" : "text-slate-600"}>{displayKey}</span>" \
-                                <br /> -d '&#123;"skill_name": "<span className="text-green-400">{skill_name}</span>"&#125;'
+                                <br /> -d '&#123;"skill_name": "<span className="text-green-500">{skill_name}</span>"&#125;'
                             </div>
                             {!isLoggedIn && (
                                 <button
@@ -274,7 +273,7 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skill_name, skill, isO
                         </motion.div>
 
                         <div className="pt-2">
-                            <Link href="/skills" className="inline-flex items-center text-xs text-slate-500 hover:text-white transition-colors">
+                            <Link href="/skills" className="inline-flex items-center text-xs transition-colors" style={{ color: "var(--color-text-secondary)" }}>
                                 ← Back to store
                             </Link>
                         </div>

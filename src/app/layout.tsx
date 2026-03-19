@@ -24,19 +24,22 @@ export const metadata: Metadata = {
 };
 
 import ScrollProgress from "@/components/ScrollProgress";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
-/* ─── 根布局：注入字体 + SessionProvider + 全局暗色背景 ─── */
+/* ─── 根布局：注入字体 + SessionProvider + 全局主题管理 ─── */
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} dark`}>
-      <body className="bg-[#0a0f1e] text-white antialiased" suppressHydrationWarning>
-        <ScrollProgress />
-        {/* Providers 包裹层包含 NextAuth SessionProvider */}
-        <Providers>{children}</Providers>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <body className="antialiased">
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+          <ScrollProgress />
+          {/* Providers 包裹层包含 NextAuth SessionProvider */}
+          <Providers>{children}</Providers>
+        </ThemeProvider>
       </body>
     </html>
   );

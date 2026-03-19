@@ -70,26 +70,28 @@ export default function TopUpModal({ isOpen, onClose, user }: TopUpModalProps) {
         <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-[#070b14]/80 backdrop-blur-md"
+                        className="absolute inset-0 backdrop-blur-md transition-colors duration-500"
+                        style={{ backgroundColor: "var(--color-backdrop)" }}
                     />
 
-                    {/* Modal Content */}
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                        className="relative w-full max-w-md glass-card-heavy p-6 sm:p-8 border border-white/10 shadow-2xl"
+                        className="relative w-full max-w-md glass-card-heavy p-6 sm:p-8 shadow-2xl"
                     >
                         {/* Close button */}
                         <button
                             onClick={onClose}
-                            className="absolute top-4 right-4 p-2 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-all"
+                            className="absolute top-4 right-4 p-2 rounded-lg transition-all"
+                            style={{ color: "var(--color-text-secondary)" }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--color-toggle-bg)"}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
                         >
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -97,8 +99,8 @@ export default function TopUpModal({ isOpen, onClose, user }: TopUpModalProps) {
                         </button>
 
                         <div className="mb-6">
-                            <h2 className="text-2xl font-black text-white mb-2">Buy API Credits</h2>
-                            <p className="text-sm text-slate-400">
+                            <h2 className="text-2xl font-black mb-2" style={{ color: "var(--color-text-primary)" }}>Buy API Credits</h2>
+                            <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
                                 Credits never expire. Top up anytime.
                             </p>
                         </div>
@@ -110,15 +112,16 @@ export default function TopUpModal({ isOpen, onClose, user }: TopUpModalProps) {
                                 onClick={() => setSelectedPack('10k')}
                                 className={`relative group p-4 rounded-xl cursor-pointer border-2 transition-all duration-300 ${selectedPack === '10k'
                                         ? 'border-blue-500 bg-blue-500/10'
-                                        : 'border-white/5 bg-white/5 hover:border-white/10'
+                                        : 'bg-black/5 hover:border-black/10 dark:bg-white/5 dark:hover:border-white/10'
                                     }`}
+                                style={{ borderColor: selectedPack === '10k' ? '#3b82f6' : 'var(--color-border)' }}
                             >
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <div className="text-white font-bold text-lg">10,000 Credits</div>
-                                        <div className="text-slate-400 text-xs mt-0.5">Standard usage</div>
+                                        <div className="font-bold text-lg" style={{ color: "var(--color-text-primary)" }}>10,000 Credits</div>
+                                        <div className="text-xs mt-0.5" style={{ color: "var(--color-text-secondary)" }}>Standard usage</div>
                                     </div>
-                                    <div className="text-white font-black text-xl">$9.90</div>
+                                    <div className="font-black text-xl" style={{ color: "var(--color-text-primary)" }}>$9.90</div>
                                 </div>
                                 {selectedPack === '10k' && (
                                     <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-blue-500 shadow-glow" />
@@ -130,8 +133,9 @@ export default function TopUpModal({ isOpen, onClose, user }: TopUpModalProps) {
                                 onClick={() => setSelectedPack('50k')}
                                 className={`relative group p-4 rounded-xl cursor-pointer border-2 transition-all duration-300 ${selectedPack === '50k'
                                         ? 'border-purple-500 bg-purple-500/10'
-                                        : 'border-white/5 bg-white/5 hover:border-white/10'
+                                        : 'bg-black/5 hover:border-black/10 dark:bg-white/5 dark:hover:border-white/10'
                                     }`}
+                                style={{ borderColor: selectedPack === '50k' ? '#a855f7' : 'var(--color-border)' }}
                             >
                                 {/* Best Value Badge */}
                                 <div className="absolute -top-3 left-6 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-[10px] font-black uppercase tracking-widest py-1 px-3 rounded-full shadow-lg z-10">
@@ -140,10 +144,10 @@ export default function TopUpModal({ isOpen, onClose, user }: TopUpModalProps) {
 
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <div className="text-white font-bold text-lg">50,000 Credits</div>
-                                        <div className="text-purple-300 text-xs mt-0.5">Pro-grade performance</div>
+                                        <div className="font-bold text-lg" style={{ color: "var(--color-text-primary)" }}>50,000 Credits</div>
+                                        <div className="text-purple-500 text-xs mt-0.5">Pro-grade performance</div>
                                     </div>
-                                    <div className="text-white font-black text-xl text-gradient-purple">$39.90</div>
+                                    <div className="font-black text-xl text-gradient-purple" style={{ color: "var(--color-text-primary)" }}>$39.90</div>
                                 </div>
                                 {selectedPack === '50k' && (
                                     <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-purple-500 shadow-glow" />
@@ -156,11 +160,11 @@ export default function TopUpModal({ isOpen, onClose, user }: TopUpModalProps) {
                             onClick={handleCheckout}
                             disabled={isProcessing}
                             className={`
-                                w-full py-4 rounded-xl text-black font-black text-sm uppercase tracking-widest transition-all
-                                shadow-[0_4px_12px_rgba(255,255,255,0.1)]
+                                w-full py-4 rounded-xl font-black text-sm uppercase tracking-widest transition-all
+                                shadow-lg
                                 ${isProcessing 
                                     ? "bg-slate-700 cursor-not-allowed text-slate-400" 
-                                    : "bg-white hover:bg-slate-200 active:scale-[0.98]"}
+                                    : "btn-primary"}
                             `}
                         >
                             {isProcessing ? (
@@ -174,10 +178,10 @@ export default function TopUpModal({ isOpen, onClose, user }: TopUpModalProps) {
                         </button>
 
                         <div className="mt-6 flex items-center justify-center gap-2 opacity-40">
-                            <svg className="w-3 h-3 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-3 h-3" style={{ color: "var(--color-text-secondary)" }} fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                             </svg>
-                            <span className="text-[10px] uppercase font-bold tracking-widest text-slate-300">Secure Lemon Squeezy Terminal</span>
+                            <span className="text-[10px] uppercase font-bold tracking-widest" style={{ color: "var(--color-text-secondary)" }}>Secure Lemon Squeezy Terminal</span>
                         </div>
                     </motion.div>
                 </div>

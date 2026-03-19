@@ -53,7 +53,7 @@ export default function BillingPage() {
     /* 未登录 */
     if (status === "unauthenticated") {
         return (
-            <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--color-bg-primary)" }}>
                 <button onClick={() => signIn("github")} className="btn-primary">
                     Sign in to view billing
                 </button>
@@ -64,7 +64,7 @@ export default function BillingPage() {
     /* 加载中 */
     if (status === "loading") {
         return (
-            <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--color-bg-primary)" }}>
                 <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
         );
@@ -73,7 +73,7 @@ export default function BillingPage() {
     const credits = session?.user?.credits;
 
     return (
-        <div className="min-h-screen bg-[#0a0f1e] bg-grid">
+        <div className="min-h-screen bg-grid" style={{ backgroundColor: "var(--color-bg-primary)" }}>
             <DashboardNavbar credits={credits} totalCredits={500} />
 
             <main className="max-w-3xl mx-auto px-6 py-10">
@@ -84,15 +84,18 @@ export default function BillingPage() {
                     >
                         <Link
                             href="/dashboard"
-                            className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors mb-4"
+                            className="inline-flex items-center gap-1.5 text-xs transition-colors mb-4"
+                            style={{ color: "var(--color-text-secondary)" }}
+                            onMouseEnter={(e) => e.currentTarget.style.color = "var(--color-text-primary)"}
+                            onMouseLeave={(e) => e.currentTarget.style.color = "var(--color-text-secondary)"}
                         >
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M19 12H5M12 5l-7 7 7 7" />
                             </svg>
                             Back to Dashboard
                         </Link>
-                        <h1 className="text-2xl font-black text-white mb-1">Billing & Credits</h1>
-                        <p className="text-slate-500 text-sm">Full credit usage history</p>
+                        <h1 className="text-2xl font-black mb-1" style={{ color: "var(--color-text-primary)" }}>Billing & Credits</h1>
+                        <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>Full credit usage history</p>
                     </motion.div>
 
                     {/* Type 筛选器 - 右侧对齐 */}
@@ -100,38 +103,56 @@ export default function BillingPage() {
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.05 }}
-                        className="flex items-center gap-1 p-1 bg-slate-900/50 border border-slate-800 rounded-lg"
+                        className="flex items-center gap-1 p-1 rounded-lg border"
+                        style={{ backgroundColor: "var(--color-os-tabs-bg)", borderColor: "var(--color-border)" }}
                     >
                         <button
                             onClick={() => { setFilterType("all"); setCurrentPage(1); }}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${filterType === 'all' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-slate-300'}`}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${filterType === 'all' ? 'shadow-sm' : ''}`}
+                            style={{ 
+                                backgroundColor: filterType === 'all' ? "var(--color-tab-active-bg)" : "transparent",
+                                color: filterType === 'all' ? "var(--color-tab-active-text)" : "var(--color-text-secondary)",
+                                border: filterType === 'all' ? "1px solid rgba(37, 99, 235, 0.2)" : "1px solid transparent"
+                            }}
                         >
                             All
                         </button>
                         <button
                             onClick={() => { setFilterType("usage"); setCurrentPage(1); }}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${filterType === 'usage' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-slate-300'}`}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${filterType === 'usage' ? 'shadow-sm' : ''}`}
+                            style={{ 
+                                backgroundColor: filterType === 'usage' ? "var(--color-tab-active-bg)" : "transparent",
+                                color: filterType === 'usage' ? "var(--color-tab-active-text)" : "var(--color-text-secondary)",
+                                border: filterType === 'usage' ? "1px solid rgba(37, 99, 235, 0.2)" : "1px solid transparent"
+                            }}
                         >
                             Usage
                         </button>
                         <button
                             onClick={() => { setFilterType("topup"); setCurrentPage(1); }}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${filterType === 'topup' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-slate-300'}`}
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${filterType === 'topup' ? 'shadow-sm' : ''}`}
+                            style={{ 
+                                backgroundColor: filterType === 'topup' ? "var(--color-tab-active-bg)" : "transparent",
+                                color: filterType === 'topup' ? "var(--color-tab-active-text)" : "var(--color-text-secondary)",
+                                border: filterType === 'topup' ? "1px solid rgba(37, 99, 235, 0.2)" : "1px solid transparent"
+                            }}
                         >
                             Top-ups
                         </button>
                     </motion.div>
                 </div>
 
-                {/* 积分事件列表 */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="rounded-2xl bg-slate-900/40 border border-slate-800 overflow-hidden"
+                    className="glass-card overflow-hidden"
                 >
                     {/* 表头 */}
-                    <div className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 px-5 py-3 border-b border-slate-800/60 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    <div 
+                        className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 px-5 py-3 border-b text-[10px] uppercase font-bold tracking-widest"
+                        style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)", backgroundColor: "var(--color-toggle-bg)" }}
+                    >
                         <span>Type</span>
                         <span>Skill</span>
                         <span>Request ID</span>
@@ -141,38 +162,40 @@ export default function BillingPage() {
 
                     {loading ? (
                         /* 骨架 */
-                        <ul className="divide-y divide-slate-800/50">
+                        <ul className="divide-y" style={{ borderColor: "var(--color-border)" }}>
                             {[...Array(5)].map((_, i) => (
                                 <li key={i} className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 px-5 py-4 animate-pulse items-center">
-                                    <div className="w-6 h-6 rounded-full bg-slate-700/60" />
-                                    <div className="h-3 w-28 rounded bg-slate-700/60" />
-                                    <div className="h-3 w-32 rounded bg-slate-700/40" />
-                                    <div className="h-3 w-16 rounded bg-slate-700/40" />
-                                    <div className="h-3 w-8 rounded bg-slate-700/60" />
+                                    <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "var(--color-menu-hover-bg)" }} />
+                                    <div className="h-3 w-28 rounded" style={{ backgroundColor: "var(--color-menu-hover-bg)" }} />
+                                    <div className="h-3 w-32 rounded" style={{ backgroundColor: "var(--color-menu-hover-bg)" }} />
+                                    <div className="h-3 w-16 rounded" style={{ backgroundColor: "var(--color-menu-hover-bg)" }} />
+                                    <div className="h-3 w-8 rounded" style={{ backgroundColor: "var(--color-menu-hover-bg)" }} />
                                 </li>
                             ))}
                         </ul>
                     ) : events.length === 0 ? (
                         /* 空状态 */
-                        <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-600">
+                        <div className="flex flex-col items-center justify-center gap-3 py-16" style={{ color: "var(--color-text-secondary)" }}>
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                                 <rect x="2" y="5" width="20" height="14" rx="2" />
                                 <line x1="2" y1="10" x2="22" y2="10" />
                             </svg>
-                            <p className="text-sm">No credit events yet</p>
-                            <p className="text-xs text-slate-700 max-w-xs text-center">
+                            <p className="text-sm font-semibold">No credit events yet</p>
+                            <p className="text-xs max-w-xs text-center opacity-70">
                                 Events will appear here once you start using API skills or receive credit top-ups.
                             </p>
                         </div>
                     ) : (
                         /* 事件行：数据由 API 按 created_at DESC 排序 */
-                        <ul className="divide-y divide-slate-800/50">
+                        <ul className="divide-y" style={{ borderColor: "var(--color-border)" }}>
                             {currentEvents.map((evt) => {
                                 const isDeduction = evt.amount < 0;
                                 return (
                                     <li
                                         key={evt.id}
-                                        className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 px-5 py-4 items-center hover:bg-slate-800/30 transition-colors group/row"
+                                        className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 px-5 py-4 items-center transition-colors group/row"
+                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--color-menu-hover-bg)"}
+                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
                                     >
                                         {/* 方向图标 */}
                                         <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${isDeduction ? "bg-rose-500/10" : "bg-green-500/10"}`}>
@@ -188,16 +211,18 @@ export default function BillingPage() {
                                         </div>
 
                                         {/* 技能名称 */}
-                                        <span className="text-sm font-medium text-slate-300 truncate">{evt.skill_name}</span>
+                                        <span className="text-sm font-semibold truncate" style={{ color: "var(--color-text-primary)" }}>{evt.skill_name}</span>
 
                                         {/* Request ID */}
                                         <span
-                                            className="text-[10px] font-mono text-slate-500 truncate cursor-pointer hover:text-indigo-400 flex items-center gap-1 group/id transition-colors"
+                                            className="text-[10px] font-mono truncate cursor-pointer flex items-center gap-1 group/id transition-colors"
+                                            style={{ color: "var(--color-text-secondary)" }}
                                             onClick={() => {
                                                 navigator.clipboard.writeText(evt.request_id || evt.id);
-                                                // Optional: provide visual feedback
                                             }}
                                             title="Click to copy Request ID"
+                                            onMouseEnter={(e) => e.currentTarget.style.color = "var(--color-blue)"}
+                                            onMouseLeave={(e) => e.currentTarget.style.color = "var(--color-text-secondary)"}
                                         >
                                             {evt.request_id || evt.id}
                                             <svg className="opacity-0 group-hover/id:opacity-100 transition-opacity" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -206,10 +231,10 @@ export default function BillingPage() {
                                         </span>
 
                                         {/* 时间 */}
-                                        <span className="text-xs text-slate-500 text-right whitespace-nowrap">{formatDateTime(evt.created_at)}</span>
+                                        <span className="text-[11px] text-right whitespace-nowrap font-medium" style={{ color: "var(--color-text-secondary)" }}>{formatDateTime(evt.created_at)}</span>
 
                                         {/* 金额 */}
-                                        <span className={`text-sm font-semibold tabular-nums text-right ${isDeduction ? "text-rose-400" : "text-green-400"}`}>
+                                        <span className={`text-sm font-bold tabular-nums text-right ${isDeduction ? "text-rose-400" : "text-green-500"}`}>
                                             {isDeduction ? evt.amount : `+${evt.amount}`}
                                         </span>
                                     </li>
@@ -220,27 +245,44 @@ export default function BillingPage() {
 
                     {/* Pagination Controls */}
                     {totalPages > 1 && (
-                        <div className="flex items-center justify-between px-5 py-4 border-t border-slate-800/60 bg-slate-900/40">
-                            <span className="text-xs text-slate-500">
-                                Showing {filteredEvents.length > 0 ? startIndex + 1 : 0} to {Math.min(startIndex + eventsPerPage, filteredEvents.length)} of {filteredEvents.length} events
+                        <div 
+                            className="flex items-center justify-between px-5 py-4 border-t"
+                            style={{ borderColor: "var(--color-border)", backgroundColor: "var(--color-toggle-bg)" }}
+                        >
+                            <span className="text-[11px] font-medium" style={{ color: "var(--color-text-secondary)" }}>
+                                Showing {filteredEvents.length > 0 ? startIndex + 1 : 0} to {Math.min(startIndex + eventsPerPage, filteredEvents.length)} of {filteredEvents.length}
                             </span>
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                                     disabled={currentPage === 1}
-                                    className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                                    className="p-1.5 rounded-md border transition-all disabled:opacity-30 disabled:pointer-events-none"
+                                    style={{ 
+                                        color: "var(--color-text-secondary)", 
+                                        backgroundColor: "var(--color-bg-primary)",
+                                        borderColor: "var(--color-border)"
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--color-menu-hover-bg)"}
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "var(--color-bg-primary)"}
                                 >
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                                 </button>
-                                <span className="text-xs font-medium text-slate-300">
-                                    Page {currentPage} of {totalPages}
+                                <span className="text-xs font-bold" style={{ color: "var(--color-text-primary)" }}>
+                                    {currentPage} / {totalPages}
                                 </span>
                                 <button
                                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                                     disabled={currentPage === totalPages}
-                                    className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                                    className="p-1.5 rounded-md border transition-all disabled:opacity-30 disabled:pointer-events-none"
+                                    style={{ 
+                                        color: "var(--color-text-secondary)", 
+                                        backgroundColor: "var(--color-bg-primary)",
+                                        borderColor: "var(--color-border)"
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--color-menu-hover-bg)"}
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "var(--color-bg-primary)"}
                                 >
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                                 </button>
                             </div>
                         </div>
@@ -248,8 +290,8 @@ export default function BillingPage() {
                 </motion.div>
 
                 {filteredEvents.length > 0 && totalPages <= 1 && (
-                    <p className="text-xs text-slate-700 text-center mt-4">
-                        Showing {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
+                    <p className="text-[10px] uppercase font-bold tracking-widest text-center mt-6" style={{ color: "var(--color-text-secondary)", opacity: 0.5 }}>
+                        Total {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
                     </p>
                 )}
             </main>

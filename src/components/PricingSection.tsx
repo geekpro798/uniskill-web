@@ -308,10 +308,10 @@ function PricingContent() {
                     <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold tracking-widest uppercase text-blue-400 border border-blue-500/30 bg-blue-500/5 mb-5">
                         Pricing
                     </span>
-                    <h2 className="text-4xl md:text-5xl font-black text-white leading-tight mb-5">
+                    <h2 className="text-4xl md:text-5xl font-black leading-tight mb-5" style={{ color: "var(--color-text-primary)" }}>
                         Simple, <span className="gradient-text">Credit-Based</span> Pricing
                     </h2>
-                    <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+                    <p className="text-lg max-w-2xl mx-auto" style={{ color: "var(--color-text-secondary)" }}>
                         Top up on demand and unlock powerful account capabilities.
                     </p>
                     <p className="text-blue-400/80 text-sm font-medium mt-2">
@@ -371,7 +371,7 @@ function PricingContent() {
                                     `}
                                 >
                                     <div className={`w-10 h-1.5 rounded-full bg-gradient-to-r ${plan.gradient} mb-5`} />
-                                    <h3 className="text-lg font-bold text-white mb-1">{plan.name}</h3>
+                                    <h3 className="text-lg font-bold mb-1" style={{ color: "var(--color-text-primary)" }}>{plan.name}</h3>
 
                                     {plan.label && (
                                         <p className={`text-xs font-medium mb-4 ${plan.labelColor}`}>
@@ -381,7 +381,7 @@ function PricingContent() {
                                     {!plan.label && <div className="mb-4" />}
 
                                     <div className="mb-5">
-                                        <span className="text-4xl font-black text-white">
+                                        <span className="text-4xl font-black" style={{ color: "var(--color-text-primary)" }}>
                                             {plan.priceDisplay}
                                         </span>
                                     </div>
@@ -398,7 +398,7 @@ function PricingContent() {
 
                                     <ul className="space-y-2.5 mb-8 flex-1">
                                         {plan.features.map((feat) => (
-                                            <li key={feat} className="flex items-start gap-2 text-sm text-slate-400">
+                                            <li key={feat} className="flex items-start gap-2 text-sm" style={{ color: "var(--color-text-secondary)" }}>
                                                 <svg className="w-4 h-4 mt-0.5 text-blue-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                                                     <polyline points="20,6 9,17 4,12" />
                                                 </svg>
@@ -410,14 +410,27 @@ function PricingContent() {
                                         onClick={() => handleCheckout(plan.id)}
                                         disabled={isDisabled || loadingTier === plan.id}
                                         className={`w-full py-4 px-6 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
-                                            plan.highlighted
-                                                ? isDisabled 
-                                                    ? "bg-slate-800/50 text-slate-400 border border-slate-700 cursor-not-allowed"
-                                                    : "bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:scale-[1.02] hover:shadow-xl hover:shadow-blue-500/20 active:scale-[0.98]"
-                                                : isDisabled
-                                                    ? "bg-slate-800/50 text-slate-400 border border-slate-700 cursor-not-allowed"
-                                                    : "bg-white/10 text-white border border-white/20 hover:bg-white/20 hover:scale-[1.02] active:scale-[0.98]"
+                                            isDisabled
+                                                ? "cursor-not-allowed opacity-80 border"
+                                                : plan.highlighted
+                                                    ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-[0_10px_30px_-10px_rgba(37,99,235,0.3)] hover:scale-[1.02] hover:shadow-blue-500/30 active:scale-[0.98] border-none"
+                                                    : "hover:scale-[1.02] active:scale-[0.98] border"
                                         } ${loadingTier === plan.id ? "opacity-70 cursor-wait" : ""}`}
+                                        style={
+                                            isDisabled 
+                                            ? { 
+                                                backgroundColor: "var(--color-btn-disabled-bg)", 
+                                                color: "var(--color-btn-disabled-text)",
+                                                borderColor: "var(--color-border)"
+                                            }
+                                            : !plan.highlighted
+                                            ? {
+                                                backgroundColor: "var(--color-btn-secondary-bg)",
+                                                color: "var(--color-btn-secondary-text)",
+                                                borderColor: "var(--color-border)"
+                                            }
+                                            : {}
+                                        }
                                     >
                                         {isCurrentTier && status === "authenticated" && (
                                             <svg className="w-5 h-5 text-cyan-400" viewBox="0 0 20 20" fill="currentColor">
@@ -456,7 +469,7 @@ function PricingContent() {
                     transition={{ duration: 0.6, delay: 0.7 }}
                     className="mt-16"
                 >
-                    <div className="glass-card border-white/10 p-8">
+                    <div className="glass-card border-slate-200 dark:border-white/10 p-8">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                                 <svg
@@ -471,7 +484,7 @@ function PricingContent() {
                                     <path d="M3 9h18M9 21V9" />
                                 </svg>
                             </div>
-                            <h3 className="text-white font-bold text-lg">
+                            <h3 className="font-bold text-lg" style={{ color: "var(--color-text-primary)" }}>
                                 Marketplace Pricing Examples
                             </h3>
                             <span className="text-slate-500 text-sm">
@@ -486,7 +499,7 @@ function PricingContent() {
                             {consumptionWeights.map((item) => (
                                 <div
                                     key={item.tool}
-                                    className="relative p-4 rounded-xl border border-white/5 bg-white/[0.03] hover:bg-white/[0.06] transition-colors"
+                                    className="relative p-4 rounded-xl border border-blue-500/10 dark:border-blue-500/20 bg-blue-500/5 dark:bg-blue-500/10 hover:bg-blue-500/10 dark:hover:bg-blue-500/20 transition-all hover:-translate-y-0.5"
                                 >
                                     {/* 权重值（大字） */}
                                     <div className={`text-3xl font-black mb-1 ${item.color}`}>
@@ -497,7 +510,7 @@ function PricingContent() {
                                     {/* 工具名称 */}
                                     <div className="flex items-center gap-1.5 mb-1">
                                         <div className={`w-1.5 h-1.5 rounded-full ${item.dotColor}`} />
-                                        <span className="text-white text-sm font-semibold">
+                                        <span className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
                                             {item.tool}
                                         </span>
                                     </div>

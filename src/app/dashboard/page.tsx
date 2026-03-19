@@ -14,9 +14,7 @@ import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
 import TopUpModal from "@/components/Dashboard/TopUpModal";
 import ResetKeyModal from "@/components/Dashboard/ResetKeyModal";
 
-/* ─── Key 展示卡片组件 ────────────────────────────────────────────────
-   首次登录时显示原始 Key，用户必须立即复制保存，刷新后不可再查
-   ─────────────────────────────────────────────────────────────────────── */
+/* ─── Key 展示卡片组件 ────────────────────────────────────────────────── */
 function KeyCard({ 
     rawKey, 
     keyPreview, 
@@ -49,7 +47,7 @@ function KeyCard({
     if (!rawKey) {
         /* 已有 Key（非首次登录或重置后刷新） */
         return (
-            <div className="glass-card p-6 border border-slate-700/50">
+            <div className="glass-card p-6">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
@@ -59,20 +57,20 @@ function KeyCard({
                             </svg>
                         </div>
                         <div>
-                            <p className="text-sm font-semibold text-slate-300">Your API Key</p>
-                            <p className="text-xs text-slate-500">Key is hidden — shown once at registration</p>
+                            <p className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>Your API Key</p>
+                            <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>Key is hidden — shown once at registration</p>
                         </div>
                     </div>
                 </div>
                 <div className="code-block flex items-center justify-between gap-4">
-                    <span className="text-slate-500 font-mono text-sm tracking-wider">
+                    <span className="font-mono text-sm tracking-wider" style={{ color: "var(--color-text-secondary)" }}>
                         {keyPreview || "us-••••••••-••••-••••-••••-••••••••••••"}
                     </span>
                     {/* 重置按钮：移动到此处以获得更好的上下文交互 */}
                     <button 
                         onClick={handleResetClick}
                         disabled={isResetting}
-                        className="text-[10px] uppercase font-bold tracking-tight text-slate-600 hover:text-red-400/80 border border-slate-800 hover:border-red-500/20 px-2 py-1 rounded bg-slate-900/50 transition-all disabled:opacity-50 flex items-center gap-1.5"
+                        className="text-[10px] uppercase font-bold tracking-tight px-2 py-1 rounded transition-all disabled:opacity-50 flex items-center gap-1.5 border bg-[var(--color-toggle-bg)] text-[var(--color-text-secondary)] border-[var(--color-toggle-border)] hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/40"
                     >
                         {isResetting ? (
                             <div className="w-3 h-3 border-2 border-slate-600 border-t-transparent rounded-full animate-spin" />
@@ -94,7 +92,7 @@ function KeyCard({
         <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="glass-card p-6 border border-yellow-500/30 relative overflow-hidden"
+            className="glass-card p-6 border-yellow-500/30 relative overflow-hidden"
         >
             {/* 警告光晕 */}
             <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-yellow-500/0 via-yellow-500/80 to-yellow-500/0" />
@@ -105,23 +103,24 @@ function KeyCard({
                     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                     <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
-                <span className="text-xs text-yellow-400 font-semibold">
+                <span className="text-xs text-yellow-500 font-semibold">
                     This key is shown ONCE — copy it now and store it securely
                 </span>
             </div>
 
-            <p className="text-sm font-semibold text-slate-300 mb-3">Your API Key</p>
+            <p className="text-sm font-semibold mb-3" style={{ color: "var(--color-text-primary)" }}>Your API Key</p>
 
             {/* Key 显示区域 */}
             <div className="code-block flex items-center justify-between gap-4 mb-3">
-                <span className={`text-green-400 font-mono text-sm ${!revealed ? "blur-sm select-none" : ""} transition-all`}>
+                <span className={`text-green-500 font-mono text-sm ${!revealed ? "blur-sm select-none" : ""} transition-all`}>
                     {rawKey}
                 </span>
                 <div className="flex items-center gap-2 shrink-0">
                     {/* 显示/隐藏 Toggle */}
                     <button
                         onClick={() => setRevealed(!revealed)}
-                        className="p-2 rounded-md text-slate-500 hover:text-slate-300 hover:bg-slate-700/50 transition-all"
+                        className="p-2 rounded-md transition-all hover:bg-slate-500/10"
+                        style={{ color: "var(--color-text-secondary)" }}
                         title={revealed ? "Hide key" : "Reveal key"}
                     >
                         {revealed ? (
@@ -142,8 +141,8 @@ function KeyCard({
                         whileTap={{ scale: 0.95 }}
                         onClick={() => handleCopy(rawKey)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${copied
-                            ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                            : "bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:bg-blue-500/25"
+                            ? "bg-green-500/20 text-green-500 border border-green-500/30"
+                            : "bg-blue-500/15 text-blue-500 border border-blue-500/30 hover:bg-blue-500/25"
                             }`}
                     >
                         {copied ? (
@@ -171,7 +170,7 @@ function CreditsBar({
     /* credits 未确定时显示骨架，避免 session 加载前误显示默认值 500 */
     if (credits === undefined) {
         return (
-            <div className="glass-card p-6 border border-slate-700/50">
+            <div className="glass-card p-6">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
@@ -179,11 +178,11 @@ function CreditsBar({
                                 <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
                             </svg>
                         </div>
-                        <span className="text-sm font-semibold text-slate-300">Credits</span>
+                        <span className="text-sm font-semibold" style={{ color: "var(--color-text-secondary)" }}>Credits</span>
                     </div>
-                    <div className="w-16 h-7 rounded bg-slate-700/50 animate-pulse" />
+                    <div className="w-16 h-7 rounded animate-pulse" style={{ backgroundColor: "var(--color-toggle-bg)" }} />
                 </div>
-                <p className="text-xs text-slate-600 mt-2">
+                <p className="text-xs mt-2" style={{ color: "var(--color-text-secondary)" }}>
                     Credit cost varies by skill · 
                     <button 
                         onClick={onBuyCredits}
@@ -197,10 +196,9 @@ function CreditsBar({
     }
 
     const pct = Math.max(0, Math.min(100, (credits / total) * 100));
-    const color = pct > 50 ? "from-blue-500 to-cyan-400" : pct > 20 ? "from-yellow-500 to-orange-400" : "from-red-500 to-rose-400";
 
     return (
-        <div className="glass-card p-6 border border-slate-700/50">
+        <div className="glass-card p-6">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
@@ -208,12 +206,12 @@ function CreditsBar({
                             <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
                         </svg>
                     </div>
-                    <span className="text-sm font-semibold text-slate-300">Credits</span>
+                    <span className="text-sm font-semibold" style={{ color: "var(--color-text-secondary)" }}>Credits</span>
                 </div>
-                <span className="text-2xl font-black text-white">{credits}</span>
+                <span className="text-2xl font-black" style={{ color: "var(--color-text-primary)" }}>{credits}</span>
             </div>
             <div className="mt-3">
-                <p className="text-xs text-slate-600">
+                <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>
                     Credit cost varies by skill · 
                     <button 
                         onClick={onBuyCredits}
@@ -300,7 +298,7 @@ export default function DashboardPage() {
     /* 未认证：显示登录提示 */
     if (status === "unauthenticated") {
         return (
-            <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center px-4">
+            <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "var(--color-bg-primary)" }}>
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -311,8 +309,8 @@ export default function DashboardPage() {
                             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     </div>
-                    <h1 className="text-xl font-bold text-white mb-2">Sign in to UniSkill</h1>
-                    <p className="text-slate-400 text-sm mb-8">Access your API key and usage dashboard</p>
+                    <h1 className="text-xl font-bold mb-2" style={{ color: "var(--color-text-primary)" }}>Sign in to UniSkill</h1>
+                    <p className="text-sm mb-8" style={{ color: "var(--color-text-secondary)" }}>Access your API key and usage dashboard</p>
                     <motion.button
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
@@ -332,8 +330,8 @@ export default function DashboardPage() {
     /* 加载中 */
     if (status === "loading") {
         return (
-            <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
-                <div className="flex items-center gap-3 text-slate-400">
+            <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--color-bg-primary)" }}>
+                <div className="flex items-center gap-3" style={{ color: "var(--color-text-secondary)" }}>
                     <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                     <span className="text-sm">Loading dashboard...</span>
                 </div>
@@ -344,7 +342,7 @@ export default function DashboardPage() {
     /* 已登录：渲染 Dashboard */
 
     return (
-        <div className="min-h-screen bg-[#0a0f1e] bg-grid">
+        <div className="min-h-screen bg-grid" style={{ backgroundColor: "var(--color-bg-primary)" }}>
             {/* ─── 顶部 Navbar：使用共享 DashboardNavbar 组件，传入实时 credits ─── */}
             <DashboardNavbar credits={credits} totalCredits={500} />
 
@@ -357,10 +355,10 @@ export default function DashboardPage() {
                     transition={{ duration: 0.5 }}
                     className="mb-8"
                 >
-                    <h1 className="text-2xl font-black text-white mb-1">
+                    <h1 className="text-2xl font-black mb-1" style={{ color: "var(--color-text-primary)" }}>
                         Welcome back, {user?.name?.split(" ")[0]} 👋
                     </h1>
-                    <p className="text-slate-500 text-sm">Your UniSkill API Gateway dashboard</p>
+                    <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>Your UniSkill API Gateway dashboard</p>
                 </motion.div>
 
                 {/* 首次登录一次性 Toast 提醒 */}
@@ -372,10 +370,10 @@ export default function DashboardPage() {
                             exit={{ opacity: 0, y: -10 }}
                             className="mb-6 px-4 py-3 rounded-lg bg-green-500/8 border border-green-500/20 flex items-center gap-3"
                         >
-                            <span className="text-green-400 text-lg">🎉</span>
+                            <span className="text-green-500 text-lg">🎉</span>
                             <div>
-                                <p className="text-sm font-semibold text-green-400">Account successfully updated!</p>
-                                <p className="text-xs text-slate-400">Your API key is shown below — please save it now.</p>
+                                <p className="text-sm font-semibold text-green-500">Account successfully updated!</p>
+                                <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>Your API key is shown below — please save it now.</p>
                             </div>
                         </motion.div>
                     )}
@@ -433,11 +431,11 @@ export default function DashboardPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4, duration: 0.5 }}
-                    className="mt-5 glass-card p-6 border border-slate-700/50"
+                    className="mt-5 glass-card p-6"
                 >
                     {/* 标题行：左侧技能标题，右侧跳转链接 */}
                     <div className="flex items-center justify-between mb-4">
-                        <p className="text-sm font-semibold text-slate-300">My Skills</p>
+                        <p className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>My Skills</p>
                         {/* 跳转到完整 Skills Store 页面 */}
                         <Link
                             href="/skills"
@@ -455,14 +453,18 @@ export default function DashboardPage() {
                             <Link
                                 key={skill.name}
                                 href="/skills"
-                                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all cursor-pointer group"
+                                className="flex flex-col items-center gap-2 p-3 rounded-xl transition-all cursor-pointer group border"
+                                style={{ 
+                                    backgroundColor: "var(--color-bg-secondary)",
+                                    borderColor: "var(--color-border)"
+                                }}
                             >
                                 <span className="text-2xl group-hover:scale-110 transition-transform">{skill.icon}</span>
-                                <span className="text-xs font-medium text-slate-400 group-hover:text-indigo-300 transition-colors">{skill.name}</span>
+                                <span className="text-xs font-medium group-hover:text-indigo-300 transition-colors" style={{ color: "var(--color-text-secondary)" }}>{skill.name}</span>
                             </Link>
                         ))}
                         <div className="col-span-full py-4 text-center">
-                            <p className="text-xs text-slate-600 italic">No skills installed yet. Visit the <Link href="/skills" className="text-indigo-400 hover:underline">store</Link> to explore.</p>
+                            <p className="text-xs italic" style={{ color: "var(--color-text-secondary)" }}>No skills installed yet. Visit the <Link href="/skills" className="text-indigo-400 hover:underline">store</Link> to explore.</p>
                         </div>
                     </div>
                 </motion.div>

@@ -5,6 +5,7 @@
 
 import { Terminal, Copy, Check, ShieldCheck, Monitor, Apple } from "lucide-react";
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 
 interface IntegrationCardProps {
     rawKey?: string;
@@ -35,34 +36,38 @@ export default function IntegrationCard({ rawKey }: IntegrationCardProps) {
                     label: "Mac / Linux",
                     cmd: `curl -fsSL https://uniskill.ai/connect.sh | bash -s -- ${rawKey}`,
                     rendered: (
-                        <code className="break-all block">
-                            <span className="text-slate-500">$ </span>
-                            <span className="text-blue-400">curl</span>
-                            <span className="text-slate-400"> -fsSL </span>
-                            <span className="text-green-400">https://uniskill.ai/connect.sh</span>
-                            <span className="text-slate-400"> | </span>
-                            <span className="text-blue-400">bash</span>
-                            <span className="text-slate-400"> -s -- </span>
-                            <span className="text-indigo-300">{rawKey}</span>
-                        </code>
+                        <div className="flex items-start gap-2 text-[13px]">
+                            <span className="select-none shrink-0 font-bold" style={{ color: "var(--color-code-flag)" }}>$</span>
+                            <span className="leading-relaxed font-bold whitespace-nowrap">
+                                <span style={{ color: "var(--color-code-keyword)" }}>curl</span>
+                                <span style={{ color: "var(--color-code-flag)" }}> -fsSL </span>
+                                <span style={{ color: "var(--color-code-string)" }}>https://uniskill.ai/connect.sh</span>
+                                <span style={{ color: "var(--color-code-flag)" }}> | </span>
+                                <span style={{ color: "var(--color-code-keyword)" }}>bash</span>
+                                <span style={{ color: "var(--color-code-flag)" }}> -s -- </span>
+                                <span style={{ color: "var(--color-code-keyword)" }}>{rawKey}</span>
+                            </span>
+                        </div>
                     ),
                 },
                 windows: {
                     label: "Windows",
                     cmd: `$env:UNISKILL_KEY="${rawKey}"; irm https://uniskill.ai/connect.ps1 | iex`,
                     rendered: (
-                        <code className="break-all block">
-                            <span className="text-slate-500">&gt; </span>
-                            <span className="text-yellow-400">$env:UNISKILL_KEY</span>
-                            <span className="text-slate-400">=&quot;</span>
-                            <span className="text-indigo-300">{rawKey}</span>
-                            <span className="text-slate-400">&quot;; </span>
-                            <span className="text-blue-400">irm</span>
-                            <span className="text-slate-400"> </span>
-                            <span className="text-green-400">https://uniskill.ai/connect.ps1</span>
-                            <span className="text-slate-400"> | </span>
-                            <span className="text-blue-400">iex</span>
-                        </code>
+                        <div className="flex items-start gap-2 text-[13px]">
+                            <span className="select-none shrink-0 font-bold" style={{ color: "var(--color-code-flag)" }}>&gt;</span>
+                            <span className="leading-relaxed font-bold whitespace-nowrap">
+                                <span style={{ color: "var(--color-code-keyword)" }}>$env:UNISKILL_KEY</span>
+                                <span style={{ color: "var(--color-code-flag)" }}>=&quot;</span>
+                                <span style={{ color: "var(--color-code-keyword)" }}>{rawKey}</span>
+                                <span style={{ color: "var(--color-code-flag)" }}>&quot;; </span>
+                                <span style={{ color: "var(--color-code-keyword)" }}>irm</span>
+                                <span style={{ color: "var(--color-code-flag)" }}> </span>
+                                <span style={{ color: "var(--color-code-string)" }}>https://uniskill.ai/connect.ps1</span>
+                                <span style={{ color: "var(--color-code-flag)" }}> | </span>
+                                <span style={{ color: "var(--color-code-keyword)" }}>iex</span>
+                            </span>
+                        </div>
                     ),
                 },
             };
@@ -73,28 +78,32 @@ export default function IntegrationCard({ rawKey }: IntegrationCardProps) {
                     label: "Mac / Linux",
                     cmd: `curl -fsSL https://uniskill.ai/connect.sh | bash`,
                     rendered: (
-                        <code className="break-all block">
-                            <span className="text-slate-500">$ </span>
-                            <span className="text-blue-400">curl</span>
-                            <span className="text-slate-400"> -fsSL </span>
-                            <span className="text-green-400">https://uniskill.ai/connect.sh</span>
-                            <span className="text-slate-400"> | </span>
-                            <span className="text-blue-400">bash</span>
-                        </code>
+                        <div className="flex items-start gap-2 text-[13px]">
+                            <span className="select-none shrink-0 font-bold" style={{ color: "var(--color-code-flag)" }}>$</span>
+                            <span className="leading-relaxed font-bold whitespace-nowrap">
+                                <span style={{ color: "var(--color-code-keyword)" }}>curl</span>
+                                <span style={{ color: "var(--color-code-flag)" }}> -fsSL </span>
+                                <span style={{ color: "var(--color-code-string)" }}>https://uniskill.ai/connect.sh</span>
+                                <span style={{ color: "var(--color-code-flag)" }}> | </span>
+                                <span style={{ color: "var(--color-code-keyword)" }}>bash</span>
+                            </span>
+                        </div>
                     ),
                 },
                 windows: {
                     label: "Windows",
                     cmd: `irm https://uniskill.ai/connect.ps1 | iex`,
                     rendered: (
-                        <code className="break-all block">
-                            <span className="text-slate-500">&gt; </span>
-                            <span className="text-blue-400">irm</span>
-                            <span className="text-slate-400"> </span>
-                            <span className="text-green-400">https://uniskill.ai/connect.ps1</span>
-                            <span className="text-slate-400"> | </span>
-                            <span className="text-blue-400">iex</span>
-                        </code>
+                        <div className="flex items-start gap-2 text-[13px]">
+                            <span className="select-none shrink-0 font-bold" style={{ color: "var(--color-code-flag)" }}>&gt;</span>
+                            <span className="leading-relaxed font-bold whitespace-nowrap">
+                                <span style={{ color: "var(--color-code-keyword)" }}>irm</span>
+                                <span style={{ color: "var(--color-code-flag)" }}> </span>
+                                <span style={{ color: "var(--color-code-string)" }}>https://uniskill.ai/connect.ps1</span>
+                                <span style={{ color: "var(--color-code-flag)" }}> | </span>
+                                <span style={{ color: "var(--color-code-keyword)" }}>iex</span>
+                            </span>
+                        </div>
                     ),
                 },
             };
@@ -110,44 +119,36 @@ export default function IntegrationCard({ rawKey }: IntegrationCardProps) {
     };
 
     return (
-        <div className="h-full bg-slate-900/40 border border-slate-800 rounded-2xl p-6 flex flex-col">
+        <div className="h-full glass-card p-6 flex flex-col">
 
             {/* ── Title Row ── */}
-            <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-600/20 rounded-lg text-indigo-400">
-                        <Terminal size={20} />
-                    </div>
-                    <div>
-                        <h3 className="text-lg font-bold text-white">Tool Suite Integration</h3>
-                        <p className="text-xs text-slate-500">
-                            One command to connect your AI client.
-                        </p>
-                    </div>
+            <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-blue-600/10 rounded-lg text-blue-500">
+                    <Terminal size={20} />
                 </div>
-                {/* Copy button */}
-                <button
-                    onClick={handleCopy}
-                    className="p-2 hover:bg-white/5 rounded-lg transition-colors text-slate-400"
-                    title={copied ? "Copied!" : "Copy command"}
-                >
-                    {copied
-                        ? <Check size={18} className="text-green-500" />
-                        : <Copy size={18} />
-                    }
-                </button>
+                <div>
+                    <h3 className="text-lg font-bold" style={{ color: "var(--color-text-primary)" }}>Tool Suite Integration</h3>
+                    <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>
+                        One command to connect your AI client.
+                    </p>
+                </div>
             </div>
 
             {/* ── OS Tab Switcher ── */}
-            <div className="flex gap-1 mb-3 bg-black/30 rounded-lg p-1 w-fit">
+            <div className="flex gap-1 mb-4 rounded-lg p-1 w-fit" style={{ backgroundColor: "var(--color-os-tabs-bg)" }}>
                 {(["mac", "windows"] as OS[]).map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setOs(tab)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 ${os === tab
-                            ? "bg-indigo-600 text-white shadow-sm"
-                            : "text-slate-400 hover:text-slate-200"
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all duration-200 ${os === tab
+                            ? "shadow-[0_2px_10px_rgba(37, 99, 235, 0.1)]"
+                            : "hover:bg-slate-200 dark:hover:bg-slate-700/50"
                             }`}
+                        style={{ 
+                            backgroundColor: os === tab ? "var(--color-tab-active-bg)" : "transparent",
+                            color: os === tab ? "var(--color-tab-active-text)" : "var(--color-text-secondary)",
+                            border: os === tab ? "1px solid rgba(37, 99, 235, 0.2)" : "1px solid transparent"
+                        }}
                     >
                         {commands[tab].label}
                     </button>
@@ -155,27 +156,75 @@ export default function IntegrationCard({ rawKey }: IntegrationCardProps) {
             </div>
 
             {/* ── Terminal Code Block ── */}
-            <div className="bg-black/60 rounded-xl p-4 font-mono text-sm mb-6 border border-white/5">
-                <div className="text-slate-500 mb-2 text-[10px] uppercase tracking-widest">
-                    {os === "mac" ? "Terminal" : "PowerShell"}
+            <div 
+                className="rounded-xl overflow-hidden border mb-6 transition-all duration-300"
+                style={{ 
+                    backgroundColor: "var(--color-terminal-bg)", 
+                    borderColor: "var(--color-border)" 
+                }}
+            >
+                <div 
+                    className="flex justify-between items-center px-4 py-2 border-b"
+                    style={{ borderColor: "var(--color-border)", backgroundColor: "rgba(15, 23, 42, 0.03)" }}
+                >
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/70" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
+                        <span className="ml-2 text-[10px] font-mono italic" style={{ color: "var(--color-text-secondary)" }}>
+                            {os === "mac" ? "Terminal" : "PowerShell"}
+                        </span>
+                    </div>
+
+                    {/* Copy button Moved Here */}
+                    <motion.button
+                        onClick={handleCopy}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="p-1.5 rounded transition-all flex items-center gap-1.5 hover:bg-white/10"
+                        style={{ color: "var(--color-text-secondary)" }}
+                        title={copied ? "Copied!" : "Copy command"}
+                    >
+                        {copied ? (
+                            <>
+                                <Check size={12} className="text-green-500" />
+                                <span className="text-[10px] font-bold text-green-500">Copied</span>
+                            </>
+                        ) : (
+                            <>
+                                <Copy size={12} />
+                                <span className="text-[10px] font-bold">Copy</span>
+                            </>
+                        )}
+                    </motion.button>
                 </div>
-                {commands[os].rendered}
+                <div className="p-5 font-mono overflow-x-auto">
+                    {commands[os].rendered}
+                </div>
             </div>
 
             {/* ── Feature Explanation ── */}
             <div className="space-y-3 mt-auto">
-                <div className="flex items-start gap-2 text-xs text-slate-400">
+                <div className="flex items-start gap-2 text-xs" style={{ color: "var(--color-text-secondary)" }}>
                     <ShieldCheck size={14} className="text-indigo-500 shrink-0 mt-0.5" />
                     <span>
                         Auto-detects your AI client (Claude, Cursor, Windsurf) and injects the MCP config.
                     </span>
                 </div>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <p className="text-xs leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>
                     Your{" "}
-                    <code className="text-indigo-400 bg-slate-800 px-1 rounded">API key</code>{" "}
+                    <code 
+                        className="px-1 rounded"
+                        style={{ 
+                            backgroundColor: "var(--color-toggle-bg)",
+                            color: "var(--color-indigo)"
+                        }}
+                    >
+                        API key
+                    </code>{" "}
                     is written into your client&apos;s config — no manual setup needed.
                     {!rawKey && (
-                        <span className="block mt-1 text-amber-600/70">
+                        <span className="block mt-1 text-amber-600/70 font-medium">
                             ⚠ Your key is only shown once at registration.
                         </span>
                     )}

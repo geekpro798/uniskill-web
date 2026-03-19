@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
+import ThemeToggle from "../ThemeToggle";
 
 interface DashboardNavbarProps {
     // 当前用户剩余 credits（由父页面通过 liveCredits 传入，支持实时刷新）
@@ -39,7 +40,13 @@ export default function DashboardNavbar({ credits, totalCredits = 500 }: Dashboa
     }, []);
 
     return (
-        <header className="border-b border-white/5 bg-[#0a0f1e]/80 backdrop-blur-xl sticky top-0 z-50">
+        <header 
+            className="border-b backdrop-blur-xl sticky top-0 z-50 transition-colors duration-300"
+            style={{ 
+                backgroundColor: "var(--color-nav-bg)", 
+                borderBottomColor: "var(--color-border)" 
+            }}
+        >
             <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
 
                 {/* ── Logo 区域（左侧） ── */}
@@ -50,11 +57,13 @@ export default function DashboardNavbar({ credits, totalCredits = 500 }: Dashboa
                                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
                         </div>
-                        <span className="font-bold text-white text-sm">UniSkill</span>
+                        <span className="font-bold text-sm" style={{ color: "var(--color-text-primary)" }}>
+                            UniSkill
+                        </span>
                     </Link>
                 </div>
 
-                {/* ── 右侧：Credits 徽章 + 用户下拉菜单 ── */}
+                {/* ── 右侧：Credits 徽章 + ThemeToggle + 用户下拉菜单 ── */}
                 <div className="flex items-center gap-4">
 
                     {/* Credits 余额徽章 */}
@@ -71,6 +80,8 @@ export default function DashboardNavbar({ credits, totalCredits = 500 }: Dashboa
                         </motion.div>
                     )}
 
+                    <ThemeToggle />
+
                     {/* 用户下拉菜单容器 */}
                     <div
                         className="relative"
@@ -79,27 +90,40 @@ export default function DashboardNavbar({ credits, totalCredits = 500 }: Dashboa
                         onMouseLeave={() => setIsMenuOpen(false)}
                     >
                         <button
-                            className={`flex items-center gap-2 p-1.5 rounded-xl transition-all outline-none group border ${isMenuOpen ? "border-blue-500/30 bg-white/5" : "border-transparent"
-                                } hover:border-blue-500/30 hover:bg-white/5`}
+                            className={`flex items-center gap-2 p-1.5 rounded-xl transition-all outline-none group border ${
+                                isMenuOpen ? "border-blue-500/30" : "border-transparent"
+                            } hover:border-blue-500/30`}
+                            style={{ 
+                                backgroundColor: isMenuOpen ? "var(--color-toggle-bg)" : "transparent" 
+                            }}
+                            onMouseEnter={(e) => {
+                                if(!isMenuOpen) e.currentTarget.style.backgroundColor = "var(--color-toggle-bg)";
+                            }}
+                            onMouseLeave={(e) => {
+                                if(!isMenuOpen) e.currentTarget.style.backgroundColor = "transparent";
+                            }}
                         >
-                            {/* 用户头像 */}
-                            {user?.image ? (
-                                <img
-                                    src={user.image}
-                                    alt={user?.name ?? "User"}
-                                    className="w-8 h-8 rounded-full border border-white/10 group-hover:border-white/20 transition-colors"
-                                />
-                            ) : (
-                                <div className="w-8 h-8 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-500">
-                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                                        <circle cx="12" cy="7" r="4" />
-                                    </svg>
-                                </div>
-                            )}
+                    {/* 用户头像 */}
+                    {user?.image ? (
+                        <img
+                            src={user.image}
+                            alt={user?.name ?? "User"}
+                            className="w-8 h-8 rounded-xl border border-white/10 group-hover:border-white/20 transition-colors"
+                        />
+                    ) : (
+                        <div className="w-8 h-8 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-500">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                <circle cx="12" cy="7" r="4" />
+                            </svg>
+                        </div>
+                    )}
 
                             {/* 用户名与展开图标 */}
-                            <span className="hidden md:block text-xs font-medium text-slate-300 group-hover:text-white transition-colors">
+                            <span 
+                                className="hidden md:block text-xs font-medium transition-colors" 
+                                style={{ color: "var(--color-text-secondary)" }}
+                            >
                                 {user?.name ?? "Account"}
                             </span>
                             <svg
@@ -108,7 +132,8 @@ export default function DashboardNavbar({ credits, totalCredits = 500 }: Dashboa
                                 fill="none"
                                 stroke="currentColor"
                                 strokeWidth="2"
-                                className={`text-slate-500 transition-transform duration-200 ${isMenuOpen ? "rotate-180" : ""}`}
+                                className={`transition-transform duration-200 ${isMenuOpen ? "rotate-180" : ""}`}
+                                style={{ color: "var(--color-text-secondary)" }}
                             >
                                 <polyline points="6 9 12 15 18 9" />
                             </svg>
@@ -122,16 +147,22 @@ export default function DashboardNavbar({ credits, totalCredits = 500 }: Dashboa
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 4, scale: 0.98 }}
                                     transition={{ duration: 0.15 }}
-                                    className="absolute right-0 mt-1 w-48 py-1.5 glass-card border border-white/10 shadow-2xl z-[60]"
+                                    className="absolute right-0 mt-1 w-48 py-1.5 glass-card shadow-2xl z-[60]"
+                                    style={{ 
+                                        backgroundColor: "var(--color-bg-card)",
+                                        backdropFilter: "blur(16px)",
+                                        borderColor: "var(--color-border)"
+                                    }}
                                 >
                                     {/* Dashboard 链接 */}
                                     <Link
                                         href="/dashboard"
                                         onClick={() => setIsMenuOpen(false)}
                                         className={`flex items-center gap-2.5 px-4 py-2 text-xs font-medium transition-colors ${isActive("/dashboard")
-                                            ? "text-blue-400 bg-blue-500/10"
-                                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                                            ? "text-blue-500 bg-blue-500/10"
+                                            : "hover:bg-[var(--color-menu-hover-bg)]"
                                             }`}
+                                        style={{ color: isActive("/dashboard") ? "var(--color-blue)" : "var(--color-text-secondary)" }}
                                     >
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                             <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -143,12 +174,12 @@ export default function DashboardNavbar({ credits, totalCredits = 500 }: Dashboa
                                     </Link>
 
                                     {/* 分割线 */}
-                                    <div className="my-1 h-[1px] bg-white/5" />
+                                    <div className="my-1 h-[1px]" style={{ backgroundColor: "var(--color-border)" }} />
 
                                     {/* 登出按钮 */}
                                     <button
                                         onClick={() => signOut({ callbackUrl: "/" })}
-                                        className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-red-400/80 hover:text-red-400 hover:bg-red-500/5 transition-colors"
+                                        className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-red-500/80 hover:text-red-500 hover:bg-red-500/5 transition-colors"
                                     >
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -164,5 +195,6 @@ export default function DashboardNavbar({ credits, totalCredits = 500 }: Dashboa
                 </div>
             </div>
         </header>
+
     );
 }

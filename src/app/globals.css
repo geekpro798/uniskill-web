@@ -1,16 +1,72 @@
 @import "tailwindcss";
 
-/* ─── 全局 CSS 变量：定义品牌色彩体系 ─────────────────────────────── */
+/* ─── 全局 CSS 变量：双色模式颜色体系 ─────────────────────────────── */
 :root {
+  /* Light Mode (High Contrast) */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f8fafc;
+  --color-bg-card: rgba(255, 255, 255, 0.9);
+  --color-border: rgba(15, 23, 42, 0.15); /* 再次加深边框至 15% */
+  --color-border-subtle: rgba(0, 0, 0, 0.04); /* 极为淡雅的灰色分隔线 */
+  --color-text-primary: #020617;
+  --color-text-secondary: #475569;
+  
+  --color-blue: #2563eb;
+  --color-purple: #7c3aed;
+  --color-cyan: #0891b2;
+  
+  --color-nav-bg: rgba(255, 255, 255, 0.85);
+  --color-toggle-bg: rgba(15, 23, 42, 0.04); /* 透亮的超淡灰色 */
+  --color-toggle-border: rgba(15, 23, 42, 0.08);
+  
+  --color-terminal-bg: rgba(37, 99, 235, 0.03); /* 极淡的主题色背景 */
+  --color-code-keyword: #60a5fa; /* Restore original blue-400 */
+  --color-code-string: #4ade80; /* Restore original green-400 */
+  --color-code-flag: #94a3b8; /* Restore original slate-400 */
+  
+  --color-os-tabs-bg: rgba(15, 23, 42, 0.05);
+  --color-tab-active-bg: rgba(37, 99, 235, 0.1);
+  --color-tab-active-text: #2563eb; /* 极简蓝 */
+  
+  --color-btn-secondary-bg: #f8fafc;
+  --color-btn-secondary-text: #0f172a;
+  --color-btn-disabled-bg: #f1f5f9;
+  --color-btn-disabled-text: #94a3b8;
+  
+  --color-menu-hover-bg: rgba(15, 23, 42, 0.05);
+  --color-backdrop: rgba(15, 23, 42, 0.3); /* 轻透的遮罩 */
+}
+
+.dark {
+  /* Dark Mode (Vibrant Contrast) */
   --color-bg-primary: #0a0f1e;
-  --color-bg-secondary: #0d1526;
-  --color-bg-card: rgba(15, 23, 42, 0.6);
-  --color-border: rgba(59, 130, 246, 0.15);
-  --color-blue: #3b82f6;
-  --color-purple: #8b5cf6;
-  --color-cyan: #06b6d4;
-  --color-text-primary: #f0f6ff;
-  --color-text-secondary: #94a3b8;
+  --color-bg-secondary: #070b18; 
+  --color-bg-card: rgba(15, 23, 42, 0.7);
+  --color-border: rgba(255, 255, 255, 0.12); /* 深色模式加深至 12% */
+  --color-border-subtle: rgba(255, 255, 255, 0.04); 
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #cbd5e1;
+
+  --color-nav-bg: rgba(10, 15, 30, 0.85);
+  --color-toggle-bg: rgba(30, 41, 59, 0.5); /* slate-800/50 */
+  --color-toggle-border: rgba(59, 130, 246, 0.2);
+  
+  --color-terminal-bg: rgba(59, 130, 246, 0.05); /* 深色模式下略显眼的主题蓝 */
+  --color-code-keyword: #60a5fa;
+  --color-code-string: #4ade80;
+  --color-code-flag: #94a3b8;
+  
+  --color-os-tabs-bg: rgba(0, 0, 0, 0.3);
+  --color-tab-active-bg: rgba(59, 130, 246, 0.2);
+  --color-tab-active-text: #3b82f6; /* 更亮的 UI 蓝 */
+  
+  --color-btn-secondary-bg: rgba(255, 255, 255, 0.1);
+  --color-btn-secondary-text: #ffffff;
+  --color-btn-disabled-bg: rgba(30, 41, 59, 0.5);
+  --color-btn-disabled-text: #64748b;
+  
+  --color-menu-hover-bg: rgba(255, 255, 255, 0.06);
+  --color-backdrop: rgba(0, 0, 0, 0.75); /* 深沉的遮罩 */
 }
 
 /* ─── 全局基础样式 ───────────────────────────────────────────────────── */
@@ -18,7 +74,7 @@ html {
   scroll-behavior: smooth;
 }
 
-body {
+html, body {
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -40,6 +96,15 @@ body {
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--color-border);
   border-radius: 16px;
+}
+
+.glass-card-heavy {
+  background: var(--color-bg-card);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
 /* ─── 主渐变文字效果 ─────────────────────────────────────────────────── */
@@ -114,12 +179,13 @@ body {
 /* ─── 代码块样式（用于 Key 示意展示）──────────────────────────────── */
 .code-block {
   font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
-  font-size: 0.85rem;
-  background: rgba(2, 6, 23, 0.8);
-  border: 1px solid rgba(59, 130, 246, 0.2);
-  border-radius: 8px;
-  padding: 1rem 1.25rem;
-  color: #93c5fd;
+  font-size: 0.8rem;
+  background: var(--color-terminal-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  color: var(--color-text-secondary);
+  transition: all 0.3s ease;
 }
 
 /* ─── 滚动条美化 ─────────────────────────────────────────────────────── */
@@ -134,4 +200,20 @@ body {
 ::-webkit-scrollbar-thumb {
   background: rgba(59, 130, 246, 0.3);
   border-radius: 3px;
+}
+
+/* ─── 主题切换动画 (View Transitions) ─────────────────────────────────── */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mixed-blend-mode: normal;
+  height: 100%;
+}
+
+/* 确保新的图层在上方，用于圆形扩散效果 */
+::view-transition-new(root) {
+  z-index: 999;
+}
+::view-transition-old(root) {
+  z-index: 1;
 }

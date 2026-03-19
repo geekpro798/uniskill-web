@@ -74,8 +74,7 @@ export default function SkillsStorePage() {
     }, [activeCategory, searchQuery, realSkills]);
 
     return (
-        <div className="min-h-screen bg-[#0a0f1e] text-slate-300 flex flex-col font-sans">
-            <style dangerouslySetInnerHTML={{ __html: `html, body { background-color: #0a0f1e !important; }` }} />
+        <div className="min-h-screen transition-colors duration-500 flex flex-col font-sans" style={{ backgroundColor: "var(--color-bg-primary)", color: "var(--color-text-secondary)" }}>
             <Navbar />
 
             <main className="max-w-7xl mx-auto px-6 lg:px-8 pt-28 pb-20 w-full flex-grow flex flex-col lg:flex-row gap-6">
@@ -83,15 +82,16 @@ export default function SkillsStorePage() {
                 {/* ── 左侧：分类导航栏 (Sidebar Categories) ── */}
                 <aside className="w-full lg:w-64 shrink-0">
                     <div className="sticky top-28 space-y-1">
-                        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 px-3">Categories</h2>
+                        <h2 className="text-xs font-bold uppercase tracking-widest mb-4 px-3" style={{ color: "var(--color-text-secondary)", opacity: 0.6 }}>Categories</h2>
                         {CATEGORIES.map((cat) => (
                             <button
                                 key={cat.id}
                                 onClick={() => setActiveCategory(cat.id)}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${activeCategory === cat.id
-                                    ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                                    : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 border border-transparent"
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${activeCategory === cat.id
+                                    ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                                    : "border-transparent opacity-70 hover:opacity-100 hover:bg-[var(--color-menu-hover-bg)]"
                                     }`}
+                                style={{ color: activeCategory === cat.id ? "var(--color-blue)" : "var(--color-text-secondary)" }}
                             >
                                 <span className="text-lg">{cat.icon}</span>
                                 {cat.label}
@@ -106,17 +106,22 @@ export default function SkillsStorePage() {
                     {/* 顶部搜索框 (Search Bar) */}
                     <div className="mb-8 relative group">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-500 group-focus-within:text-blue-400 transition-colors">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="transition-colors" style={{ color: "var(--color-text-secondary)", opacity: 0.5 }}>
                                 <circle cx="11" cy="11" r="8"></circle>
                                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                             </svg>
                         </div>
                         <input
                             type="text"
-                            placeholder="Search skills by name, description, or tags (e.g., 'finance', 'github')..."
+                            placeholder="Search skills (e.g., 'finance', 'github')..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-[#050810]/50 border border-slate-700/80 rounded-2xl pl-12 pr-4 py-4 text-sm text-slate-200 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all placeholder:text-slate-600 backdrop-blur-md shadow-inner"
+                            className="w-full border rounded-2xl pl-12 pr-4 py-4 text-sm focus:outline-none focus:ring-1 transition-all backdrop-blur-md shadow-sm"
+                            style={{ 
+                                backgroundColor: "var(--color-bg-secondary)", 
+                                borderColor: "var(--color-border)",
+                                color: "var(--color-text-primary)"
+                            }}
                         />
                         {searchQuery && (
                             <button onClick={() => setSearchQuery("")} className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-slate-300">
@@ -127,9 +132,9 @@ export default function SkillsStorePage() {
 
                     {/* 🔴 核心改动 3：增加加载状态的极客过渡动画 */}
                     {isLoading ? (
-                        <div className="flex flex-col items-center justify-center py-32 text-slate-500">
+                        <div className="flex flex-col items-center justify-center py-32" style={{ color: "var(--color-text-secondary)" }}>
                             <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-400 rounded-full animate-spin mb-4" />
-                            <p className="text-sm font-mono animate-pulse">Scanning Registry Files (*.md)...</p>
+                            <p className="text-sm font-mono animate-pulse opacity-60">Scanning Registry Files (*.md)...</p>
                         </div>
                     ) : filteredSkills.length > 0 ? (
                         <motion.div layout className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -143,7 +148,8 @@ export default function SkillsStorePage() {
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.95 }}
                                         transition={{ duration: 0.2, delay: index * 0.03 }}
-                                        className={`glass-card p-6 border border-slate-700/50 ${skill.borderColor || "hover:border-blue-500/40"} hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group block cursor-pointer flex flex-col h-full bg-[#0a0f1e]/80`}
+                                        className={`glass-card p-6 border ${skill.borderColor || ""} hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group block cursor-pointer flex flex-col h-full`}
+                                        style={{ border: `1px solid var(--color-border)` }}
                                     >
                                         <div className="flex items-start justify-between mb-4">
                                             <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${skill.gradientFrom || "from-blue-500"} ${skill.gradientTo || "to-cyan-400"} flex items-center justify-center text-2xl shadow-lg`}>
@@ -163,21 +169,26 @@ export default function SkillsStorePage() {
                                             </span>
                                         </div>
 
-                                        <h3 className="text-base font-bold text-white mb-2 group-hover:text-blue-300 transition-colors">{skill.display_name}</h3>
+                                        <h3 className="text-base font-bold mb-2 group-hover:text-blue-500 transition-colors" style={{ color: "var(--color-text-primary)" }}>{skill.display_name}</h3>
 
-                                        <p className="text-sm text-slate-400 leading-relaxed mb-6 flex-grow line-clamp-3">{skill.description}</p>
+                                        <p className="text-sm leading-relaxed mb-6 flex-grow line-clamp-3" style={{ color: "var(--color-text-secondary)" }}>{skill.description}</p>
 
                                         {/* Tags 标签展示区 */}
                                         <div className="flex flex-wrap gap-2 mb-5">
                                             {skill.tags && skill.tags.map((tag: string) => (
-                                                <span key={tag} className="px-2 py-1 bg-slate-800/60 border border-slate-700/50 rounded-md text-[10px] text-slate-400 font-mono tracking-wide group-hover:border-slate-600 transition-colors">
+                                                <span key={tag} className="px-2 py-1 border rounded-md text-[10px] font-mono tracking-wide transition-colors"
+                                                    style={{ 
+                                                        backgroundColor: "var(--color-bg-secondary)", 
+                                                        borderColor: "var(--color-border)",
+                                                        color: "var(--color-text-secondary)"
+                                                    }}>
                                                     #{tag}
                                                 </span>
                                             ))}
                                         </div>
 
-                                        <div className="flex items-center justify-between pt-4 border-t border-slate-700/50 mt-auto">
-                                            <code className="text-[10px] text-slate-500 bg-[#050810] px-2 py-1 rounded font-mono border border-slate-800">{skill.skill_name}</code>
+                                        <div className="flex items-center justify-between pt-4 mt-auto border-t" style={{ borderColor: "var(--color-border)" }}>
+                                            <code className="text-[10px] px-2 py-1 rounded font-mono border" style={{ backgroundColor: "var(--color-bg-primary)", borderColor: "var(--color-border)", color: "var(--color-text-secondary)", opacity: 0.6 }}>{skill.skill_name}</code>
                                             <div className="flex items-center gap-2">
                                                 <div className="flex items-center gap-1">
                                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2">
@@ -203,11 +214,12 @@ export default function SkillsStorePage() {
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                             className="flex flex-col items-center justify-center py-32 text-center"
                         >
-                            <div className="w-16 h-16 rounded-2xl bg-slate-800/30 flex items-center justify-center mb-4 border border-slate-700/50 text-slate-500">
+                            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 border text-[var(--color-text-secondary)]" 
+                                style={{ backgroundColor: "var(--color-bg-secondary)", borderColor: "var(--color-border)", opacity: 0.5 }}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                             </div>
-                            <h3 className="text-lg font-bold text-white mb-2">No skills found</h3>
-                            <p className="text-sm text-slate-500">We couldn't find any skills matching "{searchQuery}" in this category.</p>
+                            <h3 className="text-lg font-bold mb-2" style={{ color: "var(--color-text-primary)" }}>No skills found</h3>
+                            <p className="text-sm" style={{ color: "var(--color-text-secondary)", opacity: 0.7 }}>We couldn't find any skills matching "{searchQuery}" in this category.</p>
                             <button
                                 onClick={() => { setSearchQuery(""); setActiveCategory("all"); }}
                                 className="mt-6 text-sm text-blue-400 hover:text-blue-300 font-semibold"

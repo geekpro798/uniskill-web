@@ -27,7 +27,7 @@ export default function QuickStart({ rawKey }: QuickStartProps) {
     };
 
     return (
-        <div className="glass-card p-6 border border-slate-700/50">
+        <div className="glass-card p-6">
             {/* ── 标题栏 ── */}
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
@@ -39,8 +39,8 @@ export default function QuickStart({ rawKey }: QuickStartProps) {
                         </svg>
                     </div>
                     <div>
-                        <span className="text-sm font-semibold text-slate-300">Tool Suite Integration</span>
-                        <p className="text-xs text-slate-500 mt-0.5">
+                        <span className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>Tool Suite Integration</span>
+                        <p className="text-xs mt-0.5" style={{ color: "var(--color-text-secondary)" }}>
                             Add UniSkill capabilities to your agent without changing your LLM provider.
                         </p>
                     </div>
@@ -52,8 +52,13 @@ export default function QuickStart({ rawKey }: QuickStartProps) {
                     onClick={handleCopy}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border transition-all shrink-0 ${copied
                         ? "bg-green-500/20 text-green-400 border-green-500/30"
-                        : "bg-slate-800/60 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-slate-200"
+                        : "text-slate-400 hover:text-indigo-400"
                         }`}
+                    style={{ 
+                        backgroundColor: copied ? "rgba(34, 197, 94, 0.1)" : "var(--color-toggle-bg)",
+                        borderColor: copied ? "rgba(34, 197, 94, 0.2)" : "var(--color-border)",
+                        color: copied ? undefined : "var(--color-text-secondary)"
+                    }}
                 >
                     {copied ? (
                         <>
@@ -75,10 +80,16 @@ export default function QuickStart({ rawKey }: QuickStartProps) {
             </div>
 
             {/* ── 终端代码块 ── */}
-            <div className="code-block text-xs leading-relaxed font-mono flex items-start gap-2 overflow-x-auto">
+            <div 
+                className="code-block text-xs leading-relaxed font-mono flex items-start gap-2 overflow-x-auto p-3 rounded-lg border"
+                style={{ 
+                    backgroundColor: "rgba(0, 0, 0, 0.8)", 
+                    borderColor: "rgba(255, 255, 255, 0.05)" 
+                }}
+            >
                 {/* 提示符 */}
                 <span className="text-slate-600 select-none shrink-0">$</span>
-                <span>
+                <span className="text-slate-300">
                     {/* curl 命令关键字着色 */}
                     <span className="text-blue-400">curl</span>
                     <span className="text-slate-400"> -s </span>
@@ -93,12 +104,20 @@ export default function QuickStart({ rawKey }: QuickStartProps) {
                 </span>
             </div>
 
-            <p className="text-xs text-slate-600 mt-3 leading-relaxed">
+            <p className="text-xs mt-3 leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>
                 This script injects your{" "}
-                <code className="text-slate-500 bg-slate-800 px-1 rounded">API key</code>{" "}
+                <code 
+                    className="px-1 rounded"
+                    style={{ 
+                        backgroundColor: "var(--color-toggle-bg)",
+                        color: "var(--color-indigo)"
+                    }}
+                >
+                    API key
+                </code>{" "}
                 and auto-syncs cloud skills into your OpenClaw project.
                 {!rawKey && (
-                    <span className="block mt-1 text-amber-600/70">
+                    <span className="block mt-1 text-amber-600/70 font-medium">
                         ⚠ Your key is only shown once at registration — re-login to retrieve a new session if needed.
                     </span>
                 )}

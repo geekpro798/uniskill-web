@@ -34,7 +34,10 @@ export default function HeroSection() {
     const y3 = useTransform(scrollY, [0, 500], [0, isMobile ? 0 : 150]);
 
     return (
-        <section className="relative min-h-[75vh] flex items-center justify-center overflow-hidden bg-grid pt-32 pb-8">
+        <section 
+            className="relative min-h-[75vh] flex items-center justify-center overflow-hidden bg-grid pt-32 pb-8"
+            style={{ backgroundColor: "var(--color-bg-primary)" }}
+        >
 
             {/* ─── 背景装饰：动态光晕球 (支持视差效果) ─── */}
             <div className="absolute inset-0 pointer-events-none">
@@ -80,10 +83,11 @@ export default function HeroSection() {
                             animate="visible"
                             custom={0.1}
                             className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.05] mb-6"
+                            style={{ color: "var(--color-text-primary)" }}
                         >
-                            <span className="text-white block">One Key.</span>
+                            <span className="block">One Key.</span>
                             <span className="gradient-text block">Infinite Skills.</span>
-                            <span className="text-white block">Built for Agents.</span>
+                            <span className="block">Built for Agents.</span>
                         </motion.h1>
 
                         <motion.p
@@ -91,10 +95,11 @@ export default function HeroSection() {
                             initial="hidden"
                             animate="visible"
                             custom={0.2}
-                            className="text-lg md:text-xl text-slate-400 max-w-2xl lg:max-w-none mb-10 leading-relaxed"
+                            className="text-lg md:text-xl max-w-2xl lg:max-w-none mb-10 leading-relaxed"
+                            style={{ color: "var(--color-text-secondary)" }}
                         >
                             The unified skill layer for autonomous agents.{" "}
-                            <span className="text-slate-300">
+                            <span style={{ opacity: 0.8 }}>
                                 Stop managing API keys, start building intelligence.
                             </span>
                         </motion.p>
@@ -113,7 +118,7 @@ export default function HeroSection() {
                                 rel="noopener noreferrer"
                                 whileHover={{ scale: 1.04, y: -2 }}
                                 whileTap={{ scale: 0.97 }}
-                                className="btn-outline w-full sm:w-auto px-8 py-3.5 text-base flex items-center justify-center gap-2"
+                                className="px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-black font-bold rounded-2xl hover:bg-slate-800 dark:hover:bg-slate-100 transition-all text-center flex items-center justify-center gap-2 group"
                             >
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -146,7 +151,7 @@ function HeroCTA() {
 
     if (status === "loading") {
         return (
-            <div className="w-full sm:w-[160px] h-[52px] rounded-xl bg-slate-800 animate-pulse" />
+            <div className="w-full sm:w-[160px] h-[52px] rounded-xl bg-slate-200 dark:bg-slate-800 animate-pulse" />
         );
     }
 
