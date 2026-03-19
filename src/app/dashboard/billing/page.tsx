@@ -162,9 +162,9 @@ export default function BillingPage() {
 
                     {loading ? (
                         /* 骨架 */
-                        <ul className="divide-y" style={{ borderColor: "var(--color-border)" }}>
+                        <ul className="flex flex-col">
                             {[...Array(5)].map((_, i) => (
-                                <li key={i} className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 px-5 py-4 animate-pulse items-center">
+                                <li key={i} className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 px-5 py-4 animate-pulse items-center border-b" style={{ borderColor: "var(--color-border)" }}>
                                     <div className="w-6 h-6 rounded-full" style={{ backgroundColor: "var(--color-menu-hover-bg)" }} />
                                     <div className="h-3 w-28 rounded" style={{ backgroundColor: "var(--color-menu-hover-bg)" }} />
                                     <div className="h-3 w-32 rounded" style={{ backgroundColor: "var(--color-menu-hover-bg)" }} />
@@ -187,13 +187,14 @@ export default function BillingPage() {
                         </div>
                     ) : (
                         /* 事件行：数据由 API 按 created_at DESC 排序 */
-                        <ul className="divide-y" style={{ borderColor: "var(--color-border)" }}>
+                        <ul className="flex flex-col">
                             {currentEvents.map((evt) => {
                                 const isDeduction = evt.amount < 0;
                                 return (
                                     <li
                                         key={evt.id}
-                                        className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 px-5 py-4 items-center transition-colors group/row"
+                                        className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-4 px-5 py-4 items-center transition-colors group/row border-b last:border-0"
+                                        style={{ borderColor: "var(--color-border)" }}
                                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--color-menu-hover-bg)"}
                                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
                                     >

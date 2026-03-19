@@ -59,9 +59,9 @@ export default function QuickActivity() {
             <div className="flex-1 flex flex-col justify-center">
                 {loading ? (
                     /* 骨架加载态 */
-                    <ul className="divide-y divide-slate-800/50">
+                    <ul className="flex flex-col">
                         {[...Array(3)].map((_, i) => (
-                            <li key={i} className="flex items-center gap-3 px-5 py-3 animate-pulse">
+                            <li key={i} className="flex items-center gap-3 px-5 py-3 animate-pulse border-b" style={{ borderColor: "var(--color-border)" }}>
                                 <div className="w-6 h-6 rounded-full bg-slate-700/60" />
                                 <div className="flex-1 space-y-1.5">
                                     <div className="h-3 w-24 rounded bg-slate-700/60" />
@@ -82,14 +82,15 @@ export default function QuickActivity() {
                     </div>
                 ) : (
                     /* 事件列表：数据由 API 负责按 created_at DESC 排序 */
-                    <ul className="divide-y" style={{ borderColor: "var(--color-border)" }}>
+                    <ul className="flex flex-col">
                         {events.slice(0, 3).map((evt) => {
                             // 判断正负决定图标 and 颜色
                             const isDeduction = evt.amount < 0;
                             return (
                                 <li 
                                     key={evt.id} 
-                                    className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-[var(--color-menu-hover-bg)]"
+                                    className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-[var(--color-menu-hover-bg)] border-b last:border-0"
+                                    style={{ borderColor: "var(--color-border)" }}
                                 >
                                     {/* 方向图标：扣减用 rose-400，增加用 green-400 */}
                                     <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${isDeduction ? "bg-rose-500/10" : "bg-green-500/10"

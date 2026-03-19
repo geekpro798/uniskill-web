@@ -111,7 +111,7 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skill_name, skill, isO
   }'`;
 
     return (
-        <div className="min-h-screen transition-colors duration-500 flex flex-col" style={{ backgroundColor: "var(--color-bg-primary)", color: "var(--color-text-secondary)" }}>
+        <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--color-bg-primary)", color: "var(--color-text-secondary)" }}>
             <Navbar />
 
             <main className="max-w-6xl mx-auto px-6 pt-32 pb-20 w-full flex-grow">
@@ -170,14 +170,14 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skill_name, skill, isO
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left table-fixed">
                                         <thead>
-                                            <tr className="border-b text-[10px] uppercase transition-colors duration-500" style={{ borderColor: "var(--color-border-subtle)", color: "var(--color-text-secondary)", opacity: 0.5 }}>
+                                            <tr className="border-b text-[10px] uppercase" style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)", opacity: 0.5 }}>
                                                 <th className="pb-4 font-semibold w-[20%]">Name</th>
                                                 <th className="pb-4 font-semibold w-[15%]">Type</th>
                                                 <th className="pb-4 font-semibold w-[15%]">Required</th>
                                                 <th className="pb-4 font-semibold w-[50%]">Description</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y transition-colors duration-500" style={{ borderColor: "var(--color-border-subtle)" }}>
+                                        <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
                                             {parameterList.map((p) => (
                                                 <tr key={p.name} className="hover:bg-white/[0.02] transition-colors">
                                                     <td className="py-4 font-mono text-sm text-cyan-400">{p.name}</td>
