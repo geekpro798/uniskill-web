@@ -63,20 +63,27 @@ function KeyCard({
                             <p className="text-xs text-slate-500">Key is hidden — shown once at registration</p>
                         </div>
                     </div>
-                    {/* 重置按钮 */}
-                    <button 
-                        onClick={handleResetClick}
-                        disabled={isResetting}
-                        className="text-xs text-slate-500 hover:text-red-400 border border-slate-700 hover:border-red-500/30 px-2 py-1 rounded transition-all disabled:opacity-50"
-                    >
-                        {isResetting ? "Resetting..." : "Reset Key"}
-                    </button>
                 </div>
                 <div className="code-block flex items-center justify-between gap-4">
                     <span className="text-slate-500 font-mono text-sm tracking-wider">
                         {keyPreview || "us-••••••••-••••-••••-••••-••••••••••••"}
                     </span>
-                    <span className="text-xs text-slate-600 border border-slate-700 px-2 py-1 rounded">Hidden</span>
+                    {/* 重置按钮：移动到此处以获得更好的上下文交互 */}
+                    <button 
+                        onClick={handleResetClick}
+                        disabled={isResetting}
+                        className="text-[10px] uppercase font-bold tracking-tight text-slate-600 hover:text-red-400/80 border border-slate-800 hover:border-red-500/20 px-2 py-1 rounded bg-slate-900/50 transition-all disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                        {isResetting ? (
+                            <div className="w-3 h-3 border-2 border-slate-600 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                <path d="M23 4v6h-6M1 20v-6h6" />
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                            </svg>
+                        )}
+                        {isResetting ? "Resetting" : "Reset Key"}
+                    </button>
                 </div>
             </div>
         );

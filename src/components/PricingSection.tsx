@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import { useRef, useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
@@ -195,6 +195,18 @@ function PricingContent() {
         }
     }, [status, rawTier, currentUserTier, currentWeight]);
 
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener("resize", checkMobile);
+        return () => window.removeEventListener("resize", checkMobile);
+    }, []);
+
+    const { scrollY } = useScroll();
+    const y1 = useTransform(scrollY, [1000, 2000], [0, isMobile ? 0 : 80]);
+    const y2 = useTransform(scrollY, [1000, 2000], [0, isMobile ? 0 : -40]);
+
     const sectionRef = useRef<HTMLElement>(null);
     const isInView = useInView(sectionRef, { once: true, amount: 0.05 });
 
@@ -276,12 +288,12 @@ function PricingContent() {
         <section
             ref={sectionRef}
             id="pricing"
-            className="relative py-28 px-6 lg:px-8 overflow-hidden"
+            className="relative pt-6 pb-12 px-6 lg:px-8 overflow-hidden"
         >
-            {/* ─── 背景装饰光晕 ─── */}
+            {/* ─── 背景装饰光晕 (支持视差效果) ─── */}
             <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/5 blur-[120px] rounded-full" />
-                <div className="absolute top-1/2 left-1/4 w-[400px] h-[400px] bg-purple-600/5 blur-[100px] rounded-full" />
+                <motion.div style={{ y: y1 }} className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/5 blur-[120px] rounded-full" />
+                <motion.div style={{ y: y2 }} className="absolute top-1/2 left-1/4 w-[400px] h-[400px] bg-purple-600/5 blur-[100px] rounded-full" />
             </div>
 
             <div className="max-w-7xl mx-auto relative z-10">
@@ -291,7 +303,7 @@ function PricingContent() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={isInView ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.6 }}
-                    className="text-center mb-16"
+                    className="text-center mb-12"
                 >
                     <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold tracking-widest uppercase text-blue-400 border border-blue-500/30 bg-blue-500/5 mb-5">
                         Pricing
@@ -346,15 +358,17 @@ function PricingContent() {
                                     </div>
                                 )}
 
-                                <div
+                                <motion.div
+                                    whileHover={!isDisabled && !isMobile ? { y: -8, scale: 1.02 } : {}}
+                                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
                                     className={`
-                  glass-card h-full flex flex-col p-7 ${plan.borderClass}
-                  transition-all duration-300 ${!isDisabled ? "hover:-translate-y-1" : ""}
-                  ${plan.highlighted && !isDisabled
+                                        glass-card h-full flex flex-col p-7 ${plan.borderClass}
+                                        transition-colors duration-300
+                                        ${plan.highlighted && !isDisabled
                                             ? "ring-2 ring-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.2)]"
                                             : "hover:border-white/20"}
-                  ${isDisabled ? "opacity-80 grayscale-[0.5]" : ""}
-                `}
+                                        ${isDisabled ? "opacity-80 grayscale-[0.5]" : ""}
+                                    `}
                                 >
                                     <div className={`w-10 h-1.5 rounded-full bg-gradient-to-r ${plan.gradient} mb-5`} />
                                     <h3 className="text-lg font-bold text-white mb-1">{plan.name}</h3>
@@ -422,7 +436,7 @@ function PricingContent() {
                                             buttonLabel
                                         )}
                                     </button>
-                                </div>
+                                </motion.div>
                             </motion.div>
                         );
                     })}

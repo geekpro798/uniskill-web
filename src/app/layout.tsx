@@ -23,6 +23,8 @@ export const metadata: Metadata = {
   },
 };
 
+import ScrollProgress from "@/components/ScrollProgress";
+
 /* ─── 根布局：注入字体 + SessionProvider + 全局暗色背景 ─── */
 export default function RootLayout({
   children,
@@ -32,6 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} dark`}>
       <body className="bg-[#0a0f1e] text-white antialiased" suppressHydrationWarning>
+        <ScrollProgress />
         {/* Providers 包裹层包含 NextAuth SessionProvider */}
         <Providers>{children}</Providers>
       </body>

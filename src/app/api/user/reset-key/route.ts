@@ -33,6 +33,14 @@ export async function POST(req: Request) {
     const keyPreview = `us-${uuidPart.substring(0, 4)}••••••••${rawKey.substring(rawKey.length - 4)}`;
 
     try {
+        // 3.5 先从数据库查出当前的旧 Hash (用于同步给网关执行物理销毁)
+        const { data: oldProfile } = await supabaseAdmin
+            .from("profiles")
+            .select("key_hash")
+            .eq("user_uid", userUid)
+            .single();
+        const oldHash = oldProfile?.key_hash;
+
         // 4. 更新数据库中的 Hash 和 Preview
         const { data: updatedProfile, error: dbError } = await supabaseAdmin
             .from("profiles")
@@ -49,8 +57,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Database update failed" }, { status: 500 });
         }
 
-        // 5. 将新 Hash 同步到 Cloudflare KV (至关重要)
-        // 网关侧会根据 user_uid 覆盖原有的 key_hash，从而实现旧 Key 的瞬间作废
+        // 5. 将新 Hash 同步到 Cloudflare KV，并销毁旧 Hash (物理超度)
         const rawGatewayUrl = process.env.GATEWAY_URL ?? "http://localhost:8787";
         const gatewayBaseUrl = rawGatewayUrl.replace(/\/v1\/?$/, "");
         const targetUrl = `${gatewayBaseUrl}/v1/admin/sync_cache`;
@@ -66,7 +73,8 @@ export async function POST(req: Request) {
                     user_uid: userUid,
                     total_credits: updatedProfile.credits,
                     new_tier: updatedProfile.tier,
-                    key_hash: keyHash
+                    key_hash: keyHash,
+                    old_key_hash: oldHash // 明确告知网关销毁此旧 Hash
                 }),
             });
 
