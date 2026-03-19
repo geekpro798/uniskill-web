@@ -177,9 +177,9 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skill_name, skill, isO
                                                 <th className="pb-4 font-semibold w-[50%]">Description</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y" style={{ borderColor: "var(--color-border)" }}>
+                                        <tbody className="transition-colors duration-500">
                                             {parameterList.map((p) => (
-                                                <tr key={p.name} className="hover:bg-white/[0.02] transition-colors">
+                                                <tr key={p.name} className="hover:bg-white/[0.02] transition-colors border-b last:border-0" style={{ borderColor: "var(--color-border)" }}>
                                                     <td className="py-4 font-mono text-sm text-cyan-400">{p.name}</td>
                                                     <td className="py-4 text-xs" style={{ color: "var(--color-text-secondary)", opacity: 0.6 }}>{p.type}</td>
                                                     <td className="py-4 text-xs">

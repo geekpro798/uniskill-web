@@ -25,6 +25,7 @@ export default function BillingPage() {
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [filterType, setFilterType] = useState<"all" | "usage" | "topup">("all");
+    const [liveCredits, setLiveCredits] = useState<number | undefined>(undefined);
     const eventsPerPage = 10;
 
     // Derived values: 1. Filter events based on type
@@ -40,6 +41,21 @@ export default function BillingPage() {
     const startIndex = (currentPage - 1) * eventsPerPage;
     const currentEvents = filteredEvents.slice(startIndex, startIndex + eventsPerPage);
 
+    const fetchLiveCredits = async () => {
+        if (!session?.user?.id) return;
+        try {
+            const res = await fetch("/api/user/credits");
+            if (res.ok) {
+                const data = await res.json();
+                if (typeof data.credits === "number") {
+                    setLiveCredits(data.credits);
+                }
+            }
+        } catch (e) {
+            console.error("Failed to fetch live credits", e);
+        }
+    };
+
     useEffect(() => {
         if (status !== "authenticated") return;
         // 拉取全部积分事件（API 限制最多 100 条）
@@ -48,7 +64,12 @@ export default function BillingPage() {
             .then((d) => setEvents(d.events ?? []))
             .catch(() => setEvents([]))
             .finally(() => setLoading(false));
-    }, [status]);
+
+        // SWR: 初始由 fetchLiveCredits 获取最新值（展示骨架屏）
+        fetchLiveCredits();
+        window.addEventListener("focus", fetchLiveCredits);
+        return () => window.removeEventListener("focus", fetchLiveCredits);
+    }, [status, session?.user?.id]);
 
     /* 未登录 */
     if (status === "unauthenticated") {
@@ -70,7 +91,7 @@ export default function BillingPage() {
         );
     }
 
-    const credits = session?.user?.credits;
+    const credits = liveCredits;
 
     return (
         <div className="min-h-screen bg-grid" style={{ backgroundColor: "var(--color-bg-primary)" }}>

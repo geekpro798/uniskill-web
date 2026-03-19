@@ -67,7 +67,9 @@ export default function DashboardNavbar({ credits, totalCredits = 500 }: Dashboa
                 <div className="flex items-center gap-4">
 
                     {/* Credits 余额徽章 */}
-                    {typeof credits === "number" && (
+                    {credits === undefined ? (
+                        <div className="h-7 w-20 rounded-full animate-pulse bg-blue-500/10 border border-blue-500/20" />
+                    ) : (
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}

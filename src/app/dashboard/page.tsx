@@ -236,7 +236,7 @@ export default function DashboardPage() {
     const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
     const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
-    // liveCredits 初始化为 undefined，避免 session 尚未加载时错误 fallback 到 500
+    // liveCredits 初始化为 undefined，初次加载展示骨架屏，后续静默刷新
     const [liveCredits, setLiveCredits] = useState<number | undefined>(undefined);
     
     // API Key 重置后的临时明文及预览状态
@@ -281,8 +281,8 @@ export default function DashboardPage() {
 
     useEffect(() => {
         if (status !== "authenticated") return;
-        // 先用 session JWT 缓存展示（少量延迟，避免骨架闪烁），同时发起真实值请求
-        setLiveCredits(session.user.credits ?? 500);
+        // SWR: 初始由 fetchLiveCredits 获取最新值（展示骨架屏）
+        // 不再回滚使用 session 的旧缓存，避免数额闪烁
         fetchLiveCredits();
         window.addEventListener("focus", fetchLiveCredits);
         return () => window.removeEventListener("focus", fetchLiveCredits);
@@ -291,7 +291,7 @@ export default function DashboardPage() {
 
     /* 提取业务数据 (放在 return 之前) */
     const user = session?.user;
-    const credits = liveCredits !== undefined ? liveCredits : user?.credits;
+    const credits = liveCredits; // 始终以实时接口返回的值为准
     const finalRawKey = resetRawKey || user?.rawKey;
     const finalKeyPreview = resetKeyPreview || user?.keyPreview;
 
