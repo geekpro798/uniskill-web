@@ -23,9 +23,10 @@ export default function ScrollProgress() {
       // h-[3px]: 稍微增加一点厚度，深色模式下更显眼 (Slightly thicker for dark mode visibility)
       // z-[100]: 确保盖住 Navbar (Ensure it covers the Navbar)
       className="fixed top-0 left-0 right-0 h-[2px] z-[100] origin-left 
-                 bg-blue-600 
-                 dark:bg-gradient-to-r dark:from-cyan-400 dark:via-blue-500 dark:to-emerald-400 
-                 dark:shadow-[0_0_12px_rgba(34,211,238,0.9)]"
+                 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-400
+                 shadow-[0_0_8px_rgba(59,130,246,0.3)]
+                 dark:from-[#60a5fa] dark:via-[#a78bfa] dark:to-[#22d3ee] 
+                 dark:shadow-[0_0_15px_rgba(34,211,238,0.4)]"
       style={{ scaleX }}
     />
   );
