@@ -118,7 +118,7 @@ export async function handleUserRegistration(
     if (!dbError) {
         try {
             const gatewayUrl = process.env.GATEWAY_URL ?? "https://your-gateway.workers.dev";
-            console.log(`[auth] Initiating KV sync to ${gatewayUrl}/admin/provision...`);
+            console.log(`[auth] Initiating KV sync: URL=${gatewayUrl}/v1/admin/sync_cache, UID=${newProfile.user_uid}`);
 
             const syncRes = await fetch(`${gatewayUrl}/v1/admin/sync_cache`, {
                 method: "POST",
@@ -126,8 +126,8 @@ export async function handleUserRegistration(
                     "Authorization": `Bearer ${process.env.ADMIN_KEY}`,
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ 
-                    user_uid: newProfile.user_uid, 
+                body: JSON.stringify({
+                    user_uid: newProfile.user_uid,
                     total_credits: 500,
                     new_tier: "FREE",
                     key_hash: keyHash
@@ -137,9 +137,11 @@ export async function handleUserRegistration(
             if (!syncRes.ok) {
                 const errText = await syncRes.text();
                 console.error(`[auth] KV sync FAILED [Status ${syncRes.status}]: ${errText}`);
+                console.error(`[auth] Auth Check: ADMIN_KEY length = ${process.env.ADMIN_KEY?.length || 0}`);
                 console.error(`[auth] Check if GATEWAY_URL (${gatewayUrl}) is correct and ADMIN_KEY is valid.`);
             } else {
-                console.log("[auth] Cloudflare KV sync successful!");
+                const resData = await syncRes.json();
+                console.log("[auth] Cloudflare KV sync successful!", resData);
             }
         } catch (kvError: any) {
             console.error("[auth] KV sync FATAL ERROR (Connection Refused?):", kvError.message);

@@ -159,20 +159,31 @@ export async function POST(req: Request) {
             }
             
             const targetUrl = `${gatewayUrl}/admin/sync_cache`;
-            console.log(`[LS Webhook] Syncing Gateway Cache: ${targetUrl}`);
+            console.log(`[LS Webhook] Syncing Gateway Cache: ${targetUrl}, UID=${userUid}`);
             
-            fetch(targetUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${process.env.ADMIN_KEY}`
-                },
-                body: JSON.stringify({
-                    user_uid: userUid,
-                    total_credits: newBalance,
-                    new_tier: finalTier
-                })
-            }).catch(e => console.warn("[LS Webhook] Gateway sync notification failed:", e.message));
+            try {
+                const syncRes = await fetch(targetUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${process.env.ADMIN_KEY}`
+                    },
+                    body: JSON.stringify({
+                        user_uid: userUid,
+                        total_credits: newBalance,
+                        new_tier: finalTier
+                    })
+                });
+
+                if (!syncRes.ok) {
+                    const errText = await syncRes.text();
+                    console.error(`[LS Webhook] Gateway sync FAILED [Status ${syncRes.status}]: ${errText}`);
+                } else {
+                    console.log(`[LS Webhook] Gateway sync successful!`);
+                }
+            } catch (e: any) {
+                console.error("[LS Webhook] Gateway sync notification failed:", e.message);
+            }
         }
 
         return NextResponse.json({ success: true, userUid, newBalance });
