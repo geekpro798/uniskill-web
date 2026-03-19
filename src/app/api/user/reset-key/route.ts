@@ -51,9 +51,12 @@ export async function POST(req: Request) {
 
         // 5. 将新 Hash 同步到 Cloudflare KV (至关重要)
         // 网关侧会根据 user_uid 覆盖原有的 key_hash，从而实现旧 Key 的瞬间作废
-        const gatewayUrl = process.env.GATEWAY_URL ?? "https://your-gateway.workers.dev";
+        const rawGatewayUrl = process.env.GATEWAY_URL ?? "http://localhost:8787";
+        const gatewayBaseUrl = rawGatewayUrl.replace(/\/v1\/?$/, "");
+        const targetUrl = `${gatewayBaseUrl}/v1/admin/sync_cache`;
+
         try {
-            const syncRes = await fetch(`${gatewayUrl}/v1/admin/sync_cache`, {
+            const syncRes = await fetch(targetUrl, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${process.env.ADMIN_KEY}`,

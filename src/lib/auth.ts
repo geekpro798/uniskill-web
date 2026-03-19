@@ -123,11 +123,15 @@ export async function handleUserRegistration(
     }
 
     // 3. Sync to Cloudflare KV (至关重要：确保新用户的 Key 立即生效)
-    try {
-        const gatewayUrl = process.env.GATEWAY_URL ?? "http://localhost:8787";
-        console.log(`[auth] [KV Sync] Attempting to sync new user: ${newProfile.user_uid} to ${gatewayUrl}`);
+    const rawGatewayUrl = process.env.GATEWAY_URL ?? "http://localhost:8787";
+    // 自动清理末尾的 /v1，然后统一补上，避免出现 /v1/v1/ 的双重路径问题
+    const gatewayBaseUrl = rawGatewayUrl.replace(/\/v1\/?$/, "");
+    const targetUrl = `${gatewayBaseUrl}/v1/admin/sync_cache`;
 
-        const syncRes = await fetch(`${gatewayUrl}/v1/admin/sync_cache`, {
+    try {
+        console.log(`[auth] [KV Sync] Attempting to sync new user: ${newProfile.user_uid} to ${targetUrl}`);
+
+        const syncRes = await fetch(targetUrl, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${process.env.ADMIN_KEY}`,
@@ -143,14 +147,14 @@ export async function handleUserRegistration(
 
         if (!syncRes.ok) {
             const errText = await syncRes.text();
-            console.error(`[auth] [KV Sync] FAILED [Status ${syncRes.status}]: ${errText}`);
+            console.error(`[auth] [KV Sync] FAILED [Status ${syncRes.status}] [URL ${targetUrl}]: ${errText}`);
         } else {
             const resData = await syncRes.json();
             console.log(`[auth] [KV Sync] SUCCESS for UID: ${newProfile.user_uid}`, resData);
         }
     } catch (kvError: any) {
         console.error("[auth] [KV Sync] FATAL ERROR:", kvError.message);
-        console.error(`[auth] [KV Sync] Target URL was: ${process.env.GATEWAY_URL}/v1/admin/sync_cache`);
+        console.error(`[auth] [KV Sync] Failed to sync to: ${targetUrl}`);
     }
 
     // 4. Dispatch Account Created Notification (Fire-and-Forget)

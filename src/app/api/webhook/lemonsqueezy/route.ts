@@ -152,15 +152,12 @@ export async function POST(req: Request) {
         // We now strictly use the Gateway's sync_cache endpoint to manage its own cache.
 
         // --- Step F: Push Final State to Gateway Cache (Sync) ---
-        let gatewayUrl = process.env.GATEWAY_URL?.replace(/\/$/, "") || "";
+        const rawGatewayUrl = process.env.GATEWAY_URL ?? "http://localhost:8787";
+        const gatewayBaseUrl = rawGatewayUrl.replace(/\/v1\/?$/, "");
+        const targetUrl = `${gatewayBaseUrl}/v1/admin/sync_cache`;
+
         let isGatewaySynced = false;
-        if (gatewayUrl) {
-            // Ensure URL ends with /v1
-            if (!gatewayUrl.endsWith("/v1")) {
-                gatewayUrl += "/v1";
-            }
-            
-            const targetUrl = `${gatewayUrl}/admin/sync_cache`;
+        if (gatewayBaseUrl) {
             console.log(`[LS Webhook] Syncing Gateway Cache: ${targetUrl}, UID=${userUid}`);
             
             try {
