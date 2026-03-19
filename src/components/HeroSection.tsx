@@ -118,7 +118,7 @@ export default function HeroSection() {
                                 rel="noopener noreferrer"
                                 whileHover={{ scale: 1.04, y: -2 }}
                                 whileTap={{ scale: 0.97 }}
-                                className="px-8 py-4 bg-transparent border border-[var(--color-border)] dark:border-white/10 text-[var(--color-text-primary)] dark:text-white font-bold rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-center flex items-center justify-center gap-2 group h-[56px] transition-all"
+                                className="px-8 py-4 bg-transparent border border-[var(--color-border)] dark:border-white/10 text-[var(--color-text-primary)] dark:text-white font-bold rounded-2xl hover:border-blue-500/50 transition-all text-center flex items-center justify-center gap-2 group h-[56px] transition-all"
                             >
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -151,7 +151,7 @@ function HeroCTA() {
 
     if (status === "loading") {
         return (
-            <div className="w-full sm:w-[160px] h-[56px] rounded-xl bg-slate-200 dark:bg-slate-800 animate-pulse" />
+            <div className="w-full sm:w-[160px] h-[56px] rounded-2xl bg-slate-200 dark:bg-slate-800 animate-pulse" />
         );
     }
 

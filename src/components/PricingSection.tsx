@@ -349,27 +349,26 @@ function PricingContent() {
                                 }}
                                 className="relative"
                             >
-                                {/* Pro 卡片高亮标签 */}
-                                {plan.badgeText && (
-                                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20">
-                                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg">
-                                            {plan.badgeText}
-                                        </span>
-                                    </div>
-                                )}
-
                                 <motion.div
                                     whileHover={!isDisabled && !isMobile ? { y: -8, scale: 1.02 } : {}}
                                     transition={{ type: "spring", stiffness: 400, damping: 10 }}
                                     className={`
                                         glass-card h-full flex flex-col p-7 ${plan.borderClass}
-                                        transition-colors duration-300
+                                        transition-colors duration-300 relative
                                         ${plan.highlighted && !isDisabled
                                             ? "ring-2 ring-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.2)]"
                                             : "hover:border-white/20"}
                                         ${isDisabled ? "opacity-80 grayscale-[0.5]" : ""}
                                     `}
                                 >
+                                    {/* Pro 卡片高亮标签 */}
+                                    {plan.badgeText && (
+                                        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20">
+                                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg">
+                                                {plan.badgeText}
+                                            </span>
+                                        </div>
+                                    )}
                                     <div className={`w-10 h-1.5 rounded-full bg-gradient-to-r ${plan.gradient} mb-5`} />
                                     <h3 className="text-lg font-bold mb-1" style={{ color: "var(--color-text-primary)" }}>{plan.name}</h3>
 
