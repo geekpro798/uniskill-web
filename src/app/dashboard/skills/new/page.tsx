@@ -301,7 +301,7 @@ payload:
               模块 1：魔法生成器 (Module 1: Magic Architect)
               统一适配了浅色与深色模式 (Adapted for both light and dark modes)
               ========================================== */}
-          <div className="bg-white dark:bg-[#0f1117] border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-xl dark:shadow-2xl relative transition-colors duration-300">
+          <div className="rounded-3xl overflow-hidden shadow-xl dark:shadow-2xl relative transition-colors duration-300 border" style={{ backgroundColor: "var(--color-bg-card)", borderColor: "var(--color-border)" }}>
             {/* 背景光晕效果，仅在深色模式下明显 (Background glow, prominent in dark mode) */}
             <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/5 dark:bg-purple-600/10 rounded-full blur-3xl pointer-events-none transition-all"></div>
             
@@ -311,8 +311,8 @@ payload:
                   <Sparkles className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-wide transition-colors">Magic Skill Architect</h2>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 transition-colors">Describe what you want the tool to do. AI will generate the API schema & implementation.</p>
+                  <h2 className="text-xl font-bold tracking-wide transition-colors" style={{ color: "var(--color-text-primary)" }}>Magic Skill Architect</h2>
+                  <p className="text-sm mt-1 transition-colors" style={{ color: "var(--color-text-secondary)" }}>Describe what you want the tool to do. AI will generate the API schema & implementation.</p>
                 </div>
               </div>
 
@@ -321,7 +321,12 @@ payload:
                   value={magicPrompt}
                   onChange={(e) => setMagicPrompt(e.target.value)}
                   placeholder="e.g., Build a tool that searches crypto prices on Coingecko using my API key..."
-                  className="w-full h-32 bg-slate-50 dark:bg-slate-900/60 border-2 border-slate-200 dark:border-slate-700/50 rounded-2xl p-4 pr-16 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:border-purple-500/70 focus:bg-white dark:focus:bg-slate-900 focus:ring-0 outline-none transition-all resize-none text-sm leading-relaxed"
+                  className="w-full h-32 border-2 rounded-2xl p-4 pr-16 outline-none transition-all resize-none text-sm leading-relaxed"
+                  style={{ 
+                    backgroundColor: "var(--color-bg-secondary)", 
+                    borderColor: "var(--color-border)",
+                    color: "var(--color-text-primary)"
+                  }}
                 />
                 <button
                   onClick={handleMagicGenerate}
@@ -356,18 +361,18 @@ payload:
               模块 2：手动配置表单 (Module 2: Manual Configuration Form)
               全面适配暗色模式，背景、输入框、边框全部重构
               ========================================== */}
-          <form ref={formRef} onSubmit={handleSubmit} noValidate className="bg-white dark:bg-slate-900/40 rounded-3xl shadow-sm dark:shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden transition-all duration-300">
+          <form ref={formRef} onSubmit={handleSubmit} noValidate className="rounded-3xl shadow-sm dark:shadow-xl border overflow-hidden transition-all duration-300" style={{ backgroundColor: "var(--color-bg-card)", borderColor: "var(--color-border)" }}>
             <div className="p-8 md:p-10 space-y-10">
               
               {/* 1. 基础信息设置 (Basic Info Settings) */}
               <div className="space-y-6">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/50 pb-3 transition-colors">
-                  <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors">1</span>
+                <h3 className="text-lg font-bold flex items-center gap-2 border-b pb-3 transition-colors" style={{ color: "var(--color-text-primary)", borderBottomColor: "var(--color-border-subtle)" }}>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors" style={{ backgroundColor: "var(--color-bg-secondary)", color: "var(--color-text-secondary)" }}>1</span>
                   Basic Identification
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 transition-colors">Display Name</label>
+                    <label className="block text-sm font-semibold mb-1.5 transition-colors" style={{ color: "var(--color-text-secondary)" }}>Display Name</label>
                     <input
                       type="text"
                       required
@@ -377,19 +382,24 @@ payload:
                         if (errors.displayName) setErrors({ ...errors, displayName: '' }); // 输入时自动清除报错
                       }}
                       placeholder="e.g., Crypto Price Tracker"
-                      className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-[#161b22] border rounded-xl outline-none transition-all text-slate-900 dark:text-slate-100 ${
+                      className={`w-full px-4 py-2.5 border rounded-xl outline-none transition-all shadow-sm ${
                         errors.displayName 
                           ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20' 
-                          : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white dark:focus:bg-[#0d1117]'
+                          : 'focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
                       }`}
+                      style={{ 
+                        backgroundColor: "var(--color-bg-secondary)", 
+                        borderColor: "var(--color-border)",
+                        color: "var(--color-text-primary)"
+                      }}
                     />
                     {/* 🌟 字段底部专属报错信息 */}
                     {errors.displayName && <p className="text-red-500 dark:text-red-400 text-xs mt-1.5 font-medium flex items-center gap-1"><AlertCircle className="w-3 h-3"/>{errors.displayName}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex justify-between transition-colors">
+                    <label className="block text-sm font-semibold mb-1.5 flex justify-between transition-colors" style={{ color: "var(--color-text-secondary)" }}>
                       Skill ID (MCP Tool Name)
-                      <span className="text-xs text-slate-400 dark:text-slate-500 font-normal mt-0.5">A-Z, 0-9, underscores</span>
+                      <span className="text-xs font-normal mt-0.5" style={{ color: "var(--color-text-secondary)", opacity: 0.6 }}>A-Z, 0-9, underscores</span>
                     </label>
                     <input
                       type="text"
@@ -400,17 +410,22 @@ payload:
                         if (errors.skillName) setErrors({ ...errors, skillName: '' });
                       }}
                       placeholder="crypto_price_tracker"
-                      className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-[#161b22] border rounded-xl outline-none transition-all font-mono text-sm text-slate-900 dark:text-slate-100 ${
+                      className={`w-full px-4 py-2.5 border rounded-xl outline-none transition-all font-mono text-sm shadow-sm ${
                         errors.skillName 
                           ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20' 
-                          : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white dark:focus:bg-[#0d1117]'
+                          : 'focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
                       }`}
+                      style={{ 
+                        backgroundColor: "var(--color-bg-secondary)", 
+                        borderColor: "var(--color-border)",
+                        color: "var(--color-text-primary)"
+                      }}
                     />
                     {errors.skillName && <p className="text-red-500 dark:text-red-400 text-xs mt-1.5 font-medium flex items-center gap-1"><AlertCircle className="w-3 h-3"/>{errors.skillName}</p>}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 transition-colors">Short Description</label>
+                  <label className="block text-sm font-semibold mb-1.5 transition-colors" style={{ color: "var(--color-text-secondary)" }}>Short Description</label>
                   <input
                     type="text"
                     required
@@ -420,11 +435,16 @@ payload:
                       if (errors.description) setErrors({ ...errors, description: '' });
                     }}
                     placeholder="Fetches real-time cryptocurrency prices..."
-                    className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-[#161b22] border rounded-xl outline-none transition-all text-slate-900 dark:text-slate-100 ${
+                    className={`w-full px-4 py-2.5 border rounded-xl outline-none transition-all shadow-sm ${
                       errors.description 
                         ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20' 
-                        : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white dark:focus:bg-[#0d1117]'
+                        : 'focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
                     }`}
+                    style={{ 
+                      backgroundColor: "var(--color-bg-secondary)", 
+                      borderColor: "var(--color-border)",
+                      color: "var(--color-text-primary)"
+                    }}
                   />
                   {errors.description && <p className="text-red-500 dark:text-red-400 text-xs mt-1.5 font-medium flex items-center gap-1"><AlertCircle className="w-3 h-3"/>{errors.description}</p>}
                 </div>
@@ -432,12 +452,12 @@ payload:
 
               {/* 2. 核心资产：Markdown 提示词与架构 (Core Asset: Markdown Manifest) */}
               <div className="space-y-4">
-                <div className="flex justify-between items-end border-b border-slate-100 dark:border-slate-800/50 pb-3 transition-colors">
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 transition-colors">
-                    <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors">2</span>
+                <div className="flex justify-between items-end border-b pb-3 transition-colors" style={{ borderBottomColor: "var(--color-border-subtle)" }}>
+                  <h3 className="text-lg font-bold flex items-center gap-2 transition-colors" style={{ color: "var(--color-text-primary)" }}>
+                    <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors" style={{ backgroundColor: "var(--color-bg-secondary)", color: "var(--color-text-secondary)" }}>2</span>
                     Skill Manifest (Markdown)
                   </h3>
-                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md transition-colors">Defines Parameters & Implementation</span>
+                  <span className="text-xs font-medium px-2.5 py-1 rounded-md transition-colors" style={{ backgroundColor: "var(--color-bg-secondary)", color: "var(--color-text-secondary)" }}>Defines Parameters & Implementation</span>
                 </div>
                 <textarea
                   required
@@ -448,29 +468,34 @@ payload:
                   }}
                   rows={14}
                   placeholder="# Description&#10;...&#10;&#10;# Parameters&#10;...&#10;&#10;# Implementation&#10;..."
-                  className={`w-full px-4 py-4 bg-slate-50 dark:bg-[#161b22] border rounded-xl outline-none transition-all font-mono text-[13px] leading-relaxed resize-y dark:shadow-inner text-slate-900 dark:text-slate-100 ${
+                  className={`w-full px-4 py-4 border rounded-xl outline-none transition-all font-mono text-[13px] leading-relaxed resize-y shadow-inner ${
                     errors.markdownBody 
                       ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20' 
-                      : 'border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white dark:focus:bg-[#0d1117]'
+                      : 'focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
                   }`}
+                  style={{ 
+                    backgroundColor: "var(--color-bg-secondary)", 
+                    borderColor: "var(--color-border)",
+                    color: "var(--color-text-primary)"
+                  }}
                 />
                 {errors.markdownBody && <p className="text-red-500 dark:text-red-400 text-xs mt-1 font-medium flex items-center gap-1"><AlertCircle className="w-3 h-3"/>{errors.markdownBody}</p>}
               </div>
 
               {/* 3. 环境变量与机密管理 (Environment Variables & Secrets) */}
-              <div className="space-y-4 bg-amber-50/50 dark:bg-amber-900/10 -mx-8 px-8 py-6 border-y border-amber-100 dark:border-amber-900/30 transition-colors">
+              <div className="space-y-4 -mx-8 px-8 py-8 border-y transition-colors" style={{ backgroundColor: "var(--color-bg-secondary)", borderColor: "var(--color-border-subtle)" }}>
                 <div className="flex justify-between items-end mb-4">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 transition-colors">
-                      <span className="bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-500 w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors">3</span>
+                    <h3 className="text-lg font-bold flex items-center gap-2 transition-colors" style={{ color: "var(--color-text-primary)" }}>
+                      <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors" style={{ backgroundColor: "rgba(245, 158, 11, 0.1)", color: "#f59e0b" }}>3</span>
                       <KeyRound className="w-5 h-5 text-amber-500" />
                       Environment Variables (Secrets)
                     </h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 pl-8 transition-colors">
-                      Store your API keys securely. Referenced as <code className="bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 text-xs font-mono transition-colors">{'{{SECRETS.KEY_NAME}}'}</code> in the manifest.
+                    <p className="text-sm mt-1 pl-8 transition-colors" style={{ color: "var(--color-text-secondary)" }}>
+                      Store your API keys securely. Referenced as <code className="px-1.5 py-0.5 rounded text-amber-600 dark:text-amber-400 border text-xs font-mono transition-colors" style={{ backgroundColor: "var(--color-bg-primary)", borderColor: "var(--color-border)" }}>{'{{SECRETS.KEY_NAME}}'}</code> in the manifest.
                     </p>
                   </div>
-                  <span className="text-xs text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 px-2 py-1 rounded font-bold border border-amber-200 dark:border-amber-900/50 transition-colors">
+                  <span className="text-xs px-2 py-1 rounded font-bold border transition-colors" style={{ backgroundColor: "rgba(245, 158, 11, 0.05)", color: "#f59e0b", borderColor: "rgba(245, 158, 11, 0.2)" }}>
                     AES-256 Encrypted
                   </span>
                 </div>
@@ -484,7 +509,12 @@ payload:
                           placeholder="KEY_NAME (e.g., COINGECKO_API_KEY)"
                           value={secret.key}
                           onChange={(e) => handleSecretChange(index, 'key', e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))}
-                          className="w-full px-3 py-2.5 bg-white dark:bg-[#161b22] border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none font-mono text-sm uppercase text-slate-900 dark:text-slate-100 shadow-sm transition-colors"
+                          className="w-full px-3 py-2.5 border rounded-lg outline-none font-mono text-sm uppercase shadow-sm transition-colors"
+                          style={{ 
+                            backgroundColor: "var(--color-bg-primary)", 
+                            borderColor: "var(--color-border)",
+                            color: "var(--color-text-primary)"
+                          }}
                         />
                       </div>
                       <div className="flex-[2]">
@@ -493,13 +523,19 @@ payload:
                           placeholder="Enter the actual secret value..."
                           value={secret.value}
                           onChange={(e) => handleSecretChange(index, 'value', e.target.value)}
-                          className={`w-full px-3 py-2.5 bg-white dark:bg-[#161b22] border rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none font-mono text-sm text-slate-900 dark:text-slate-100 shadow-sm transition-colors ${secret.key && !secret.value ? 'border-amber-400 dark:border-amber-600 ring-2 ring-amber-100 dark:ring-amber-900/30' : 'border-slate-200 dark:border-slate-700'}`}
+                          className={`w-full px-3 py-2.5 border rounded-lg outline-none font-mono text-sm shadow-sm transition-colors ${secret.key && !secret.value ? 'ring-2 ring-amber-500/20 border-amber-500' : ''}`}
+                          style={{ 
+                            backgroundColor: "var(--color-bg-primary)", 
+                            borderColor: "var(--color-border)",
+                            color: "var(--color-text-primary)"
+                          }}
                         />
                       </div>
                       <button
                         type="button"
                         onClick={() => handleRemoveSecret(index)}
-                        className="p-2.5 text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors border border-transparent hover:border-red-100 dark:hover:border-red-900/30"
+                        className="p-2.5 transition-colors border border-transparent hover:bg-red-500/10 hover:text-red-500 rounded-lg"
+                        style={{ color: "var(--color-text-secondary)" }}
                         title="Remove Secret"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -509,7 +545,8 @@ payload:
                   <button
                     type="button"
                     onClick={handleAddSecret}
-                    className="flex items-center gap-1.5 text-sm text-amber-600 dark:text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 font-bold px-1 py-2 transition-colors"
+                    className="flex items-center gap-1.5 text-sm font-bold px-1 py-2 transition-colors hover:opacity-80"
+                    style={{ color: "#f59e0b" }}
                   >
                     <Plus className="w-4 h-4" /> Add Variable
                   </button>
@@ -518,8 +555,8 @@ payload:
 
               {/* 4. 权限可见性设置 (Publishing) */}
               <div className="space-y-6">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/50 pb-3 transition-colors">
-                  <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors">4</span>
+                <h3 className="text-lg font-bold flex items-center gap-2 border-b pb-3 transition-colors" style={{ color: "var(--color-text-primary)", borderBottomColor: "var(--color-border-subtle)" }}>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors" style={{ backgroundColor: "var(--color-bg-secondary)", color: "var(--color-text-secondary)" }}>4</span>
                   Publishing Mode
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-8">
@@ -528,14 +565,18 @@ payload:
                     onClick={() => setIsPublic(false)}
                     className={`flex items-start gap-3 p-5 rounded-2xl border-2 text-left transition-all ${
                       !isPublic 
-                        ? 'border-blue-500 bg-blue-50/40 dark:bg-blue-900/20 shadow-sm' 
-                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-[#161b22]'
+                        ? 'border-blue-500 bg-blue-500/5 dark:bg-blue-500/10 shadow-sm' 
+                        : 'hover:border-slate-300 dark:hover:border-slate-600'
                     }`}
+                    style={{ 
+                      backgroundColor: !isPublic ? undefined : "var(--color-bg-primary)",
+                      borderColor: !isPublic ? undefined : "var(--color-border)"
+                    }}
                   >
-                    <Lock className={`w-5 h-5 mt-0.5 flex-shrink-0 transition-colors ${!isPublic ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                    <Lock className="w-5 h-5 mt-0.5 flex-shrink-0 transition-colors" style={{ color: !isPublic ? "var(--color-selected-private)" : "var(--color-text-secondary)" }} />
                     <div>
-                      <h4 className={`font-bold transition-colors ${!isPublic ? 'text-blue-900 dark:text-blue-300' : 'text-slate-700 dark:text-slate-300'}`}>Private Sandbox</h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed transition-colors">Deployed instantly to your personal MCP gateway. Only you can call this endpoint.</p>
+                      <h4 className="font-bold transition-colors" style={{ color: !isPublic ? "var(--color-selected-private)" : "var(--color-text-primary)" }}>Private Sandbox</h4>
+                      <p className="text-xs mt-1.5 leading-relaxed transition-colors font-medium" style={{ color: !isPublic ? "var(--color-selected-private)" : "var(--color-text-secondary)", opacity: !isPublic ? 0.8 : 1 }}>Deployed instantly to your personal MCP gateway. Only you can call this endpoint.</p>
                     </div>
                   </button>
 
@@ -544,14 +585,18 @@ payload:
                     onClick={() => setIsPublic(true)}
                     className={`flex items-start gap-3 p-5 rounded-2xl border-2 text-left transition-all relative overflow-hidden ${
                       isPublic 
-                        ? 'border-purple-500 bg-purple-50/40 dark:bg-purple-900/20 shadow-sm' 
-                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-[#161b22]'
+                        ? 'border-purple-500 bg-purple-500/5 dark:bg-purple-500/10 shadow-sm' 
+                        : 'hover:border-slate-300 dark:hover:border-slate-600'
                     }`}
+                    style={{ 
+                      backgroundColor: isPublic ? undefined : "var(--color-bg-primary)",
+                      borderColor: isPublic ? undefined : "var(--color-border)"
+                    }}
                   >
-                    <Globe className={`w-5 h-5 mt-0.5 flex-shrink-0 transition-colors ${isPublic ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                    <Globe className="w-5 h-5 mt-0.5 flex-shrink-0 transition-colors" style={{ color: isPublic ? "var(--color-selected-public)" : "var(--color-text-secondary)" }} />
                     <div>
-                      <h4 className={`font-bold transition-colors ${isPublic ? 'text-purple-900 dark:text-purple-300' : 'text-slate-700 dark:text-slate-300'}`}>Public Marketplace</h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed transition-colors">Publish to the UniSkill Store. Earn crypto credits when other agents invoke your tool.</p>
+                      <h4 className="font-bold transition-colors" style={{ color: isPublic ? "var(--color-selected-public)" : "var(--color-text-primary)" }}>Public Marketplace</h4>
+                      <p className="text-xs mt-1.5 leading-relaxed transition-colors font-medium" style={{ color: isPublic ? "var(--color-selected-public)" : "var(--color-text-secondary)", opacity: isPublic ? 0.8 : 1 }}>Publish to the UniSkill Store. Earn crypto credits when other agents invoke your tool.</p>
                     </div>
                     <div className="absolute top-3 right-3 bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 text-[9px] font-black px-2 py-0.5 rounded-sm uppercase tracking-widest transition-colors">
                       Phase 2
@@ -563,15 +608,15 @@ payload:
 
             {/* 🌟 底部提交与沙箱测试区域 (Footer & Sandbox Area) */}
             {!deployedSkill ? (
-              <div className="bg-slate-50 dark:bg-[#0d1117] p-6 md:px-10 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors">
-                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                  <AlertCircle className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+              <div className="p-6 md:px-10 border-t flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors" style={{ backgroundColor: "var(--color-bg-secondary)", borderTopColor: "var(--color-border)" }}>
+                <div className="flex items-center gap-2 text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                  <AlertCircle className="w-4 h-4" />
                   <span>Edge deployment takes &lt; 1s globally.</span>
                 </div>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-900 font-bold rounded-xl transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-xl shadow-slate-900/10 dark:shadow-slate-100/10 active:scale-95"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold rounded-xl transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-xl shadow-slate-900/10 dark:shadow-white/10 active:scale-95"
                 >
                   {isSubmitting ? (
                     <div className="w-5 h-5 border-2 border-white/30 dark:border-slate-900/30 border-t-white dark:border-t-slate-900 rounded-full animate-spin transition-colors" />
@@ -582,16 +627,16 @@ payload:
                 </button>
               </div>
             ) : (
-              // 🌟 部署成功后的深色沙箱测试面板 (Dark Sandbox Panel after successful deployment)
-              <div className="bg-[#020617] border-t border-emerald-500/30 p-8 md:p-10 animate-in fade-in slide-in-from-bottom-8">
+              // 🌟 部署成功后的沙箱测试面板 (Sandbox Panel after successful deployment)
+              <div className="border-t p-8 md:p-10 animate-in fade-in slide-in-from-bottom-8" style={{ backgroundColor: "var(--color-bg-secondary)", borderTopColor: "var(--color-border)" }}>
                 <div className="flex flex-col md:flex-row items-start justify-between gap-6 mb-8">
                   <div>
-                    <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                    <h3 className="text-2xl font-bold flex items-center gap-3" style={{ color: "var(--color-text-primary)" }}>
                       <CheckCircle2 className="w-8 h-8 text-emerald-500" />
                       Endpoint Live!
                     </h3>
-                    <p className="text-slate-400 mt-2 text-sm">
-                      Your skill <code className="text-emerald-400 bg-emerald-900/30 px-1.5 py-0.5 rounded">execute_{deployedSkill.id}</code> is running at the edge. Test it below.
+                    <p className="mt-2 text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                      Your skill <code className="text-emerald-400 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded">execute_{deployedSkill.id}</code> is running at the edge. Test it below.
                     </p>
                   </div>
                   <div className="flex gap-3 w-full md:w-auto">
@@ -624,13 +669,17 @@ payload:
                       value={testInput}
                       onChange={(e) => setTestInput(e.target.value)}
                       placeholder='e.g., {"query": "Show me trending rust repos"}'
-                      className="w-full h-40 bg-[#0d1117] border border-slate-700 rounded-xl p-4 text-emerald-400 font-mono text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none resize-none shadow-inner"
+                      className="w-full h-40 border rounded-xl p-4 text-emerald-600 dark:text-emerald-400 font-mono text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none resize-none shadow-inner"
+                      style={{ 
+                        backgroundColor: "var(--color-bg-primary)", 
+                        borderColor: "var(--color-border)"
+                      }}
                     />
                     <button
                       type="button"
                       onClick={handleRunTest}
                       disabled={isTesting || !testInput.trim()}
-                      className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold rounded-xl transition-colors flex justify-center items-center gap-2"
+                      className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold rounded-xl transition-colors flex justify-center items-center gap-2"
                     >
                       {isTesting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Run Execution'}
                     </button>
@@ -640,7 +689,7 @@ payload:
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
                       <Activity className="w-4 h-4" /> Execution Log
                     </label>
-                    <div className="flex-1 bg-[#0d1117] border border-slate-700 rounded-xl p-4 overflow-auto min-h-[10rem] relative shadow-inner">
+                    <div className="flex-1 border rounded-xl p-4 overflow-auto min-h-[10rem] relative shadow-inner" style={{ backgroundColor: "var(--color-bg-primary)", borderColor: "var(--color-border)" }}>
                       {!testLog && !isTesting && (
                         <div className="absolute inset-0 flex items-center justify-center text-slate-600 font-mono text-sm">
                           Waiting for execution...

@@ -12,8 +12,13 @@
   --color-text-secondary: #475569;
   
   --color-blue: #2563eb;
+  --color-blue-rgb: 37, 99, 235;
   --color-purple: #7c3aed;
+  --color-purple-rgb: 124, 58, 237;
   --color-cyan: #0891b2;
+  
+  --color-selected-private: #1e40af; /* Blue-800 for light mode selection */
+  --color-selected-public: #7e22ce; /* Purple-800 for light mode selection */
   
   --color-nav-bg: rgba(255, 255, 255, 0.85);
   --color-toggle-bg: rgba(15, 23, 42, 0.04); /* 透亮的超淡灰色 */
@@ -46,6 +51,12 @@
   --color-border-subtle: rgba(255, 255, 255, 0.04); 
   --color-text-primary: #ffffff;
   --color-text-secondary: #cbd5e1;
+
+  --color-blue-rgb: 59, 130, 246; /* blue-500 */
+  --color-purple-rgb: 168, 85, 247; /* purple-500 */
+
+  --color-selected-private: #ffffff; /* Brighter for dark mode selection */
+  --color-selected-public: #ffffff; /* Brighter for dark mode selection */
 
   --color-nav-bg: rgba(10, 15, 30, 0.85);
   --color-toggle-bg: rgba(30, 41, 59, 0.5); /* slate-800/50 */

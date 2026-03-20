@@ -90,7 +90,7 @@ export default function HowItWorks() {
         <section
             ref={sectionRef}
             id="how-it-works"
-            className="relative py-24 overflow-hidden"
+            className="relative pt-12 pb-24 overflow-hidden"
             style={{ backgroundColor: "var(--color-bg-primary)" }}
         >
             {/* ─── 背景光晕装饰 ─── */}
@@ -105,14 +105,14 @@ export default function HowItWorks() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={isInView ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.6 }}
-                    className="text-center mb-12"
+                    className="text-center mb-6"
                 >
                     {/* 小标签 */}
                     <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold tracking-widest uppercase text-purple-400 border border-purple-500/30 bg-purple-500/5 mb-5">
                         How It Works
                     </span>
                     {/* 主标题 */}
-                    <h2 className="text-4xl md:text-5xl font-black leading-tight mb-5 max-w-4xl mx-auto" style={{ color: "var(--color-text-primary)" }}>
+                    <h2 className="text-4xl md:text-5xl font-black leading-tight mb-[15px] max-w-4xl mx-auto" style={{ color: "var(--color-text-primary)" }}>
                         From Zero to{" "}
                         <span className="gradient-text">Full Capability</span>{" "}
                         in 3 Steps

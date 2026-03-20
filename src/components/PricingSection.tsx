@@ -303,12 +303,12 @@ function PricingContent() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={isInView ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.6 }}
-                    className="text-center mb-12"
+                    className="text-center mb-6"
                 >
                     <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold tracking-widest uppercase text-blue-400 border border-blue-500/30 bg-blue-500/5 mb-5">
                         Pricing
                     </span>
-                    <h2 className="text-4xl md:text-5xl font-black leading-tight mb-5" style={{ color: "var(--color-text-primary)" }}>
+                    <h2 className="text-4xl md:text-5xl font-black leading-tight mb-[15px]" style={{ color: "var(--color-text-primary)" }}>
                         Simple, <span className="gradient-text">Credit-Based</span> Pricing
                     </h2>
                     <p className="text-lg max-w-2xl mx-auto" style={{ color: "var(--color-text-secondary)" }}>
@@ -353,7 +353,7 @@ function PricingContent() {
                                     whileHover={!isDisabled && !isMobile ? { y: -8, scale: 1.02 } : {}}
                                     transition={{ type: "spring", stiffness: 400, damping: 10 }}
                                     className={`
-                                        glass-card h-full flex flex-col p-7 ${plan.borderClass}
+                                        glass-card h-full flex flex-col p-6 ${plan.borderClass}
                                         transition-colors duration-300 relative
                                         ${plan.highlighted && !isDisabled
                                             ? "ring-2 ring-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.2)]"
@@ -369,46 +369,46 @@ function PricingContent() {
                                             </span>
                                         </div>
                                     )}
-                                    <div className={`w-10 h-1.5 rounded-full bg-gradient-to-r ${plan.gradient} mb-5`} />
+                                    <div className={`w-10 h-1.5 rounded-full bg-gradient-to-r ${plan.gradient} mb-4`} />
                                     <h3 className="text-lg font-bold mb-1" style={{ color: "var(--color-text-primary)" }}>{plan.name}</h3>
-
-                                    {plan.label && (
-                                        <p className={`text-xs font-medium mb-4 ${plan.labelColor}`}>
-                                            {plan.label}
-                                        </p>
-                                    )}
-                                    {!plan.label && <div className="mb-4" />}
-
-                                    <div className="mb-5">
+ 
+                                     {plan.label && (
+                                         <p className={`text-xs font-medium mb-2 ${plan.labelColor}`}>
+                                             {plan.label}
+                                         </p>
+                                     )}
+                                     {!plan.label && <div className="mb-2" />}
+ 
+                                     <div className="mb-4">
                                         <span className="text-4xl font-black" style={{ color: "var(--color-text-primary)" }}>
                                             {plan.priceDisplay}
                                         </span>
                                     </div>
 
-                                    <div
-                                        className={`
-                    px-3 py-2 rounded-lg text-sm font-semibold mb-6
-                    bg-gradient-to-r ${plan.gradient} bg-opacity-10
-                    text-white border border-white/10
-                  `}
-                                    >
-                                        ✦ {plan.credits}
-                                    </div>
+                                     <div
+                                         className={`
+                     px-3 py-1.5 rounded-lg text-sm font-semibold mb-5
+                     bg-gradient-to-r ${plan.gradient} bg-opacity-10
+                     text-white border border-white/10
+                   `}
+                                     >
+                                         ✦ {plan.credits}
+                                     </div>
 
-                                    <ul className="space-y-2.5 mb-8 flex-1">
-                                        {plan.features.map((feat) => (
-                                            <li key={feat} className="flex items-start gap-2 text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                                                <svg className="w-4 h-4 mt-0.5 text-blue-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                                    <polyline points="20,6 9,17 4,12" />
-                                                </svg>
-                                                {feat}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    <button
-                                        onClick={() => handleCheckout(plan.id)}
-                                        disabled={isDisabled || loadingTier === plan.id}
-                                        className={`w-full py-4 px-6 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
+                                     <ul className="space-y-1.5 mb-5 flex-1">
+                                         {plan.features.map((feat) => (
+                                             <li key={feat} className="flex items-start gap-2 text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                                                 <svg className="w-4 h-4 mt-0.5 text-blue-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                     <polyline points="20,6 9,17 4,12" />
+                                                 </svg>
+                                                 {feat}
+                                             </li>
+                                         ))}
+                                     </ul>
+                                     <button
+                                         onClick={() => handleCheckout(plan.id)}
+                                         disabled={isDisabled || loadingTier === plan.id}
+                                         className={`w-full py-3 px-6 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
                                             isDisabled
                                                 ? "cursor-not-allowed opacity-80 border"
                                                 : plan.highlighted
@@ -455,7 +455,7 @@ function PricingContent() {
                 </div>
 
                 {/* 底部补充说明 */}
-                <div className="mt-12 text-center">
+                <div className="mt-6 text-center">
                     <p className="text-slate-500 text-sm">
                         Need more credits? <a href="/dashboard" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">Go to Dashboard to top up</a>
                     </p>

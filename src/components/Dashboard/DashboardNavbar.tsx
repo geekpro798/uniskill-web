@@ -175,6 +175,23 @@ export default function DashboardNavbar({ credits, totalCredits = 500 }: Dashboa
                                         Dashboard
                                     </Link>
 
+                                    {/* Create New Skill 链接 */}
+                                    <Link
+                                        href="/dashboard/skills/new"
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className={`flex items-center gap-2.5 px-4 py-2 text-xs font-medium transition-colors ${isActive("/dashboard/skills/new")
+                                            ? "text-blue-500 bg-blue-500/10"
+                                            : "hover:bg-[var(--color-menu-hover-bg)]"
+                                            }`}
+                                        style={{ color: isActive("/dashboard/skills/new") ? "var(--color-blue)" : "var(--color-text-secondary)" }}
+                                    >
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="12" y1="5" x2="12" y2="19" />
+                                            <line x1="5" y1="12" x2="19" y2="12" />
+                                        </svg>
+                                        Create New Skill
+                                    </Link>
+
                                     {/* 分割线 */}
                                     <div className="my-1 h-[1px]" style={{ backgroundColor: "var(--color-border)" }} />
 

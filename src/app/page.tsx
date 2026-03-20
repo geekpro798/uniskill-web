@@ -6,6 +6,7 @@ import HeroSection from "@/components/HeroSection";
 import HowItWorks from "@/components/HowItWorks";
 import QuickstartCard from "@/components/QuickstartCard";
 import PricingSection from "@/components/PricingSection";
+import CreatorHubSection from "@/components/homepage/CreatorHubSection";
 import Footer from "@/components/Footer";
 
 export default function HomePage() {
@@ -19,6 +20,9 @@ export default function HomePage() {
 
       {/* 流程说明区块 */}
       <HowItWorks />
+
+      {/* 创作者中心区块 */}
+      <CreatorHubSection />
 
       {/* 定价区块 */}
       <PricingSection />
