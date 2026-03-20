@@ -1,459 +1,608 @@
-"use client";
+'use client';
 
-// src/app/dashboard/page.tsx
-// UniSkill Dashboard — 用户登录后的主控制台
-// 展示：UniSkill Key（首次登录仅此一次）、剩余配额、快速接入代码
-
-import { useSession, signIn, signOut } from "next-auth/react";
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect } from 'react';
+import { useSession } from "next-auth/react";
 import Link from "next/link";
-import IntegrationCard from "@/components/Dashboard/IntegrationCard";
-import QuickActivity from "@/components/Dashboard/QuickActivity";
 import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
 import TopUpModal from "@/components/Dashboard/TopUpModal";
 import ResetKeyModal from "@/components/Dashboard/ResetKeyModal";
-import MySkillsSection from "@/components/Dashboard/MySkillsSection";
+import { supabase } from "@/lib/supabase";
+import { 
+  Zap, Key, Terminal, BarChart3, ArrowUpRight, 
+  Plus, Layers, ExternalLink, Activity, ShieldCheck, 
+  Copy, CheckCircle2, ChevronRight, Eye, EyeOff,
+  History, Monitor, Code2, Globe, Lock, MoreVertical
+} from 'lucide-react';
 
-/* ─── Key 展示卡片组件 ────────────────────────────────────────────────── */
-function KeyCard({ 
-    rawKey, 
-    keyPreview, 
-    onReset 
-}: { 
-    rawKey?: string; 
-    keyPreview?: string; 
-    onReset: () => void 
-}) {
-    const [copied, setCopied] = useState(false);
-    const [revealed, setRevealed] = useState(false);
-    const [isResetting, setIsResetting] = useState(false);
+// ==========================================
+// Component: Tool Suite Integration
+const IntegrationTerminal = ({ apiKey }: { apiKey?: string }) => {
+  const [platform, setPlatform] = useState<'mac' | 'win'>('mac');
+  const [copied, setCopied] = useState(false);
 
-    /* 复制 Key 到剪贴板 */
-    const handleCopy = async (text: string) => {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
+  const command = platform === 'mac' 
+    ? (apiKey ? `curl -fsSL https://uniskill.ai/connect.sh | bash -s -- ${apiKey}` : 'curl -fsSL https://uniskill.ai/connect.sh | bash')
+    : (apiKey ? `$env:UNISKILL_KEY="${apiKey}"; irm https://uniskill.ai/connect.ps1 | iex` : 'irm https://uniskill.ai/connect.ps1 | iex');
 
-    const handleResetClick = async () => {
-        setIsResetting(true);
-        try {
-            await onReset();
-        } finally {
-            setIsResetting(false);
-        }
-    };
+  const handleCopy = () => {
+    navigator.clipboard.writeText(command);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
-    if (!rawKey) {
-        /* 已有 Key（非首次登录或重置后刷新） */
-        return (
-            <div className="glass-card p-6">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2">
-                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                            </svg>
-                        </div>
-                        <div>
-                            <p className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>Your API Key</p>
-                            <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>Key is hidden — shown once at registration</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="code-block flex items-center justify-between gap-4">
-                    <span className="font-mono text-sm tracking-wider" style={{ color: "var(--color-text-secondary)" }}>
-                        {keyPreview || "us-••••••••-••••-••••-••••-••••••••••••"}
-                    </span>
-                    {/* 重置按钮：移动到此处以获得更好的上下文交互 */}
-                    <button 
-                        onClick={handleResetClick}
-                        disabled={isResetting}
-                        className="text-[10px] uppercase font-bold tracking-tight px-2 py-1 rounded transition-all disabled:opacity-50 flex items-center gap-1.5 border bg-[var(--color-toggle-bg)] text-[var(--color-text-secondary)] border-[var(--color-toggle-border)] hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/40"
-                    >
-                        {isResetting ? (
-                            <div className="w-3 h-3 border-2 border-slate-600 border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                                <path d="M23 4v6h-6M1 20v-6h6" />
-                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-                            </svg>
-                        )}
-                        {isResetting ? "Resetting" : "Reset Key"}
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    /* 首次登录：展示原始 Key，提示立即复制 */
-    return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.97 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="glass-card p-6 border-yellow-500/30 relative overflow-hidden"
-        >
-            {/* 警告光晕 */}
-            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-yellow-500/0 via-yellow-500/80 to-yellow-500/0" />
-
-            {/* 一次性提示横幅 */}
-            <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-yellow-500/8 border border-yellow-500/20">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#eab308" strokeWidth="2">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                    <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
-                <span className="text-xs text-yellow-500 font-semibold">
-                    This key is shown ONCE — copy it now and store it securely
-                </span>
-            </div>
-
-            <p className="text-sm font-semibold mb-3" style={{ color: "var(--color-text-primary)" }}>Your API Key</p>
-
-            {/* Key 显示区域 */}
-            <div className="code-block flex items-center justify-between gap-4 mb-3">
-                <span className={`text-green-500 font-mono text-sm ${!revealed ? "blur-sm select-none" : ""} transition-all`}>
-                    {rawKey}
-                </span>
-                <div className="flex items-center gap-2 shrink-0">
-                    {/* 显示/隐藏 Toggle */}
-                    <button
-                        onClick={() => setRevealed(!revealed)}
-                        className="p-2 rounded-md transition-all hover:bg-slate-500/10"
-                        style={{ color: "var(--color-text-secondary)" }}
-                        title={revealed ? "Hide key" : "Reveal key"}
-                    >
-                        {revealed ? (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                                <line x1="1" y1="1" x2="23" y2="23" />
-                            </svg>
-                        ) : (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                <circle cx="12" cy="12" r="3" />
-                            </svg>
-                        )}
-                    </button>
-                    {/* 复制按钮 */}
-                    <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => handleCopy(rawKey)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${copied
-                            ? "bg-green-500/20 text-green-500 border border-green-500/30"
-                            : "bg-blue-500/15 text-blue-500 border border-blue-500/30 hover:bg-blue-500/25"
-                            }`}
-                    >
-                        {copied ? (
-                            <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20,6 9,17 4,12" /></svg> Copied!</>
-                        ) : (
-                            <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg> Copy Key</>
-                        )}
-                    </motion.button>
-                </div>
-            </div>
-        </motion.div>
-    );
-}
-
-/* ─── 配额进度条组件 ─────────────────────────────────────────────────── */
-function CreditsBar({ 
-    credits, 
-    total = 500, 
-    onBuyCredits 
-}: { 
-    credits?: number; 
-    total?: number; 
-    onBuyCredits: () => void 
-}) {
-    /* credits 未确定时显示骨架，避免 session 加载前误显示默认值 500 */
-    if (credits === undefined) {
-        return (
-            <div className="glass-card p-6">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2">
-                                <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
-                            </svg>
-                        </div>
-                        <span className="text-sm font-semibold" style={{ color: "var(--color-text-secondary)" }}>Credits</span>
-                    </div>
-                    <div className="w-16 h-7 rounded animate-pulse" style={{ backgroundColor: "var(--color-toggle-bg)" }} />
-                </div>
-                <p className="text-xs mt-2" style={{ color: "var(--color-text-secondary)" }}>
-                    Credit cost varies by skill · 
-                    <button 
-                        onClick={onBuyCredits}
-                        className="text-blue-500 hover:underline ml-1"
-                    >
-                        Buy Credits
-                    </button>
-                </p>
-            </div>
-        );
-    }
-
-    const pct = Math.max(0, Math.min(100, (credits / total) * 100));
-
-    return (
-        <div className="glass-card p-6">
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2">
-                            <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
-                        </svg>
-                    </div>
-                    <span className="text-sm font-semibold" style={{ color: "var(--color-text-secondary)" }}>Credits</span>
-                </div>
-                <span className="text-2xl font-black" style={{ color: "var(--color-text-primary)" }}>{credits}</span>
-            </div>
-            <div className="mt-3">
-                <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>
-                    Credit cost varies by skill · 
-                    <button 
-                        onClick={onBuyCredits}
-                        className="text-blue-500 hover:underline ml-1"
-                    >
-                        Buy Credits
-                    </button>
-                </p>
-            </div>
+  return (
+    <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-[28px] p-6 shadow-sm text-left relative group transition-all">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-50 dark:bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500">
+            <Monitor size={20} />
+          </div>
+          <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Tool Suite Integration</h3>
         </div>
-    );
-}
+        <div className="flex bg-[#f3f4f6] dark:bg-slate-800/50 rounded-[12px] p-1 border border-slate-200/50 dark:border-slate-700/50">
+          <button 
+            onClick={() => setPlatform('mac')}
+            className={`px-4 py-1.5 text-xs font-bold rounded-[8px] transition-all ${platform === 'mac' ? 'bg-[#e0e7ff] text-[#2563eb] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >Mac / Linux</button>
+          <button 
+            onClick={() => setPlatform('win')}
+            className={`px-4 py-1.5 text-xs font-bold rounded-[8px] transition-all ${platform === 'win' ? 'bg-[#e0e7ff] text-[#2563eb] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >Windows</button>
+        </div>
+      </div>
 
+      <div className="rounded-[16px] border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50 dark:bg-slate-950 shadow-sm">
+        <div className="bg-[#f1f5f9] dark:bg-slate-900 px-4 py-2.5 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
+           <div className="flex gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+           </div>
+           <span className="text-[11px] font-mono italic text-slate-500 font-bold ml-4 user-select-none">Terminal</span>
+           <button 
+             onClick={handleCopy}
+             className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-400 hover:text-blue-500 transition-colors"
+           >
+             {copied ? <CheckCircle2 size={13} className="text-emerald-500" /> : <Copy size={13} />}
+             <span>Copy</span>
+           </button>
+        </div>
+        <div className="p-5 font-mono text-[14px] leading-relaxed break-all bg-white dark:bg-slate-950 flex gap-3">
+           <span className="text-slate-400 font-bold">$</span>
+           <div className="flex-1">
+              {platform === 'mac' ? (
+                <>
+                  <span className="text-blue-500">curl</span> 
+                  <span className="text-slate-500 ml-1.5">-fsSL</span> 
+                  <span className="text-emerald-500 ml-2">https://uniskill.ai/connect.sh</span> 
+                  <span className="text-slate-400 ml-2">|</span> 
+                  <span className="text-blue-500 ml-2">bash</span>
+                  {apiKey && (
+                    <>
+                      <span className="text-slate-400 ml-2">-s --</span> 
+                      <span className="text-emerald-500 ml-2">{apiKey}</span>
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  {apiKey && (
+                    <>
+                      <span className="text-slate-400">$env:UNISKILL_KEY="</span>
+                      <span className="text-emerald-500">{apiKey}</span>
+                      <span className="text-slate-400">"; </span>
+                    </>
+                  )}
+                  <span className="text-blue-500">irm</span> 
+                  <span className="text-emerald-500 ml-2">https://uniskill.ai/connect.ps1</span> 
+                  <span className="text-slate-400 ml-2">|</span> 
+                  <span className="text-blue-500 ml-2">iex</span>
+                </>
+              )}
+           </div>
+        </div>
+      </div>
 
-/* ─── Dashboard 主页面 ──────────────────────────────────────────────────
-   受保护路由：未登录自动跳转到 GitHub OAuth 页面
-   ─────────────────────────────────────────────────────────────────────── */
+      <p className="text-[11px] text-slate-500 leading-relaxed font-medium mt-4">
+        One command to connect your local IDE (Cursor/Claude) to UniSkill network.
+      </p>
+    </div>
+  );
+};
+
+// ==========================================
+// Component: Recent Activity
+// Logic: 展示最新的 API 消费和微交易流水
+// ==========================================
+const RecentActivity = ({ logs, loading }: { logs: any[], loading: boolean }) => {
+  return (
+    <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-[24px] overflow-hidden shadow-sm text-left">
+      <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between bg-slate-50/50 dark:bg-transparent">
+        <h3 className="text-[12px] font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <History size={14} className="text-slate-400" />
+          Recent Activity
+        </h3>
+        <Link href="/dashboard/billing" className="text-[10px] font-bold text-blue-500 hover:underline">View All</Link>
+      </div>
+      <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
+        {loading ? (
+          <div className="px-5 py-8 flex items-center justify-center">
+            <div className="w-4 h-4 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+          </div>
+        ) : logs.length > 0 ? (
+          logs.map(log => (
+            <div key={log.id} className="px-5 py-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
+              <div className="flex flex-col">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 font-mono truncate max-w-[120px]">
+                  {log.skill_name || 'System'}
+                </span>
+                <span className="text-[10px] text-slate-400 mt-0.5">
+                  {new Date(log.created_at).toLocaleString('zh-CN', { 
+                    year: 'numeric', month: '2-digit', day: '2-digit', 
+                    hour: '2-digit', minute: '2-digit', hour12: false 
+                  }).replace(/\//g, '-')}
+                </span>
+              </div>
+              <span className={`text-[11px] font-black font-mono ${log.amount < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                {log.amount > 0 ? `+${log.amount}` : log.amount}
+              </span>
+            </div>
+          ))
+        ) : (
+          <div className="px-5 py-8 text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">
+            No activity yet
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// Main Page: Dashboard Console
+// Logic: Credits、技能资产及安全配置的管理中枢
+// ==========================================
 export default function DashboardPage() {
-    const { data: session, status } = useSession();
+  const { data: session, status } = useSession();
+  const [showKey, setShowKey] = useState(false);
+  const [copiedKey, setCopiedKey] = useState(false);
+  const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [liveCredits, setLiveCredits] = useState<number | undefined>(undefined);
+  
+  // API Key 重置后的临时明文及预览状态
+  const [resetRawKey, setResetRawKey] = useState<string | undefined>(undefined);
+  const [resetKeyPreview, setResetKeyPreview] = useState<string | undefined>(undefined);
+  const [skills, setSkills] = useState<any[]>([]);
+  const [loadingSkills, setLoadingSkills] = useState(true);
+  const [invocationStats, setInvocationStats] = useState({ daily: 0, lifetime: 0 });
+  const [recentLogs, setRecentLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(true);
 
-    // 控制弹窗状态
-    const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
-    const [isResetModalOpen, setIsResetModalOpen] = useState(false);
-
-    // liveCredits 初始化为 undefined，初次加载展示骨架屏，后续静默刷新
-    const [liveCredits, setLiveCredits] = useState<number | undefined>(undefined);
-    
-    // API Key 重置后的临时明文及预览状态
-    const [resetRawKey, setResetRawKey] = useState<string | undefined>(undefined);
-    const [resetKeyPreview, setResetKeyPreview] = useState<string | undefined>(undefined);
-
-    const fetchLiveCredits = async () => {
-        if (!session?.user?.id) return;
-        try {
-            const res = await fetch("/api/user/credits");
-            if (res.ok) {
-                const data = await res.json();
-                if (typeof data.credits === "number") {
-                    setLiveCredits(data.credits);
-                }
-            }
-        } catch (e) {
-            console.error("Failed to fetch live credits", e);
+  const fetchLiveCredits = async () => {
+    if (!session?.user?.id) return;
+    try {
+      const res = await fetch("/api/user/credits");
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof data.credits === "number") {
+          setLiveCredits(data.credits);
         }
-    };
-
-    const handleResetKey = () => {
-        setIsResetModalOpen(true);
-    };
-
-    const handleConfirmReset = async () => {
-        try {
-            const res = await fetch("/api/user/reset-key", { method: "POST" });
-            if (res.ok) {
-                const data = await res.json();
-                setResetRawKey(data.rawKey);
-                setResetKeyPreview(data.keyPreview);
-            } else {
-                throw new Error("Failed to reset key");
-            }
-        } catch (e) {
-            console.error("Failed to reset key", e);
-            alert("Error resetting key. Please try again.");
-            throw e;
-        }
-    };
-
-    useEffect(() => {
-        if (status !== "authenticated") return;
-        // SWR: 初始由 fetchLiveCredits 获取最新值（展示骨架屏）
-        // 不再回滚使用 session 的旧缓存，避免数额闪烁
-        fetchLiveCredits();
-        window.addEventListener("focus", fetchLiveCredits);
-        return () => window.removeEventListener("focus", fetchLiveCredits);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [status]);
-
-    /* 提取业务数据 (放在 return 之前) */
-    const user = session?.user;
-    const credits = liveCredits; // 始终以实时接口返回的值为准
-    const finalRawKey = resetRawKey || user?.rawKey;
-    const finalKeyPreview = resetKeyPreview || user?.keyPreview;
-
-    /* 未认证：显示登录提示 */
-    if (status === "unauthenticated") {
-        return (
-            <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "var(--color-bg-primary)" }}>
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="glass-card p-10 text-center max-w-md w-full"
-                >
-                    <div className="w-14 h-14 mx-auto mb-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    </div>
-                    <h1 className="text-xl font-bold mb-2" style={{ color: "var(--color-text-primary)" }}>Sign in to UniSkill</h1>
-                    <p className="text-sm mb-8" style={{ color: "var(--color-text-secondary)" }}>Access your API key and usage dashboard</p>
-                    <motion.button
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => signIn("github")}
-                        className="btn-primary w-full flex items-center justify-center gap-3"
-                    >
-                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                        </svg>
-                        <span>Continue with GitHub</span>
-                    </motion.button>
-                </motion.div>
-            </div>
-        );
+      }
+    } catch (e) {
+      console.error("Failed to fetch live credits", e);
     }
+  };
 
-    /* 加载中 */
-    if (status === "loading") {
-        return (
-            <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--color-bg-primary)" }}>
-                <div className="flex items-center gap-3" style={{ color: "var(--color-text-secondary)" }}>
-                    <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm">Loading dashboard...</span>
-                </div>
-            </div>
-        );
+  const fetchSkills = async () => {
+    // 使用 userUid 兼容 auth 层 (session 对象中的标识符)
+    const uid = (session?.user as any)?.userUid || session?.user?.id;
+    if (!uid) return;
+    try {
+      setLoadingSkills(true);
+      const { data, error } = await supabase
+        .from('skills')
+        .select('*')
+        .eq('creator_uid', uid) // 修正字段名：经查证，skills 表使用 creator_uid 标识作者
+        .order('skill_name', { ascending: true }); // 使用 skill_name 排序，该表没有 created_at
+
+      if (error) throw error;
+      setSkills(data || []);
+    } catch (e) {
+      console.error("Failed to fetch skills", e);
+    } finally {
+      setLoadingSkills(false);
     }
+  };
 
-    /* 已登录：渲染 Dashboard */
+  const fetchInvocations = async () => {
+    const uid = (session?.user as any)?.userUid || session?.user?.id;
+    if (!uid) return;
+    try {
+      // 1. 获取 24h 内的调用次数 (Count 24h invocations via negative credit events)
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { count: dailyCount, error: dailyError } = await supabase
+        .from('credit_events')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_uid', uid)
+        .lt('amount', 0) // 仅计算扣费事件 (只有负值才是调用)
+        .gte('created_at', twentyFourHoursAgo);
 
-    return (
-        <div className="min-h-screen bg-grid" style={{ backgroundColor: "var(--color-bg-primary)" }}>
-            {/* ─── 顶部 Navbar：使用共享 DashboardNavbar 组件，传入实时 credits ─── */}
-            <DashboardNavbar credits={credits} totalCredits={500} />
+      if (dailyError) throw dailyError;
 
-            {/* ─── Dashboard 主内容 ─── */}
-            <main className="max-w-5xl mx-auto px-6 py-10">
-                {/* 欢迎标题 */}
-                <motion.div
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="mb-8"
-                >
-                    <h1 className="text-2xl font-black mb-1" style={{ color: "var(--color-text-primary)" }}>
-                        Welcome back, {user?.name?.split(" ")[0]} 👋
-                    </h1>
-                    <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>Your UniSkill API Gateway dashboard</p>
-                </motion.div>
+      // 2. 获取累计调用总次数 (Count lifetime invocations via negative credit events)
+      const { count: lifetimeCount, error: lifetimeError } = await supabase
+        .from('credit_events')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_uid', uid)
+        .lt('amount', 0); // 仅计算扣费事件
 
-                {/* 首次登录一次性 Toast 提醒 */}
-                <AnimatePresence>
-                    {finalRawKey && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="mb-6 px-4 py-3 rounded-lg bg-green-500/8 border border-green-500/20 flex items-center gap-3"
-                        >
-                            <span className="text-green-500 text-lg">🎉</span>
-                            <div>
-                                <p className="text-sm font-semibold text-green-500">Account successfully updated!</p>
-                                <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>Your API key is shown below — please save it now.</p>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+      if (lifetimeError) throw lifetimeError;
 
-                {/* ─── 卡片网格 ─── */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
-                    {/* Key 卡片（跨两列） */}
-                    <motion.div
-                        className="lg:col-span-2"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 1.1, duration: 0.5 }}
-                    >
-                        <KeyCard 
-                            rawKey={finalRawKey} 
-                            keyPreview={finalKeyPreview}
-                            onReset={handleResetKey}
-                        />
-                    </motion.div>
+      setInvocationStats({ 
+        daily: dailyCount || 0, 
+        lifetime: lifetimeCount || 0 
+      });
+    } catch (e) {
+      console.error("Failed to fetch invocations", e);
+    }
+  };
 
-                    {/* ── 左列：Credits 卡片 + Recent Activity（flex-1 填满剩余高度）── */}
-                    {/* 左列用 flex column 布局，使两个子卡等高撑满整列 */}
-                    <motion.div
-                        className="flex flex-col gap-4 h-full"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2, duration: 0.5 }}
-                    >
-                        {/* 配额卡片 */}
-                        <CreditsBar 
-                            credits={credits} 
-                            total={500} 
-                            onBuyCredits={() => setIsTopUpModalOpen(true)}
-                        />
-                        {/* Recent Activity：flex-1 让它填满左列剩余高度，与右列等高 */}
-                        <div className="flex-1">
-                            <QuickActivity />
-                        </div>
-                    </motion.div>
+  const fetchRecentActivity = async () => {
+    const uid = (session?.user as any)?.userUid || session?.user?.id;
+    if (!uid) return;
+    try {
+      setLoadingLogs(true);
+      const { data, error } = await supabase
+        .from('credit_events')
+        .select('id, skill_name, amount, created_at')
+        .eq('user_uid', uid)
+        .order('created_at', { ascending: false })
+        .limit(3);
 
-                    {/* ── 右列：Auto-Integration 卡片（h-full 匹配左列总高度）── */}
-                    <motion.div
-                        className="h-full"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3, duration: 0.5 }}
-                    >
-                        <IntegrationCard rawKey={finalRawKey} />
-                    </motion.div>
+      if (error) throw error;
+      setRecentLogs(data || []);
+    } catch (e) {
+      console.error("Failed to fetch recent activity", e);
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    fetchLiveCredits();
+    fetchSkills();
+    fetchInvocations();
+    fetchRecentActivity();
+    window.addEventListener("focus", fetchLiveCredits);
+    return () => window.removeEventListener("focus", fetchLiveCredits);
+  }, [status, session?.user?.id]);
+
+  const handleConfirmReset = async () => {
+    try {
+      const res = await fetch("/api/user/reset-key", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setResetRawKey(data.rawKey);
+        setResetKeyPreview(data.keyPreview);
+      } else {
+        throw new Error("Failed to reset key");
+      }
+    } catch (e) {
+      console.error("Failed to reset key", e);
+      alert("Error resetting key. Please try again.");
+      throw e;
+    }
+  };
+
+  const privateCount = skills.filter(s => s.is_public === false).length;
+  const publicCount = skills.filter(s => s.is_public === true).length;
+
+  // 首页统计看板展示的核心数据逻辑
+  const stats = [
+    { 
+      label: 'Credits Balance', 
+      value: liveCredits !== undefined ? liveCredits.toLocaleString() : '---', 
+      icon: Zap, 
+      color: 'text-amber-400', 
+      bg: 'bg-amber-400/10'
+    },
+    { 
+      label: '24h Invocations', 
+      value: invocationStats.daily.toLocaleString(), 
+      icon: Activity, 
+      color: 'text-emerald-400', 
+      bg: 'bg-emerald-400/10',
+      totalLifetime: invocationStats.lifetime >= 1000 
+        ? `${(invocationStats.lifetime / 1000).toFixed(1)}K` 
+        : invocationStats.lifetime.toString() 
+    },
+    { 
+      label: 'Live Skills', 
+      value: loadingSkills ? '---' : skills.length.toString(), 
+      icon: Layers, 
+      color: 'text-blue-400', 
+      bg: 'bg-blue-400/10',
+      breakdown: { private: privateCount, public: publicCount } // 资产分布展示逻辑
+    },
+  ];
+
+  const handleCopyKey = () => {
+    const key = resetRawKey || session?.user?.rawKey || "";
+    if (!key) return;
+    const textArea = document.createElement("textarea");
+    textArea.value = key;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    setCopiedKey(true);
+    setTimeout(() => setCopiedKey(false), 2000);
+  };
+
+  const finalRawKey = resetRawKey || session?.user?.rawKey;
+  const finalKeyPreview = resetKeyPreview || session?.user?.keyPreview;
+
+  return (
+    <div className="min-h-screen transition-colors duration-500 font-sans relative" style={{ backgroundColor: "var(--color-bg-primary)" }}>
+      <div className="absolute inset-0 opacity-[0.15] dark:opacity-[0.05] pointer-events-none bg-grid"></div>
+      {/* 顶部 Navbar */}
+      <DashboardNavbar credits={liveCredits} totalCredits={500} />
+
+      <div className="max-w-7xl mx-auto p-6 md:p-8 space-y-6">
+        
+        {/* Header Section */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="text-left">
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-cyan-400">{session?.user?.name?.split(" ")[0] || session?.user?.email?.split("@")[0] || "uniskillai"}</span> 👋
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Your UniSkill API Gateway dashboard.</p>
+          </div>
+          <div className="flex items-center gap-2">
+             <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-sm transition-all text-xs">
+                <BarChart3 size={14} /> Analytics
+             </button>
+             <button 
+               onClick={() => window.location.href = '/dashboard/skills/new'}
+               className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-md active:scale-95 text-xs"
+             >
+                <Plus size={16} /> Deploy Skill
+             </button>
+          </div>
+        </header>
+
+        {/* Top 3-Card Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {stats.map((stat, idx) => (
+            <div key={idx} className="p-5 bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-[24px] group hover:border-blue-500/30 transition-all shadow-sm text-left">
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`p-2 rounded-lg ${stat.bg} ${stat.color}`}>
+                  <stat.icon size={16} />
                 </div>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</span>
+              </div>
+              
+              <div className="flex items-baseline justify-between mb-3">
+                <span className="text-2xl font-black text-slate-900 dark:text-white">{stat.value}</span>
+                
+                {/* 针对 Live Skills 的 P/S 拆解标签 */}
+                {stat.label === 'Live Skills' ? (
+                  <div className="text-[9px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded flex items-center gap-1.5 uppercase tracking-tighter">
+                    <span>{stat.breakdown?.private}P</span>
+                    <span className="opacity-30">|</span>
+                    <span className="text-purple-400">{stat.breakdown?.public}S</span>
+                  </div>
+                ) : (
+                  <div className="text-[9px] font-black text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                    <ArrowUpRight size={8} /> 12%
+                  </div>
+                )}
+              </div>
 
-                {/* ─── 优化后的 My Skills 区域 ─── */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4, duration: 0.5 }}
-                    className="mt-5"
-                >
-                    <MySkillsSection />
-                </motion.div>
-            </main>
+              {/* 视觉化资产分布条 */}
+              {stat.label === 'Live Skills' && (
+                <div className="flex h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                   <div className="bg-blue-500 h-full transition-all duration-500" style={{ width: `${skills.length > 0 ? (privateCount / skills.length) * 100 : 0}%` }}></div>
+                   <div className="bg-purple-500 h-full transition-all duration-500" style={{ width: `${skills.length > 0 ? (publicCount / skills.length) * 100 : 0}%` }}></div>
+                </div>
+              )}
 
-            {/* 重置 Key 确认弹窗 */}
-            <ResetKeyModal 
-                isOpen={isResetModalOpen}
-                onClose={() => setIsResetModalOpen(false)}
-                onConfirm={handleConfirmReset}
-            />
+              {/* 累计总调用量统计栏 */}
+              {stat.label === '24h Invocations' && (
+                <div className="pt-2 border-t border-slate-50 dark:border-slate-800/50 flex items-center justify-between">
+                   <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Total Lifetime Calls</span>
+                   <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400">{stat.totalLifetime}</span>
+                </div>
+              )}
 
-            {/* 充值弹窗组件 */}
-            <TopUpModal 
-                isOpen={isTopUpModalOpen}
-                onClose={() => setIsTopUpModalOpen(false)}
-                user={{
-                    userUid: user?.userUid,
-                    email: user?.email || undefined
-                }}
-            />
+              {stat.label === 'Credits Balance' && (
+                <button 
+                  onClick={() => setIsTopUpModalOpen(true)}
+                  className="text-[9px] font-black text-blue-500 hover:underline uppercase tracking-tighter"
+                >Buy Credits &rarr;</button>
+              )}
+            </div>
+          ))}
         </div>
-    );
+
+        {/* Main Section: My Skills Workspace (2/3) vs Operations Sidebar (1/3) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          
+          {/* Workspace Area: Skill Assets */}
+          <div className="lg:col-span-2 space-y-6">
+            <section className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-[28px] overflow-hidden shadow-sm text-left">
+              <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                <h2 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <Layers size={18} className="text-blue-500" />
+                  My Skills
+                </h2>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => window.location.href='/dashboard/skills/new'} className="text-[11px] font-bold text-slate-400 hover:text-blue-500">+ New</button>
+                  <button onClick={() => window.location.href='/dashboard/skills'} className="text-[11px] font-bold text-blue-500 hover:underline flex items-center gap-1">Manage All <ChevronRight size={12} /></button>
+                </div>
+              </div>
+              <div className="p-0">
+                {loadingSkills ? (
+                  <div className="flex items-center justify-center py-24">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-8 h-8 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">Loading Workspace...</span>
+                    </div>
+                  </div>
+                ) : skills.length > 0 ? (
+                  <div className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                    {skills.map((skill) => (
+                      <div 
+                        key={skill.id} 
+                        className="p-4 md:p-5 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all flex items-center justify-between group cursor-pointer"
+                        onClick={() => window.location.href = `/dashboard/skills/${skill.id}`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-11 h-11 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center border border-slate-200/50 dark:border-slate-700/50 group-hover:border-blue-500/30 transition-all shadow-sm">
+                            <Code2 className="text-slate-400 group-hover:text-blue-500 transition-colors" size={22} />
+                          </div>
+                          <div className="text-left">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <h4 className="text-[13px] font-black text-slate-900 dark:text-white uppercase tracking-tight">{skill.name || "Unnamed Skill"}</h4>
+                              <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest border ${
+                                skill.is_public 
+                                ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' 
+                                : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+                              }`}>
+                                {skill.is_public ? 'Public' : 'Private'}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-slate-400 line-clamp-1 max-w-[200px] md:max-w-[400px] font-medium italic">
+                              {skill.description || 'Professional AI tool for advanced automation logic.'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-6">
+                          <div className="hidden md:flex flex-col items-end gap-1">
+                             <div className="flex items-center gap-1.5">
+                                <Activity size={10} className="text-emerald-500 animate-pulse" />
+                                <span className="text-[10px] font-black text-slate-600 dark:text-slate-300">Active</span>
+                             </div>
+                             <span className="text-[8px] text-slate-400 font-mono uppercase tracking-tighter">Last call 12m ago</span>
+                          </div>
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-300 group-hover:text-blue-500">
+                             <ChevronRight size={18} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 px-6 border-2 border-dashed border-slate-100 dark:border-slate-800/50 rounded-[24px] bg-slate-50/30 dark:bg-[#0d0f16]/30 m-6">
+                    <div className="p-4 bg-white dark:bg-slate-800 rounded-xl mb-4 shadow-sm border border-slate-100 dark:border-slate-700">
+                      <Code2 className="w-8 h-8 text-slate-300" />
+                    </div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1 tracking-tight">No skills deployed yet</h3>
+                    <p className="text-slate-400 text-[11px] max-w-[240px] text-center mb-6 leading-relaxed font-medium">
+                      Build your own private AI tools using Markdown, or install community skills from the marketplace.
+                    </p>
+                    <div className="flex gap-2">
+                      <button onClick={() => window.location.href='/dashboard/skills/new'} className="px-5 py-2.5 bg-blue-600 text-white text-[11px] font-black rounded-xl shadow-md active:scale-95 transition-all">+ Create Private Skill</button>
+                      <button className="px-5 py-2.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-black rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 hover:bg-slate-50 transition-all">
+                        <Globe size={12} strokeWidth={3} /> Visit Store
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+
+          {/* Operations Sidebar */}
+          <div className="space-y-6">
+            
+            {/* API Key Management */}
+            <div className={`p-5 bg-white dark:bg-[#0f1117] border rounded-[24px] shadow-sm text-left transition-all ${finalRawKey ? 'border-yellow-500/30' : 'border-slate-200 dark:border-slate-800'}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1 rounded-md ${finalRawKey ? 'bg-yellow-500/10 text-yellow-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                      <Key size={12} />
+                    </div>
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Your API Key</span>
+                  </div>
+                  <button 
+                    onClick={() => setIsResetModalOpen(true)}
+                    className="text-[9px] font-black text-slate-400 hover:text-red-400 transition-colors uppercase tracking-widest bg-slate-50 dark:bg-slate-800/30 px-2 py-0.5 rounded border border-slate-100 dark:border-slate-800"
+                  >
+                    Reset
+                  </button>
+                </div>
+
+                {finalRawKey && (
+                  <div className="flex items-center gap-2 mb-3 px-2.5 py-1.5 rounded-lg bg-yellow-500/8 border border-yellow-500/20">
+                     <span className="text-[9px] text-yellow-600 font-bold uppercase tracking-tight leading-none italic">
+                        This key is shown ONCE — copy it now and store it securely
+                     </span>
+                  </div>
+                )}
+
+                <div className={`bg-slate-50 dark:bg-[#161b22] border rounded-lg p-2.5 mb-2 flex items-center gap-2 ${finalRawKey ? 'border-yellow-500/20' : 'border-slate-100 dark:border-slate-800'}`}>
+                  <code className={`text-[12px] font-mono truncate flex-1 ${finalRawKey && showKey ? 'text-green-500' : 'text-slate-500'}`}>
+                    {finalRawKey 
+                      ? (showKey ? finalRawKey : "us-••••••••••••••••••••••••••••••••") 
+                      : (finalKeyPreview || "us-••••••••••••••••••••••••••••••••")}
+                  </code>
+                  <div className="flex items-center gap-1">
+                    {finalRawKey && (
+                      <button onClick={() => setShowKey(!showKey)} className="p-1 text-slate-400 hover:text-slate-600 transition-colors">
+                        {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    )}
+                    <button 
+                      onClick={finalRawKey ? handleCopyKey : undefined} 
+                      disabled={!finalRawKey}
+                      className={`p-1 transition-colors ${finalRawKey ? 'text-slate-400 hover:text-slate-600' : 'text-slate-200 dark:text-slate-800 cursor-not-allowed'}`}
+                    >
+                      {copiedKey ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                    </button>
+                  </div>
+                </div>
+                <p className="text-[9px] text-slate-400 italic font-sans leading-none">
+                  {finalRawKey ? 'Save this key now — it will be hidden after refresh.' : 'Key is hidden — shown once at registration.'}
+                </p>
+            </div>
+
+            <IntegrationTerminal apiKey={finalRawKey || undefined} />
+
+            <RecentActivity logs={recentLogs} loading={loadingLogs} />
+
+            <div className="p-6 bg-gradient-to-br from-indigo-600 to-blue-700 rounded-[28px] text-white shadow-xl relative overflow-hidden group text-left">
+               <ShieldCheck className="absolute -right-2 -bottom-2 w-24 h-24 text-white/10 rotate-12 group-hover:rotate-0 transition-transform duration-700" />
+               <h3 className="text-base font-black mb-1.5 relative z-10">M2M Security</h3>
+               <p className="text-blue-100 text-[10px] leading-relaxed mb-5 relative z-10 max-w-[180px]">
+                 Enable strict wallet verification to secure your endpoints against API key leakage.
+               </p>
+               <button className="w-full py-2 bg-white text-blue-600 font-black rounded-lg text-[10px] hover:bg-blue-50 transition-all shadow-md active:scale-95 relative z-10 uppercase tracking-widest">
+                 Harden My Endpoints
+               </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <TopUpModal 
+        isOpen={isTopUpModalOpen}
+        onClose={() => setIsTopUpModalOpen(false)}
+        user={{
+          userUid: session?.user?.userUid,
+          email: session?.user?.email || undefined
+        }}
+      />
+
+      <ResetKeyModal 
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        onConfirm={handleConfirmReset}
+      />
+    </div>
+  );
 }

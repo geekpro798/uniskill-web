@@ -1,0 +1,329 @@
+'use client';
+
+import React, { useState, useMemo, useEffect } from 'react';
+import { useSession } from "next-auth/react";
+import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
+import { supabase } from "@/lib/supabase";
+import { 
+  Plus, Lock, Globe, 
+  Copy, CheckCircle2, LayoutGrid, List, Search, 
+  Zap, ChevronRight,
+  ShieldCheck, Info
+} from 'lucide-react';
+
+/**
+ * UniSkill 资产管理中心 (v3.3 - Production Version)
+ * 核心逻辑：从 Supabase 实时抓取并管理私人沙箱及已发布的社区技能
+ */
+
+export default function SkillsPage() {
+  const { data: session } = useSession();
+  const [liveCredits, setLiveCredits] = useState<number | undefined>(undefined);
+  const [skills, setSkills] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterVisibility, setFilterVisibility] = useState<'all' | 'private' | 'public'>('all');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // ------------------------------------------------------------------
+  // 数据抓取：实时 Credits 与 技能列表 (Supabase Integration)
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    const fetchData = async () => {
+      // 检查 session 并提取 UID
+      if (!session?.user?.id) return;
+      
+      try {
+        setLoading(true);
+
+        // 1. 获取实时积分 (Live Credits)
+        const credRes = await fetch("/api/user/credits");
+        if (credRes.ok) {
+          const credData = await credRes.json();
+          setLiveCredits(credData.credits);
+        }
+
+        // 2. 提取 UUID (UID Fallback Logic to handle GitHub numeric IDs)
+        // logic: (session.user.userUid || fallback to query profile by github_id)
+        let uid = (session?.user as any)?.userUid;
+        if (!uid && session?.user?.id) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('user_uid')
+            .eq('github_id', session.user.id)
+            .maybeSingle();
+          if (profile) uid = profile.user_uid;
+        }
+
+        if (!uid) {
+          setLoading(false);
+          return;
+        }
+
+        // 3. 从 Supabase 获取技能列表 (Creator Filter)
+        const { data: skillsData, error } = await supabase
+          .from('skills')
+          .select('*')
+          .eq('creator_uid', uid)
+          .order('skill_name', { ascending: true });
+
+        if (error) throw error;
+
+        // 4. 格式化数据以适配 v3.3 UI 协议
+        const formattedSkills = (skillsData || []).map(s => ({
+          id: s.skill_uid || s.id,
+          slug: s.skill_name || 'unknown-skill',
+          name: s.display_name || s.skill_name,
+          description: s.description || 'Professional AI tool for advanced automation logic.',
+          visibility: s.is_public ? 'public' : 'private',
+          credits_per_call: s.is_public ? (s.credits_per_call || 1) : 1, // 私人技能固化 1 积分展示
+          emoji: s.emoji || '⚙️',
+          iconBg: s.gradient_from ? (s.gradient_from.startsWith('bg-') ? s.gradient_from : `bg-[${s.gradient_from}]`) : (s.is_public ? 'bg-purple-600' : 'bg-blue-600'),
+          tags: s.tags || []
+        }));
+
+        setSkills(formattedSkills);
+      } catch (e) {
+        console.error("Failed to fetch skills data", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [session?.user?.id]);
+
+  // ------------------------------------------------------------------
+  // 核心逻辑：基于名称、ID 及 隐藏标签的搜索算法
+  // ------------------------------------------------------------------
+  const filteredSkills = useMemo(() => {
+    return skills.filter(skill => {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = 
+        skill.name.toLowerCase().includes(query) || 
+        skill.id.toLowerCase().includes(query) ||
+        (skill.tags && skill.tags.some((t: string) => t.toLowerCase().includes(query.replace('#', ''))));
+      
+      const matchesFilter = filterVisibility === 'all' || skill.visibility === filterVisibility;
+      return matchesSearch && matchesFilter;
+    });
+  }, [skills, searchQuery, filterVisibility]);
+
+  const handleCopyId = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation(); 
+    const textArea = document.createElement("textarea");
+    textArea.value = id;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  return (
+    <div className="min-h-screen transition-colors duration-500 font-sans relative" style={{ backgroundColor: "var(--color-bg-primary)" }}>
+      {/* Background Grid Pattern */}
+      <div className="absolute inset-0 opacity-[0.15] dark:opacity-[0.05] pointer-events-none bg-grid"></div>
+
+      {/* Persistent Navbar */}
+      <DashboardNavbar credits={liveCredits} />
+
+      <main className="max-w-7xl mx-auto p-6 md:p-10 space-y-8 relative z-10">
+        
+        {/* Header Section */}
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="text-left">
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase transition-colors">
+              My Skills
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium">
+              Manage your edge endpoints and track platform consumption.
+            </p>
+          </div>
+          <button 
+            onClick={() => window.location.href = '/dashboard/skills/new'}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition-all shadow-lg active:scale-95 w-full md:w-auto"
+          >
+            <Plus className="w-5 h-5" />
+            Deploy New Skill
+          </button>
+        </header>
+
+        {/* Toolbar: 紧凑型工具栏 (Search & Filters) */}
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900/40 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all">
+          <div className="relative w-full lg:w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by name, ID or #tag..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/20 outline-none transition-all text-sm text-slate-900 dark:text-white"
+            />
+          </div>
+
+          <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-end px-1">
+            <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+              {(['all', 'private', 'public'] as const).map((filter) => (
+                <button
+                  key={filter}
+                  onClick={() => setFilterVisibility(filter)}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                    filterVisibility === filter
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+              <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500'}`}><LayoutGrid size={16}/></button>
+              <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' : 'text-slate-400'}`}><List size={16}/></button>
+            </div>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="min-h-[400px]">
+          {loading ? (
+             <div className="flex flex-col items-center justify-center py-32 gap-4">
+                <div className="w-10 h-10 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+                <span className="text-xs font-black text-slate-400 uppercase tracking-widest animate-pulse">Syncing Assets...</span>
+             </div>
+          ) : viewMode === 'grid' ? (
+            /* 网格视图：参照图片样式的极简卡片 */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredSkills.map((skill) => (
+                <div 
+                  key={skill.id}
+                  className="group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-[32px] p-8 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex flex-col min-h-[300px]"
+                >
+                  {/* Card Top: 图标背景 + 状态徽章 */}
+                  <div className="flex items-start justify-between mb-8">
+                    <div className={`w-16 h-16 rounded-2xl ${skill.iconBg} flex items-center justify-center text-3xl shadow-lg group-hover:scale-110 transition-transform`}>
+                      {skill.emoji}
+                    </div>
+                    {skill.visibility === 'private' ? (
+                      <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-slate-200 dark:border-slate-700">
+                        <Lock size={12} /> Private
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-purple-500/20">
+                        <Globe size={12} /> Published
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Title & Description */}
+                  <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-3 tracking-tight group-hover:text-blue-500 transition-colors uppercase">
+                    {skill.name}
+                  </h3>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-3 mb-10 flex-1 font-medium italic">
+                    {skill.description}
+                  </p>
+
+                  <div className="w-full h-px bg-slate-100 dark:bg-slate-800/80 mb-6 transition-colors"></div>
+
+                  {/* Footer: ID & 计费展示 */}
+                  <div className="flex items-center justify-between">
+                    <div 
+                      onClick={(e) => handleCopyId(skill.id, e)}
+                      className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-mono font-bold text-slate-400 cursor-pointer hover:border-blue-500/30 transition-all flex items-center gap-2"
+                    >
+                      <span className="uppercase">ID: {skill.id.substring(0, 8)}</span>
+                      {copiedId === skill.id ? <CheckCircle2 size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                    </div>
+                    
+                    <div className="flex flex-col items-end">
+                      <div className="flex items-center gap-1.5">
+                        <Zap size={14} className="text-amber-500 fill-amber-500/20" />
+                        <span className="text-lg font-black text-slate-900 dark:text-white">{skill.credits_per_call}</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Credits</span>
+                      </div>
+                      {/* 私人技能显示固定费率提示 */}
+                      {skill.visibility === 'private' && (
+                        <div className="text-[9px] font-bold text-blue-500 uppercase tracking-widest mt-0.5 opacity-80 flex items-center gap-1">
+                          <Info size={10} /> Fixed Infra Fee
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {filteredSkills.length === 0 && !loading && (
+                 <div className="col-span-full py-24 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[32px] bg-slate-50/10">
+                    <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800/50 rounded-2xl flex items-center justify-center mb-6">
+                      <Plus className="w-8 h-8 text-slate-300" />
+                    </div>
+                    <p className="text-sm font-black text-slate-400 uppercase tracking-widest text-center">
+                      No deployed skills found<br/>
+                      <span className="text-[10px] font-bold lowercase normal-case tracking-normal italic mt-1 block">Click "Deploy New Skill" to start your journey.</span>
+                    </p>
+                 </div>
+              )}
+            </div>
+          ) : (
+            /* 列表视图 */
+            <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-[32px] overflow-hidden shadow-sm transition-all">
+               <table className="w-full text-left">
+                  <thead className="bg-slate-50/50 dark:bg-slate-900/50 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 dark:border-slate-800">
+                    <tr>
+                      <th className="px-8 py-5 tracking-widest">Skill Name</th>
+                      <th className="px-8 py-5 tracking-widest">Tool ID</th>
+                      <th className="px-8 py-5 tracking-widest text-right">Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                    {filteredSkills.map(skill => (
+                      <tr key={skill.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors cursor-pointer group">
+                        <td className="px-8 py-6 text-left">
+                          <div className="flex items-center gap-4">
+                            <span className="text-2xl group-hover:scale-110 transition-transform">{skill.emoji}</span>
+                            <div>
+                                <span className="font-black text-[13px] text-slate-900 dark:text-white uppercase tracking-tight">{skill.name}</span>
+                                <div className="text-[10px] text-slate-400 font-medium italic line-clamp-1">{skill.description}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6 font-mono text-xs text-slate-400 group-hover:text-blue-500 transition-colors text-left uppercase font-bold">{skill.id}</td>
+                        <td className="px-8 py-6 text-right font-black text-slate-900 dark:text-white text-lg">
+                          {skill.credits_per_call} <span className="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">Credits</span>
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredSkills.length === 0 && !loading && (
+                      <tr className="border-none">
+                        <td colSpan={3} className="py-24 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest italic">
+                          Database is empty. No records found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+               </table>
+            </div>
+          )}
+        </div>
+
+        {/* 底部信息 */}
+        <footer className="pt-10 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6 text-left transition-colors">
+           <div className="flex items-center gap-3 p-5 bg-blue-500/5 border border-blue-500/10 rounded-2xl max-w-lg text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed shadow-sm italic font-medium">
+              <ShieldCheck className="w-6 h-6 text-blue-500 shrink-0" />
+              <span>Private skills are billed at a flat 1-credit rate to cover secure gateway infrastructure costs. Public skills include custom markups set by authors. Check our <button className="text-blue-500 hover:underline">billing policies</button> for more details.</span>
+           </div>
+           <div className="flex gap-4">
+             <button className="text-[11px] font-black text-slate-400 hover:text-blue-500 uppercase tracking-widest transition-colors">Pricing FAQ</button>
+             <button className="text-[11px] font-black text-slate-400 hover:text-blue-500 uppercase tracking-widest flex items-center gap-1 group transition-colors">
+               API Docs <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+             </button>
+           </div>
+        </footer>
+
+      </main>
+    </div>
+  );
+}

@@ -17,7 +17,7 @@ usd_per_call: 0.001
 # uniskill_weather
 
 ## Description
-Get real-time weather conditions and forecasts for any city in the world. Powered by wttr.in.
+Get real-time weather conditions and forecasts (up to 3 days) for any city in the world. Powered by wttr.in.
 
 ## Parameters
 ```json

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 /* ─── 全局 CSS 变量：双色模式颜色体系 ─────────────────────────────── */
 :root {
   /* Light Mode (High Contrast) */

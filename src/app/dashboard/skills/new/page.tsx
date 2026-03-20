@@ -10,6 +10,7 @@ import { useSession, signIn } from "next-auth/react";
 import { useEffect } from 'react';
 import { motion } from "framer-motion";
 import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
+import { supabase } from "@/lib/supabase";
 
 export default function CreateSkillPage() {
   const { data: session, status } = useSession();
@@ -35,6 +36,7 @@ export default function CreateSkillPage() {
       return () => clearInterval(interval);
     }
   }, [status, session?.user?.id]);
+
   // ==========================================
   // State: Magic Architect (AI 生成器状态)
   // ==========================================
@@ -59,8 +61,42 @@ export default function CreateSkillPage() {
   const [testInput, setTestInput] = useState('');
   const [testLog, setTestLog] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
+  const [testSuccess, setTestSuccess] = useState(false); // 🌟 新增：记录测试是否成功 (Track if test was successful)
+  const [isCheckingName, setIsCheckingName] = useState(false); // 🌟 新增：正在检查名称唯一性 (Checking name uniqueness)
 
   const formRef = useRef<HTMLFormElement>(null);
+
+  // 🌟 新增：检查 Skill Name 是否重复 (Check if Skill Name is unique)
+  useEffect(() => {
+    if (!skillName || skillName.length < 3) return;
+
+    const timer = setTimeout(async () => {
+      setIsCheckingName(true);
+      try {
+        const { data, error } = await supabase
+          .from('skills')
+          .select('skill_name')
+          .eq('skill_name', skillName)
+          .maybeSingle();
+
+        if (data) {
+          setErrors(prev => ({ ...prev, skillName: 'This Skill Name is already taken. Please choose another one.' }));
+        } else if (!error) {
+          setErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors.skillName;
+            return newErrors;
+          });
+        }
+      } catch (err) {
+        console.error('Failed to check name uniqueness:', err);
+      } finally {
+        setIsCheckingName(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [skillName]);
 
   if (status === "unauthenticated") {
     return (
@@ -130,51 +166,40 @@ export default function CreateSkillPage() {
     if (!magicPrompt) return;
     setIsGenerating(true);
     setMagicSuccess(false);
-    setDeployedSkill(null); // 如果重新生成，隐藏沙箱 (Hide sandbox on regenerate)
+    setDeployedSkill(null); 
+    setErrors({}); // 清除现有错误 (Clear existing errors)
 
     try {
-      // 模拟网络延迟和 AI 生成时间 (Simulating LLM generation time)
-      await new Promise(resolve => setTimeout(resolve, 2500));
+      const response = await fetch('/api/skills/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: magicPrompt }),
+      });
+
+      const responseText = await response.text();
       
-      const mockResponse = `---
-skill_name: my_crypto_tracker
-display_name: Crypto Price Tracker
-secrets:
-  - COINGECKO_API_KEY
----
-# Description
-Fetches real-time cryptocurrency prices.
+      if (!response.ok) {
+        let errorMessage = 'Failed to generate skill architecture';
+        try {
+          const errorJson = JSON.parse(responseText);
+          errorMessage = errorJson.error || errorMessage;
+        } catch (e) {
+          errorMessage = responseText.substring(0, 100); 
+        }
+        throw new Error(errorMessage);
+      }
 
-# Parameters
-\`\`\`json
-{
-  "type": "object",
-  "properties": {
-    "coin_id": { "type": "string", "description": "ID of the coin (e.g., bitcoin)" }
-  },
-  "required": ["coin_id"]
-}
-\`\`\`
-
-# Implementation
-\`\`\`yaml
-type: custom_http
-endpoint: "https://api.coingecko.com/api/v3/simple/price"
-method: "GET"
-headers:
-  x-cg-demo-api-key: "{{SECRETS.COINGECKO_API_KEY}}"
-payload:
-  ids: "{{coin_id}}"
-  vs_currencies: "usd"
-\`\`\`
-`;
-
-      const frontmatterMatch = mockResponse.match(/^---\n([\s\S]+?)\n---/);
-      let bodyStr = mockResponse;
+      const data = JSON.parse(responseText);
+      const generatedMarkdown = data.markdown;
+      
+      const frontmatterMatch = generatedMarkdown.match(/^---\n([\s\S]+?)\n---/);
+      let bodyStr = generatedMarkdown;
       
       if (frontmatterMatch) {
         const fm = frontmatterMatch[1];
-        bodyStr = mockResponse.replace(/^---\n[\s\S]+?\n---\n*/, '');
+        bodyStr = generatedMarkdown.replace(/^---\n[\s\S]+?\n---\n*/, '');
 
         const sNameMatch = fm.match(/skill_name:\s*(.+)/);
         const dNameMatch = fm.match(/display_name:\s*(.+)/);
@@ -185,7 +210,10 @@ payload:
         const secretsMatch = fm.match(/secrets:\n([\s\S]+?)(?=\n[a-z_]+:|$)/);
         if (secretsMatch) {
           const secretLines = secretsMatch[1].split('\n').filter(l => l.trim().startsWith('-'));
-          const extractedSecrets = secretLines.map(line => ({ key: line.replace('-', '').trim(), value: '' }));
+          const extractedSecrets = secretLines.map(line => ({ 
+            key: line.replace('-', '').trim(), 
+            value: '' 
+          }));
           setSecrets(extractedSecrets.length > 0 ? extractedSecrets : [{ key: '', value: '' }]);
         }
       }
@@ -200,8 +228,10 @@ payload:
         formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 300);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Magic Generation failed:', error);
+      // 将 API 报错显示在界面上 (Display API error on UI)
+      setErrors({ magic: error.message });
     } finally {
       setIsGenerating(false);
     }
@@ -283,6 +313,7 @@ payload:
       };
       
       setTestLog(JSON.stringify(mockResponse, null, 2));
+      setTestSuccess(true); // 🌟 测试成功后触发按钮点亮 (Enable the Done button)
     } catch (err) {
       setTestLog(JSON.stringify({ error: "Failed to execute. Check your API Keys." }, null, 2));
     } finally {
@@ -343,8 +374,17 @@ payload:
 
               {magicSuccess && (
                 <div className="mt-4 flex items-center gap-2 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 border border-emerald-200 dark:border-emerald-400/20 px-4 py-2.5 rounded-xl text-sm font-medium animate-in fade-in slide-in-from-top-2 transition-colors">
-                  <CheckCircle2 className="w-5 h-5" />
-                  Architecture synthesized! Review the configuration and add your API Keys below.
+                  <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                  {secrets.some(s => s.key.trim() !== '') 
+                    ? "Skill blueprint ready! ✨ Please review the details and add your API Keys below to get started."
+                    : "Skill blueprint ready! ✨ Everything looks good. Review the configuration below to proceed."}
+                </div>
+              )}
+
+              {errors.magic && (
+                <div className="mt-4 flex items-center gap-2 text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-400/10 border border-red-200 dark:border-red-400/20 px-4 py-2.5 rounded-xl text-sm font-medium animate-in fade-in slide-in-from-top-2 transition-colors">
+                  <AlertCircle className="w-5 h-5" />
+                  {errors.magic}
                 </div>
               )}
             </div>
@@ -398,29 +438,35 @@ payload:
                   </div>
                   <div>
                     <label className="block text-sm font-semibold mb-1.5 flex justify-between transition-colors" style={{ color: "var(--color-text-secondary)" }}>
-                      Skill ID (MCP Tool Name)
+                      Skill Name (Internal ID / MCP)
                       <span className="text-xs font-normal mt-0.5" style={{ color: "var(--color-text-secondary)", opacity: 0.6 }}>A-Z, 0-9, underscores</span>
                     </label>
-                    <input
-                      type="text"
-                      required
-                      value={skillName}
-                      onChange={(e) => {
-                        setSkillName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''));
-                        if (errors.skillName) setErrors({ ...errors, skillName: '' });
-                      }}
-                      placeholder="crypto_price_tracker"
-                      className={`w-full px-4 py-2.5 border rounded-xl outline-none transition-all font-mono text-sm shadow-sm ${
-                        errors.skillName 
-                          ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20' 
-                          : 'focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
-                      }`}
-                      style={{ 
-                        backgroundColor: "var(--color-bg-secondary)", 
-                        borderColor: "var(--color-border)",
-                        color: "var(--color-text-primary)"
-                      }}
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        value={skillName}
+                        onChange={(e) => {
+                          setSkillName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''));
+                        }}
+                        placeholder="crypto_price_tracker"
+                        className={`w-full px-4 py-2.5 border rounded-xl outline-none transition-all font-mono text-sm shadow-sm ${
+                          errors.skillName 
+                            ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20' 
+                            : 'focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
+                        }`}
+                        style={{ 
+                          backgroundColor: "var(--color-bg-secondary)", 
+                          borderColor: "var(--color-border)",
+                          color: "var(--color-text-primary)"
+                        }}
+                      />
+                      {isCheckingName && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                        </div>
+                      )}
+                    </div>
                     {errors.skillName && <p className="text-red-500 dark:text-red-400 text-xs mt-1.5 font-medium flex items-center gap-1"><AlertCircle className="w-3 h-3"/>{errors.skillName}</p>}
                   </div>
                 </div>
@@ -645,6 +691,7 @@ payload:
                       onClick={() => {
                         setDeployedSkill(null);
                         setTestLog(null);
+                        setTestSuccess(false);
                       }}
                       className="flex-1 md:flex-none px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-colors border border-slate-700"
                     >
@@ -652,7 +699,12 @@ payload:
                     </button>
                     <button 
                       type="button"
-                      className="flex-1 md:flex-none px-5 py-2.5 bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-emerald-900/20"
+                      disabled={!testSuccess}
+                      className={`flex-1 md:flex-none px-5 py-2.5 text-sm font-bold rounded-xl transition-all shadow-lg ${
+                        testSuccess 
+                          ? 'bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white shadow-emerald-900/20 hover:scale-105 active:scale-95 cursor-pointer' 
+                          : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed grayscale'
+                      }`}
                     >
                       Done
                     </button>
@@ -702,7 +754,7 @@ payload:
                         </div>
                       )}
                       {testLog && !isTesting && (
-                        <pre className="text-cyan-300 font-mono text-[13px] leading-relaxed">
+                        <pre className="text-emerald-500 font-mono text-[13px] leading-relaxed">
                           {testLog}
                         </pre>
                       )}
