@@ -209,8 +209,8 @@ export default function CreateSkillPage() {
 
         const secretsMatch = fm.match(/secrets:\n([\s\S]+?)(?=\n[a-z_]+:|$)/);
         if (secretsMatch) {
-          const secretLines = secretsMatch[1].split('\n').filter(l => l.trim().startsWith('-'));
-          const extractedSecrets = secretLines.map(line => ({ 
+          const secretLines = secretsMatch[1].split('\n').filter((l: string) => l.trim().startsWith('-'));
+          const extractedSecrets = secretLines.map((line: string) => ({ 
             key: line.replace('-', '').trim(), 
             value: '' 
           }));
