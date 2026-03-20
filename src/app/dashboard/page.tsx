@@ -13,6 +13,7 @@ import QuickActivity from "@/components/Dashboard/QuickActivity";
 import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
 import TopUpModal from "@/components/Dashboard/TopUpModal";
 import ResetKeyModal from "@/components/Dashboard/ResetKeyModal";
+import MySkillsSection from "@/components/Dashboard/MySkillsSection";
 
 /* ─── Key 展示卡片组件 ────────────────────────────────────────────────── */
 function KeyCard({ 
@@ -426,47 +427,14 @@ export default function DashboardPage() {
                     </motion.div>
                 </div>
 
-                {/* ─── 可用技能列表 ─── */}
+                {/* ─── 优化后的 My Skills 区域 ─── */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4, duration: 0.5 }}
-                    className="mt-5 glass-card p-6"
+                    className="mt-5"
                 >
-                    {/* 标题行：左侧技能标题，右侧跳转链接 */}
-                    <div className="flex items-center justify-between mb-4">
-                        <p className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>My Skills</p>
-                        {/* 跳转到完整 Skills Store 页面 */}
-                        <Link
-                            href="/skills"
-                            className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors font-medium"
-                        >
-                            Explore All Skills
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M5 12h14M12 5l7 7-7 7" />
-                            </svg>
-                        </Link>
-                    </div>
-                    {/* 技能图标网格：清空 mock 数据 */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                        {[].map((skill: any) => (
-                            <Link
-                                key={skill.name}
-                                href="/skills"
-                                className="flex flex-col items-center gap-2 p-3 rounded-xl transition-all cursor-pointer group border"
-                                style={{ 
-                                    backgroundColor: "var(--color-bg-secondary)",
-                                    borderColor: "var(--color-border)"
-                                }}
-                            >
-                                <span className="text-2xl group-hover:scale-110 transition-transform">{skill.icon}</span>
-                                <span className="text-xs font-medium group-hover:text-indigo-300 transition-colors" style={{ color: "var(--color-text-secondary)" }}>{skill.name}</span>
-                            </Link>
-                        ))}
-                        <div className="col-span-full py-4 text-center">
-                            <p className="text-xs italic" style={{ color: "var(--color-text-secondary)" }}>No skills installed yet. Visit the <Link href="/skills" className="text-indigo-400 hover:underline">store</Link> to explore.</p>
-                        </div>
-                    </div>
+                    <MySkillsSection />
                 </motion.div>
             </main>
 
