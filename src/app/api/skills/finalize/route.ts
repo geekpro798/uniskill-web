@@ -66,13 +66,23 @@ export async function POST(req: Request) {
     const parsedDescription = descMatch ? descMatch[1].trim() : "";
 
     // 解析最新的 Parameters (提取 ## Parameters 下方的 JSON)
-    const paramMatch = content.match(/## Parameters\s+```json\s+([\s\S]*?)```/i);
+    const paramMatch = content.match(/#+\s*Parameters[\s\S]*?```(?:json)?\s*([\s\S]*?)```/i);
     let parsedParameters = { type: "object", properties: {} };
     try {
-      if (paramMatch) parsedParameters = JSON.parse(paramMatch[1]);
+      if (paramMatch) {
+         const jsonStr = paramMatch[1].trim();
+         parsedParameters = JSON.parse(jsonStr);
+      }
     } catch (e) {
       console.warn("[Compiler] Failed to parse Parameters JSON, using fallback.");
     }
+
+    // 解析最新的 Frontmatter (提取 display_name 和 emoji)
+    const dNameMatch = content.match(/display_name:\s*(.+)/);
+    const emojiMatch = content.match(/emoji:\s*([^\s\n]+)/);
+    
+    const finalDisplayName = dNameMatch ? dNameMatch[1].replace(/['"]/g, '').trim() : skill.display_name;
+    const finalEmoji = emojiMatch ? emojiMatch[1].replace(/['"]/g, '').trim() : skill.emoji;
 
     // 计算最新的内容指纹 (DID)
     const contentHash = crypto.createHash('sha256').update(content).digest('hex');
@@ -87,6 +97,8 @@ export async function POST(req: Request) {
       .update({ 
         state: 'active',
         did: did,
+        display_name: finalDisplayName, // 👈 同步最新的显示名称
+        emoji: finalEmoji,               // 👈 同步最新的图标
         description: parsedDescription, // 👈 强制覆盖为最新解析的描述
         parameters: parsedParameters,   // 👈 强制覆盖为最新解析的参数
         deployed_at: new Date().toISOString()
@@ -103,8 +115,8 @@ export async function POST(req: Request) {
       did: did,
       owner_uid: userUid,
       meta: {
-        name: (skill.emoji || "🧩") + " " + (skill.display_name || skill.skill_name),
-        emoji: skill.emoji || "🧩",
+        name: (finalEmoji || "🧩") + " " + (finalDisplayName || skill.skill_name),
+        emoji: finalEmoji || "🧩",
         description: parsedDescription // 使用刚才解析出的最新描述
       },
       config: {

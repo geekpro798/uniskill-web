@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react';
 import { 
   Save, Terminal, Globe, Lock, AlertCircle, KeyRound, 
   Plus, Trash2, Sparkles, Wand2, Loader2, CheckCircle2,
-  Activity, Edit3 
+  Activity, Edit3, Code2
 } from 'lucide-react';
 import { useSession, signIn } from "next-auth/react";
 import { useEffect } from 'react';
@@ -71,6 +71,10 @@ export default function CreateSkillPage() {
   // 🌟 二阶段部署：完结态逻辑 (Two-Stage Deployment: Finalization State)
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [finalizeSuccess, setFinalizeSuccess] = useState(false);
+
+  // 🌟 AI 意图抽取状态 (AI Intent Extraction State)
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [nlpQuery, setNlpQuery] = useState('');
 
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -404,31 +408,65 @@ export default function CreateSkillPage() {
     }
   };
 
+  // 🌟 AI 意图抽取逻辑 (AI Intent Extraction Logic)
+  const handleExtractIntent = async () => {
+    if (!nlpQuery.trim()) return;
+    setIsExtracting(true);
+    try {
+      const res = await fetch('/api/skills/intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          manifest: markdownBody,
+          query: nlpQuery
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTestInput(data.payload);
+        setNlpQuery(''); // Clear after successful extraction
+      } else {
+        console.error("Extraction failed:", data.error);
+      }
+    } catch (err) {
+      console.error("AI Extraction Error:", err);
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
   // 🌟 沙箱执行逻辑 (Sandbox Execution Logic)
   const handleRunTest = async () => {
     if (!testInput.trim()) return;
     setIsTesting(true);
     setTestLog(null);
+    setTestSuccess(false);
+
     try {
-      // 模拟调用刚创建好的云端 Endpoint
-      // (Simulate hitting the newly deployed endpoint)
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // 🌟 调用真实的后端沙箱验证接口 (Call real backend sandbox API)
+      const res = await fetch('/api/skills/sandbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          manifest: markdownBody,
+          payload: testInput
+        })
+      });
       
-      // 模拟成功的 JSON 响应 (Simulate a successful JSON response)
-      const mockResponse = {
-        status: "success",
-        tool_invoked: deployedSkill?.id,
-        latency_ms: 142,
-        result: {
-          data: "Mock response generated successfully based on your prompt.",
-          input_received: testInput
-        }
-      };
+      const result = await res.json();
+      setTestLog(JSON.stringify(result, null, 2));
       
-      setTestLog(JSON.stringify(mockResponse, null, 2));
-      setTestSuccess(true); // 🌟 测试成功后触发按钮点亮 (Enable the Done button)
-    } catch (err) {
-      setTestLog(JSON.stringify({ error: "Failed to execute. Check your API Keys." }, null, 2));
+      if (res.ok && result.status === 'success') {
+        setTestSuccess(true);
+      } else {
+        setTestSuccess(false);
+      }
+    } catch (err: any) {
+      setTestLog(JSON.stringify({ 
+        status: "error", 
+        error: err.message || "Failed to execute. Check your network connection." 
+      }, null, 2));
+      setTestSuccess(false);
     } finally {
       setIsTesting(false);
     }
@@ -441,6 +479,18 @@ export default function CreateSkillPage() {
     setErrors({});
     
     try {
+      // 🌟 重要：在 Finalize 之前，先同步一次表单数据到数据库
+      // 理由：用户可能在点击 Done 之前修改了 Display Name 等字段，但没有再次点击 Deploy
+      const { error: syncError } = await supabase.from('skills')
+        .update({
+          display_name: displayName,
+          description: description,
+          markdown_manifest: markdownBody
+        })
+        .eq('skill_uid', deployedSkill.id);
+
+      if (syncError) throw new Error("Pre-finalize sync failed: " + syncError.message);
+
       const res = await fetch('/api/skills/finalize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -904,18 +954,52 @@ export default function CreateSkillPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                      <Terminal className="w-4 h-4" /> Test Input Payload
+                      <Code2 className="w-4 h-4" /> Test Input Payload
                     </label>
-                    <textarea
-                      value={testInput}
-                      onChange={(e) => setTestInput(e.target.value)}
-                      placeholder='e.g., {"query": "Show me trending rust repos"}'
-                      className="w-full h-40 border rounded-xl p-4 text-emerald-600 dark:text-emerald-400 font-mono text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none resize-none shadow-inner"
-                      style={{ 
-                        backgroundColor: "var(--color-bg-primary)", 
-                        borderColor: "var(--color-border)"
-                      }}
-                    />
+                    <div className="relative group">
+                      <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600 to-blue-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+                      <div className="relative space-y-3">
+                        {/* Magic Intent Extractor Input */}
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <input
+                              type="text"
+                              value={nlpQuery}
+                              onChange={(e) => setNlpQuery(e.target.value)}
+                              placeholder="Describe your intent in natural language..."
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && nlpQuery.trim()) {
+                                  e.preventDefault();
+                                  handleExtractIntent();
+                                }
+                              }}
+                              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none transition-all"
+                            />
+                            <Sparkles className="absolute left-3.5 top-3 w-4 h-4 text-emerald-500" />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleExtractIntent}
+                            disabled={isExtracting || !nlpQuery.trim()}
+                            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-200 dark:disabled:bg-slate-800 text-white rounded-xl transition-all flex items-center gap-2 font-bold text-sm shadow-sm"
+                          >
+                            {isExtracting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Wand2 className="w-4 h-4" /> Magic Fill</>}
+                          </button>
+                        </div>
+
+                        {/* Traditional JSON Textarea */}
+                        <textarea
+                          value={testInput}
+                          onChange={(e) => setTestInput(e.target.value)}
+                          placeholder='e.g., {"query": "Show me trending rust repos"}'
+                          className="w-full h-40 border rounded-xl p-4 text-emerald-600 dark:text-emerald-400 font-mono text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none resize-none shadow-inner transition-all"
+                          style={{ 
+                            backgroundColor: "var(--color-bg-primary)", 
+                            borderColor: "var(--color-border)"
+                          }}
+                        />
+                      </div>
+                    </div>
                     <button
                       type="button"
                       onClick={handleRunTest}
@@ -943,7 +1027,7 @@ export default function CreateSkillPage() {
                         </div>
                       )}
                       {testLog && !isTesting && (
-                        <pre className="text-emerald-500 font-mono text-[13px] leading-relaxed">
+                        <pre className={`font-mono text-[13px] leading-relaxed ${testSuccess ? 'text-emerald-500' : 'text-red-500'}`}>
                           {testLog}
                         </pre>
                       )}
