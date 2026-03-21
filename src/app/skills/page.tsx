@@ -64,13 +64,16 @@ export default function SkillsStorePage() {
         let communityCount = 0;
 
         realSkills.forEach(skill => {
+            // 🌟 冗余保护：排除私有及测试态技能 (Redundant protection for Private/Testing)
+            if (skill.status === "Private" || skill.state !== "active") return;
+
             // 分类统计
             const cat = skill.category || "utilities";
             categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
             
             // 状态统计
             if (skill.status === "Official") officialCount++;
-            else communityCount++;
+            else if (skill.status === "Community") communityCount++;
         });
 
         return { categoryCounts, officialCount, communityCount };
@@ -86,7 +89,10 @@ export default function SkillsStorePage() {
             // 逻辑 2：匹配状态 (Official/Community)
             const matchStatus = filterVisibility === "all" || 
                 (filterVisibility === "official" && skill.status === "Official") ||
-                (filterVisibility === "community" && skill.status !== "Official");
+                (filterVisibility === "community" && skill.status === "Community");
+
+            // 🌟 核心增补：排除私有及测试态技能
+            const isPubliclyVisible = skill.status !== "Private" && skill.state === "active";
 
             // 逻辑 3：匹配顶部搜索框（模糊匹配 Name, Description, 以及 Tags）
             const query = searchQuery.toLowerCase().trim();
@@ -96,7 +102,7 @@ export default function SkillsStorePage() {
                 skill.skill_name?.toLowerCase().includes(query) ||
                 (skill.tags && skill.tags.some((tag: string) => tag.toLowerCase().includes(query)));
 
-            return matchCategory && matchStatus && matchSearch;
+            return matchCategory && matchStatus && matchSearch && isPubliclyVisible;
         });
     }, [activeCategory, filterVisibility, searchQuery, realSkills]);
 

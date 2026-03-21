@@ -30,6 +30,7 @@ export interface SkillDetailProps {
     skill: SkillSpec;
     isOfficial: boolean;
     isOwner: boolean;
+    status?: string; // 🌟 新增：显式支持 Private / Community / Official
 }
 
 const META_FALLBACK: Record<string, any> = {
@@ -80,7 +81,7 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
     );
 }
 
-export const SkillDetail: React.FC<SkillDetailProps> = ({ skill_name, skill, isOfficial, isOwner }) => {
+export const SkillDetail: React.FC<SkillDetailProps> = ({ skill_name, skill, isOfficial, isOwner, status }) => {
     const { data: session } = useSession();
     const isLoggedIn = !!session;
     const hasRealKey = isLoggedIn && session.user?.image;
@@ -152,9 +153,15 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skill_name, skill, isO
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                             </svg>
                                         </div>
-                                        <span className="px-2.5 py-1 rounded-md text-xs font-bold tracking-widest uppercase border bg-blue-500/10 text-blue-400 border-blue-500/25">
-                                            {isOfficial ? "Official" : "Community"}
-                                        </span>
+                                         <span className={`px-2.5 py-1 rounded-md text-xs font-bold tracking-widest uppercase border ${
+                                            (status === 'Official' || isOfficial)
+                                              ? "bg-blue-500/10 text-blue-400 border-blue-500/25"
+                                              : (status === 'Community')
+                                                ? "bg-purple-500/10 text-purple-400 border-purple-500/25"
+                                                : "bg-slate-500/10 text-slate-400 border-slate-500/25"
+                                          }`}>
+                                            {status || (isOfficial ? "Official" : "Community")}
+                                          </span>
                                     </div>
                                 </div>
                             </div>

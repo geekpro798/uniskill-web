@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react';
 import { 
   Save, Terminal, Globe, Lock, AlertCircle, KeyRound, 
   Plus, Trash2, Sparkles, Wand2, Loader2, CheckCircle2,
-  Activity 
+  Activity, Edit3 
 } from 'lucide-react';
 import { useSession, signIn } from "next-auth/react";
 import { useEffect } from 'react';
@@ -58,13 +58,60 @@ export default function CreateSkillPage() {
 
   // 🌟 新增：部署成功后的状态，用于触发原地沙箱 (State for post-deployment sandbox)
   const [deployedSkill, setDeployedSkill] = useState<{id: string, name: string} | null>(null);
+  const [resumeSkillUid, setResumeSkillUid] = useState<string | null>(null);
+  const [originalState, setOriginalState] = useState<string | null>(null);
+  const [isSkillNameDirty, setIsSkillNameDirty] = useState(false); // 🌟 新增：智能锁定 (Smart Sync Lock)
+
   const [testInput, setTestInput] = useState('');
   const [testLog, setTestLog] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
   const [testSuccess, setTestSuccess] = useState(false); // 🌟 新增：记录测试是否成功 (Track if test was successful)
   const [isCheckingName, setIsCheckingName] = useState(false); // 🌟 新增：正在检查名称唯一性 (Checking name uniqueness)
+  
+  // 🌟 二阶段部署：完结态逻辑 (Two-Stage Deployment: Finalization State)
+  const [isFinalizing, setIsFinalizing] = useState(false);
+  const [finalizeSuccess, setFinalizeSuccess] = useState(false);
 
   const formRef = useRef<HTMLFormElement>(null);
+
+  // 🌟 Resume Logic: Load drafted or active skill if '?resume=' is in URL
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    const params = new URLSearchParams(window.location.search);
+    const resumeId = params.get('resume');
+    if (resumeId) {
+      setResumeSkillUid(resumeId);
+      supabase.from('skills')
+        .select('*')
+        .eq('skill_uid', resumeId)
+        .single()
+        .then(({ data, error }) => {
+          // 现在允许加载 testing 或 active 状态的技能进行编辑 (Allow loading testing or active skills)
+          if (data && !error && (data.state === 'testing' || data.state === 'active')) {
+            setOriginalState(data.state);
+            setSkillName(data.skill_name || '');
+            setDisplayName(data.display_name || data.skill_name || '');
+            setDescription(data.description || '');
+            setMarkdownBody(data.markdown_manifest || '');
+            setIsPublic(data.status === 'Community');
+            setSecrets(data.secrets && Array.isArray(data.secrets) && data.secrets.length > 0 
+              ? data.secrets 
+              : [{ key: '', value: '' }]
+            );
+            
+            // 如果是已发布的技能，进入已部署状态以便直接进入右侧 Sandbox
+            if (data.state === 'active') {
+              setDeployedSkill({ id: data.skill_uid || data.id, name: data.display_name || data.skill_name });
+            }
+
+            // 只有首次加载时尝试滚动，且加延迟以避开渲染闪烁
+            setTimeout(() => {
+              window.scrollTo({ top: document.body.scrollHeight / 2, behavior: 'smooth' });
+            }, 800);
+          }
+        });
+    }
+  }, [status]);
 
   // 🌟 新增：检查 Skill Name 是否重复 (Check if Skill Name is unique)
   useEffect(() => {
@@ -77,6 +124,7 @@ export default function CreateSkillPage() {
           .from('skills')
           .select('skill_name')
           .eq('skill_name', skillName)
+          .neq('skill_uid', resumeSkillUid || 'none') // 🌟 排除当前正在编辑的资产 (Exclude current asset)
           .maybeSingle();
 
         if (data) {
@@ -97,6 +145,7 @@ export default function CreateSkillPage() {
 
     return () => clearTimeout(timer);
   }, [skillName]);
+
 
   if (status === "unauthenticated") {
     return (
@@ -144,7 +193,10 @@ export default function CreateSkillPage() {
   const handleDisplayNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVal = e.target.value;
     setDisplayName(newVal);
-    if (!magicSuccess) {
+    
+    // 🌟 核心：智能锁定 (Smart Sync Lock)
+    // 逻辑：如果是编辑已有技能 (resumeSkillUid 存在) 或者是用户手动改过 ID (isSkillNameDirty)，则禁止联变
+    if (!resumeSkillUid && !isSkillNameDirty && !magicSuccess) {
       setSkillName(newVal.toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/(^_|_$)+/g, ''));
     }
   };
@@ -265,19 +317,80 @@ export default function CreateSkillPage() {
         skill_name: skillName,
         display_name: displayName,
         description,
-        markdown_body: markdownBody,
+        markdown_manifest: markdownBody,
         visibility: isPublic ? 'public' : 'private',
         secrets: validSecrets 
       };
 
-      console.log('Deploying Final Skill:', payload);
-      // 模拟部署延迟 (Simulate deployment delay)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('Deploying Initial Skill State:', payload);
+
+      // 🌟 物理入库逻辑 (Insert to Supabase as 'testing' state)
+      let ownerUid = (session as any)?.user?.userUid;
+      if (!ownerUid && session?.user?.id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('user_uid')
+          .eq('github_id', session.user.id)
+          .maybeSingle();
+        ownerUid = profile?.user_uid;
+      }
+      
+      if (!ownerUid) {
+        throw new Error('Required: User Profile UID not found.');
+      }
+      
+      // 提取 Emoji 用于概览展示
+      const emojiMatch = markdownBody.match(/emoji:\s*([^\s\n]+)/);
+      const extractedEmoji = emojiMatch ? emojiMatch[1] : '⚙️';
+      
+      const skillPayload = {
+        skill_name: payload.skill_name,
+        display_name: payload.display_name,
+        description: payload.description,
+        markdown_manifest: payload.markdown_manifest,
+        status: isPublic ? 'Community' : 'Private',
+        owner_uid: ownerUid,
+        // 🌟 影子更新逻辑 (Shadow Update Logic)：
+        // 如果原本就是 active，则保持 active，仅更新源码，决不降级为 testing。
+        state: originalState === 'active' ? 'active' : 'testing',
+        secrets: payload.secrets,
+        credits_per_call: 1,
+        usd_per_call: 0.001,
+        emoji: extractedEmoji,
+        gradient_from: 'from-blue-500', 
+        gradient_to: 'to-indigo-500' 
+      };
+
+      let insertedSkill;
+      if (resumeSkillUid) {
+        // Resume mode: Update the existing draft record
+        const { data, error } = await supabase.from('skills')
+          .update(skillPayload)
+          .eq('skill_uid', resumeSkillUid)
+          .select().single();
+        
+        if (error) {
+          throw new Error("Database update failed: " + error.message);
+        }
+        insertedSkill = data;
+      } else {
+        // Initial creation mode: Insert new draft
+        const { data, error } = await supabase.from('skills')
+          .insert(skillPayload)
+          .select().single();
+
+        if (error) {
+          throw new Error("Database insertion failed: " + error.message);
+        }
+        insertedSkill = data;
+      }
       
       // 🌟 核心变更：不再弹窗，而是将状态置为已部署，触发沙箱 UI
-      // alert('Skill deployed successfully! Your API keys are encrypted at rest.');
-      setDeployedSkill({ id: skillName, name: displayName });
-
+      setDeployedSkill({ 
+        id: insertedSkill.id?.toString() || insertedSkill.skill_uid?.toString() || skillName, 
+        name: displayName, 
+        visibility: isPublic ? 'public' : 'private' 
+      } as any);
       // 平滑滚动至页面底部的沙箱区域
       // (Smooth scroll to the sandbox area at the bottom)
       setTimeout(() => {
@@ -321,6 +434,39 @@ export default function CreateSkillPage() {
     }
   };
 
+  // 🌟 完结部署逻辑：从测试态转移至生产态 (Finalize Deployment Logic)
+  const handleFinalize = async () => {
+    if (!deployedSkill) return;
+    setIsFinalizing(true);
+    setErrors({});
+    
+    try {
+      const res = await fetch('/api/skills/finalize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skillUid: deployedSkill.id })
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to finalize skill');
+      }
+      
+      setFinalizeSuccess(true);
+      
+      // 稍微延迟让用户看到成功视图，然后返回面板
+      setTimeout(() => {
+         window.location.href = '/dashboard/skills';
+      }, 3500);
+      
+    } catch (err: any) {
+      console.error('Finalize failed:', err);
+      alert('Failed to launch skill: ' + err.message);
+    } finally {
+      setIsFinalizing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-grid" style={{ backgroundColor: "var(--color-bg-primary)" }}>
       <DashboardNavbar credits={liveCredits} totalCredits={500} />
@@ -328,6 +474,26 @@ export default function CreateSkillPage() {
       <main className="max-w-5xl mx-auto px-6 py-10">
         <div className="max-w-4xl mx-auto space-y-8">
           
+          {/* Header section for Shadow Edit Mode */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+            <div>
+              <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {originalState === 'active' ? 'Edit Live Skill' : 'Deploy New Skill'}
+              </h1>
+              <p className="text-sm text-slate-500 font-medium mt-1">
+                {originalState === 'active' 
+                  ? 'Update your production tool without any downtime.' 
+                  : 'Architect a new autonomous agent capability.'}
+              </p>
+            </div>
+            {originalState === 'active' && (
+              <div className="flex items-center gap-2 bg-blue-500/10 text-blue-500 px-3 py-1.5 rounded-full border border-blue-500/20 shadow-sm animate-in fade-in slide-in-from-right-4 transition-all">
+                <Edit3 size={12} className="shrink-0" />
+                <span className="text-[10px] font-black uppercase tracking-widest">Shadow Edit Mode</span>
+              </div>
+            )}
+          </div>
+
           {/* ==========================================
               模块 1：魔法生成器 (Module 1: Magic Architect)
               统一适配了浅色与深色模式 (Adapted for both light and dark modes)
@@ -445,8 +611,10 @@ export default function CreateSkillPage() {
                       <input
                         type="text"
                         required
+                        disabled={originalState === 'active'}
                         value={skillName}
                         onChange={(e) => {
+                          setIsSkillNameDirty(true); // 🌟 用户手动修改，彻底锁定联动
                           setSkillName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''));
                         }}
                         placeholder="crypto_price_tracker"
@@ -454,9 +622,8 @@ export default function CreateSkillPage() {
                           errors.skillName 
                             ? 'border-red-500 dark:border-red-500 focus:ring-2 focus:ring-red-500/20' 
                             : 'focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'
-                        }`}
+                        } ${originalState === 'active' ? 'opacity-50 cursor-not-allowed bg-slate-100/50 dark:bg-slate-800/50' : ''}`}
                         style={{ 
-                          backgroundColor: "var(--color-bg-secondary)", 
                           borderColor: "var(--color-border)",
                           color: "var(--color-text-primary)"
                         }}
@@ -669,8 +836,29 @@ export default function CreateSkillPage() {
                   ) : (
                     <Save className="w-5 h-5" />
                   )}
-                  {isSubmitting ? 'Deploying to Edge...' : 'Deploy Skill Endpoint'}
+                  {isSubmitting 
+                    ? 'Deploying to Edge...' 
+                    : (originalState === 'active' ? 'Save & Proceed to Sandbox' : 'Deploy Skill Endpoint')}
                 </button>
+              </div>
+            ) : finalizeSuccess ? (
+              // 🌟 权限感知成功界面 (Access-Aware Success View)
+              <div className="border-t p-12 animate-in fade-in zoom-in-95 duration-500 flex flex-col items-center text-center" style={{ backgroundColor: "var(--color-bg-secondary)", borderTopColor: "var(--color-border)" }}>
+                <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mb-6">
+                  <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+                </div>
+                <h3 className="text-3xl font-black mb-4 transition-colors uppercase tracking-tight" style={{ color: "var(--color-text-primary)" }}>
+                  {(deployedSkill as any)?.visibility === 'private' ? 'Deployment Secured' : 'Deployment Live'}
+                </h3>
+                <p className="text-lg font-medium max-w-lg mb-8" style={{ color: "var(--text-secondary)" }}>
+                  {/* Dynamic Success Message based on Tier */}
+                  {(deployedSkill as any)?.visibility === 'private' 
+                    ? "Deployed! This skill is now securely active in your private vault and ready for your agents." 
+                    : "Live! Your skill is now discoverable in the global marketplace and earning potential is active."}
+                </p>
+                <div className="flex items-center gap-2 text-sm text-slate-400 font-bold uppercase tracking-widest animate-pulse">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Redirecting to Hub
+                </div>
               </div>
             ) : (
               // 🌟 部署成功后的沙箱测试面板 (Sandbox Panel after successful deployment)
@@ -682,7 +870,7 @@ export default function CreateSkillPage() {
                       Endpoint Live!
                     </h3>
                     <p className="mt-2 text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                      Your skill <code className="text-emerald-400 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded">execute_{deployedSkill.id}</code> is running at the edge. Test it below.
+                      Your skill <span className="font-bold text-slate-900 dark:text-white uppercase tracking-tight">{deployedSkill.name}</span> <code className="text-emerald-400 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded ml-1 font-mono">({skillName})</code> is running at the edge. Test it below.
                     </p>
                   </div>
                   <div className="flex gap-3 w-full md:w-auto">
@@ -699,14 +887,15 @@ export default function CreateSkillPage() {
                     </button>
                     <button 
                       type="button"
-                      disabled={!testSuccess}
-                      className={`flex-1 md:flex-none px-5 py-2.5 text-sm font-bold rounded-xl transition-all shadow-lg ${
+                      onClick={handleFinalize}
+                      disabled={!testSuccess || isFinalizing}
+                      className={`flex-1 md:flex-none px-5 py-2.5 text-sm font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 ${
                         testSuccess 
                           ? 'bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white shadow-emerald-900/20 hover:scale-105 active:scale-95 cursor-pointer' 
                           : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed grayscale'
                       }`}
                     >
-                      Done
+                      {isFinalizing ? <><Loader2 className="w-4 h-4 animate-spin" /> Finalizing...</> : 'Done'}
                     </button>
                   </div>
                 </div>

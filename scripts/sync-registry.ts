@@ -1,6 +1,6 @@
-// uniskill-web/scripts/sync-registry.ts
-// Logic: Unified Registry Sync - Push .md skills to both Cloudflare KV and Supabase DB.
-// This implements the "Upload Time = Registration" logic.
+// uniskill 统一注册中心同步脚本 (v2.1 - 架构对齐版)
+// Logic: 职责：解析 registry/skills 下的 Markdown，同步至 KV 和 Supabase。
+// 升级点：增加了 state 自动激活、DID 确定性生成以及网关缓存强制刷新。
 
 import fs from "fs";
 import path from "path";
@@ -24,6 +24,9 @@ const NAMESPACE_ID = process.env.CLOUDFLARE_KV_NAMESPACE_ID;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+const GATEWAY_URL = process.env.GATEWAY_URL || "http://localhost:8787";
+const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY || process.env.INTERNAL_API_SECRET;
+
 const SKILLS_DIR = path.join(SCRIPT_DIR, "..", "registry", "skills");
 const SYSTEM_UID = "00000000-0000-0000-0000-000000000001";
 
@@ -34,11 +37,11 @@ async function putToKV(key: string, value: string) {
     try {
         const tmpFile = path.join("/tmp", `kv_${key.replace(/:/g, "_")}.json`);
         fs.writeFileSync(tmpFile, value);
-        
+
         execSync(`npx -y wrangler kv key put --namespace-id ${NAMESPACE_ID} "${key}" --path "${tmpFile}" --remote`, {
             stdio: "inherit"
         });
-        
+
         fs.unlinkSync(tmpFile);
     } catch (err: any) {
         console.error(`❌ Ranger KV Put failed for [${key}]:`, err.message);
@@ -110,12 +113,16 @@ async function syncRegistry() {
                 inputSchema: parameters
             });
 
-            console.log(`🔍 Processing: ${skill_name} (${display_name})`);
+            // 🌟 核心升级：生成确定性 DID 指纹 (Generate Deterministic DID)
+            const did = `did:usk:skill:official:${skill_name}`;
+
+            console.log(`🔍 Processing: ${skill_name} (${display_name}) | DID: ${did}`);
 
             // B. Sync to Cloudflare KV (For Gateway Runtime)
             const unifiedSkill = {
                 skill_name,
                 source: status,
+                did, // 🌟 注入指纹
                 meta: {
                     display_name,
                     emoji: frontmatter.emoji || "🧩",
@@ -158,10 +165,13 @@ async function syncRegistry() {
                     usd_per_call: usd_per_call,
                     category: category,
                     status: frontmatter.status || "Official",
+                    state: 'active', // 🌟 核心：官方同步直接激活
+                    did: did,        // 🌟 核心：注入指纹
                     gradient_from: frontmatter.gradientFrom || "from-slate-600",
                     gradient_to: frontmatter.gradientTo || "from-slate-400",
-                    parameters: parameters, 
-                    creator_uid: SYSTEM_UID
+                    parameters: parameters,
+                    owner_uid: SYSTEM_UID,
+                    deployed_at: new Date().toISOString()
                 }, {
                     onConflict: "skill_name"
                 });
@@ -179,6 +189,25 @@ async function syncRegistry() {
 
     console.log(`📡 [KV] Bundling entire menu into single cache key...`);
     await putToKV("mcp_registry:tools_cache", JSON.stringify(allTools));
+
+    // E. 🌟 核心升级：触发边缘网关热更新广播 (Trigger Hot-Reload Broadcast)
+    console.log(`\n📡 Sending sync signal to Gateway Admin API...`);
+    try {
+        const signalRes = await fetch(`${GATEWAY_URL}/v1/admin/refresh-tools`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${ADMIN_SECRET_KEY}`
+            }
+        });
+        if (signalRes.ok) {
+            console.log("✅ Gateway cache warmed up and broadcast triggered!");
+        } else {
+            console.warn(`⚠️ Gateway returned ${signalRes.status} ${await signalRes.text()}`);
+        }
+    } catch (e: any) {
+        console.warn(`⚠️ Gateway unreachable (${e.message}), but DB/KV are updated.`);
+    }
 
     console.log("\n🎉 Unified Sync Complete!");
 }

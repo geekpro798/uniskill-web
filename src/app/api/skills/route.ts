@@ -9,6 +9,8 @@ export async function GET() {
         const { data: skills, error } = await supabase
             .from("skills")
             .select("*")
+            .in("status", ["Official", "Community"]) // 🌟 只拉取官方或社区公开技能
+            .eq("state", "active")                   // 🌟 只拉取已完成部署的激活态技能
             .order("skill_name", { ascending: true });
 
         if (error) {

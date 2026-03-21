@@ -6,12 +6,14 @@ import Link from "next/link";
 import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
 import TopUpModal from "@/components/Dashboard/TopUpModal";
 import ResetKeyModal from "@/components/Dashboard/ResetKeyModal";
+import DeleteSkillModal from "@/components/Dashboard/DeleteSkillModal";
 import { supabase } from "@/lib/supabase";
 import { 
   Zap, Key, Terminal, BarChart3, ArrowUpRight, 
   Plus, Layers, ExternalLink, Activity, ShieldCheck, 
   Copy, CheckCircle2, ChevronRight, Eye, EyeOff,
-  History, Monitor, Code2, Globe, Lock, MoreVertical
+  History, Monitor, Code2, Globe, Lock, MoreVertical,
+  Trash2, PlayCircle, Edit3
 } from 'lucide-react';
 
 // ==========================================
@@ -168,6 +170,7 @@ export default function DashboardPage() {
   const [copiedKey, setCopiedKey] = useState(false);
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [skillToDelete, setSkillToDelete] = useState<{uid: string, name: string} | null>(null);
   const [liveCredits, setLiveCredits] = useState<number | undefined>(undefined);
   
   // API Key 重置后的临时明文及预览状态
@@ -203,7 +206,7 @@ export default function DashboardPage() {
       const { data, error } = await supabase
         .from('skills')
         .select('*')
-        .eq('creator_uid', uid) // 修正字段名：经查证，skills 表使用 creator_uid 标识作者
+        .eq('owner_uid', uid) // 修正字段名：经查证，skills 表使用 owner_uid 标识作者
         .order('skill_name', { ascending: true }); // 使用 skill_name 排序，该表没有 created_at
 
       if (error) throw error;
@@ -245,6 +248,32 @@ export default function DashboardPage() {
       });
     } catch (e) {
       console.error("Failed to fetch invocations", e);
+    }
+  };
+
+  // 🌟 核心逻辑：删除技能/草稿 (Delete logic)
+  const handleDelete = async (skillUid: string, skillName: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // 阻止进入详情页 (Prevent navigation)
+    setSkillToDelete({ uid: skillUid, name: skillName });
+  };
+
+  const confirmDelete = async () => {
+    if (!skillToDelete) return;
+    try {
+      const { error } = await supabase
+        .from('skills')
+        .delete()
+        .eq('skill_uid', skillToDelete.uid);
+
+      if (error) throw error;
+
+      // 更新本地 UI 状态 (Update local state)
+      setSkills(prev => prev.filter(s => s.skill_uid !== skillToDelete.uid));
+    } catch (err: any) {
+      console.error("[Delete Error]", err.message);
+      alert("Failed to delete the skill. Please try again.");
+    } finally {
+      setSkillToDelete(null);
     }
   };
 
@@ -296,8 +325,10 @@ export default function DashboardPage() {
     }
   };
 
-  const privateCount = skills.filter(s => s.is_public === false).length;
-  const publicCount = skills.filter(s => s.is_public === true).length;
+  const liveSkills = skills.filter(s => s.state === 'active');
+  const privateCount = liveSkills.filter(s => s.status === 'Private').length;
+  const communityCount = liveSkills.filter(s => s.status === 'Community' || s.status === 'Official').length;
+  const liveSkillsCount = liveSkills.length;
 
   // 首页统计看板展示的核心数据逻辑
   const stats = [
@@ -320,11 +351,11 @@ export default function DashboardPage() {
     },
     { 
       label: 'Live Skills', 
-      value: loadingSkills ? '---' : skills.length.toString(), 
+      value: loadingSkills ? '---' : liveSkillsCount.toString(), 
       icon: Layers, 
       color: 'text-blue-400', 
       bg: 'bg-blue-400/10',
-      breakdown: { private: privateCount, public: publicCount } // 资产分布展示逻辑
+      breakdown: { private: privateCount, community: communityCount } // 资产分布展示逻辑
     },
   ];
 
@@ -387,12 +418,12 @@ export default function DashboardPage() {
               <div className="flex items-baseline justify-between mb-3">
                 <span className="text-2xl font-black text-slate-900 dark:text-white">{stat.value}</span>
                 
-                {/* 针对 Live Skills 的 P/S 拆解标签 */}
+                {/* 针对 Live Skills 的 P/C 拆解标签 */}
                 {stat.label === 'Live Skills' ? (
                   <div className="text-[9px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded flex items-center gap-1.5 uppercase tracking-tighter">
                     <span>{stat.breakdown?.private}P</span>
                     <span className="opacity-30">|</span>
-                    <span className="text-purple-400">{stat.breakdown?.public}S</span>
+                    <span className="text-purple-400">{stat.breakdown?.community}C</span>
                   </div>
                 ) : (
                   <div className="text-[9px] font-black text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded flex items-center gap-0.5">
@@ -404,8 +435,8 @@ export default function DashboardPage() {
               {/* 视觉化资产分布条 */}
               {stat.label === 'Live Skills' && (
                 <div className="flex h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                   <div className="bg-blue-500 h-full transition-all duration-500" style={{ width: `${skills.length > 0 ? (privateCount / skills.length) * 100 : 0}%` }}></div>
-                   <div className="bg-purple-500 h-full transition-all duration-500" style={{ width: `${skills.length > 0 ? (publicCount / skills.length) * 100 : 0}%` }}></div>
+                   <div className="bg-blue-500 h-full transition-all duration-500" style={{ width: `${liveSkillsCount > 0 ? (privateCount / liveSkillsCount) * 100 : 0}%` }}></div>
+                   <div className="bg-purple-500 h-full transition-all duration-500" style={{ width: `${liveSkillsCount > 0 ? (communityCount / liveSkillsCount) * 100 : 0}%` }}></div>
                 </div>
               )}
 
@@ -453,46 +484,118 @@ export default function DashboardPage() {
                   </div>
                 ) : skills.length > 0 ? (
                   <div className="divide-y divide-slate-50 dark:divide-slate-800/50">
-                    {skills.map((skill) => (
+                    {skills.map((skill) => {
+                      const isTesting = skill.state === 'testing';
+                      return (
                       <div 
-                        key={skill.id} 
-                        className="p-4 md:p-5 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all flex items-center justify-between group cursor-pointer"
-                        onClick={() => window.location.href = `/dashboard/skills/${skill.id}`}
+                        key={skill.skill_uid}
+                        className={`p-4 md:p-5 transition-all flex items-center justify-between group cursor-pointer relative border-b last:border-0 ${
+                          isTesting
+                            ? 'border-amber-500/40 border-dashed bg-amber-50/10 dark:bg-amber-900/10 hover:bg-amber-50/50 dark:hover:bg-amber-900/20'
+                            : 'border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/30'
+                        }`}
+                        onClick={() => {
+                          if (isTesting) {
+                            window.location.href = `/dashboard/skills/new?resume=${skill.skill_uid}`;
+                          } else {
+                            window.location.href = `/dashboard/skills/${skill.skill_name}`;
+                          }
+                        }}
                       >
                         <div className="flex items-center gap-4">
                           <div className="w-11 h-11 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center border border-slate-200/50 dark:border-slate-700/50 group-hover:border-blue-500/30 transition-all shadow-sm">
-                            <Code2 className="text-slate-400 group-hover:text-blue-500 transition-colors" size={22} />
+                            <span className="text-xl">{skill.emoji || '⚙️'}</span>
                           </div>
                           <div className="text-left">
                             <div className="flex items-center gap-2 mb-0.5">
-                              <h4 className="text-[13px] font-black text-slate-900 dark:text-white uppercase tracking-tight">{skill.name || "Unnamed Skill"}</h4>
+                              <h4 className="text-[13px] font-black text-slate-900 dark:text-white tracking-tight">{skill.display_name || skill.name || "Unnamed Skill"}</h4>
                               <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest border ${
-                                skill.is_public 
+                                skill.status === 'Community' 
                                 ? 'bg-purple-500/10 text-purple-500 border-purple-500/20' 
                                 : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
                               }`}>
-                                {skill.is_public ? 'Public' : 'Private'}
+                                {skill.status === 'Community' ? 'Public' : 'Private'}
                               </span>
+                              {skill.state === 'testing' && (
+                                <span className="text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest border bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse">
+                                  Draft
+                                </span>
+                              )}
                             </div>
-                            <p className="text-[10px] text-slate-400 line-clamp-1 max-w-[200px] md:max-w-[400px] font-medium italic">
+                            <p className="text-[10px] text-slate-400 line-clamp-1 max-w-[200px] md:max-w-[400px] font-medium italic mb-1">
                               {skill.description || 'Professional AI tool for advanced automation logic.'}
+                            </p>
+                            <p className="text-[9px] text-slate-500 font-mono">
+                              ID: {skill.skill_name}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-6">
-                          <div className="hidden md:flex flex-col items-end gap-1">
-                             <div className="flex items-center gap-1.5">
-                                <Activity size={10} className="text-emerald-500 animate-pulse" />
-                                <span className="text-[10px] font-black text-slate-600 dark:text-slate-300">Active</span>
-                             </div>
-                             <span className="text-[8px] text-slate-400 font-mono uppercase tracking-tighter">Last call 12m ago</span>
+                        <div className="flex items-center gap-4">
+                          <div className="hidden md:flex flex-col items-end gap-1 mr-2">
+                             {isTesting ? (
+                               <>
+                                 <div className="flex items-center gap-1.5">
+                                    <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                                    <span className="text-[10px] font-black text-amber-600 dark:text-amber-500">In Sandbox</span>
+                                 </div>
+                                 <span className="text-[8px] text-slate-400 font-mono uppercase tracking-tighter">Pending Deploy</span>
+                               </>
+                             ) : (
+                               <>
+                                 <div className="flex items-center gap-1.5">
+                                    <Activity size={10} className="text-emerald-500 animate-pulse" />
+                                    <span className="text-[10px] font-black text-slate-600 dark:text-slate-300">Active</span>
+                                 </div>
+                                 <span className="text-[8px] text-slate-400 font-mono uppercase tracking-tighter">Last call 12m ago</span>
+                               </>
+                             )}
                           </div>
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-300 group-hover:text-blue-500">
-                             <ChevronRight size={18} />
-                          </div>
+                          
+                          {isTesting ? (
+                            <div className="flex items-center gap-2">
+                              {/* 🌟 删除按钮 (Delete Button) */}
+                              <button 
+                                onClick={(e) => handleDelete(skill.skill_uid, skill.display_name || skill.skill_name || 'Draft', e)}
+                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                                title="Discard Draft"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                              
+                              {/* 恢复部署按钮 */}
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.location.href = `/dashboard/skills/new?resume=${skill.skill_uid}`;
+                                }}
+                                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black rounded-lg transition-all flex items-center gap-1.5 shadow-lg shadow-amber-500/20 active:scale-95"
+                              >
+                                <PlayCircle size={12} /> Resume
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              {(skill.status === 'Private' || skill.status === 'Community') && (
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    window.location.href = `/dashboard/skills/new?resume=${skill.skill_uid}`;
+                                  }}
+                                  className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all"
+                                  title="Edit Live Skill"
+                                >
+                                  <Edit3 size={16} />
+                                </button>
+                              )}
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-300 group-hover:text-blue-500">
+                                <ChevronRight size={18} />
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    ))}
+                    );
+                  })}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-16 px-6 border-2 border-dashed border-slate-100 dark:border-slate-800/50 rounded-[24px] bg-slate-50/30 dark:bg-[#0d0f16]/30 m-6">
@@ -602,6 +705,13 @@ export default function DashboardPage() {
         isOpen={isResetModalOpen}
         onClose={() => setIsResetModalOpen(false)}
         onConfirm={handleConfirmReset}
+      />
+
+      <DeleteSkillModal
+        isOpen={!!skillToDelete}
+        skillName={skillToDelete?.name || ''}
+        onClose={() => setSkillToDelete(null)}
+        onConfirm={confirmDelete}
       />
     </div>
   );

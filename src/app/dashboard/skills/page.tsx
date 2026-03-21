@@ -4,11 +4,12 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
 import { supabase } from "@/lib/supabase";
+import DeleteSkillModal from "@/components/Dashboard/DeleteSkillModal";
 import { 
   Plus, Lock, Globe, 
   Copy, CheckCircle2, LayoutGrid, List, Search, 
-  Zap, ChevronRight,
-  ShieldCheck, Info
+  Zap, ChevronRight, Trash2,
+  ShieldCheck, Info, AlertCircle, PlayCircle
 } from 'lucide-react';
 
 /**
@@ -21,6 +22,7 @@ export default function SkillsPage() {
   const [liveCredits, setLiveCredits] = useState<number | undefined>(undefined);
   const [skills, setSkills] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [skillToDelete, setSkillToDelete] = useState<{uid: string, name: string} | null>(null);
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,7 +68,7 @@ export default function SkillsPage() {
         const { data: skillsData, error } = await supabase
           .from('skills')
           .select('*')
-          .eq('creator_uid', uid)
+          .eq('owner_uid', uid)
           .order('skill_name', { ascending: true });
 
         if (error) throw error;
@@ -77,11 +79,13 @@ export default function SkillsPage() {
           slug: s.skill_name || 'unknown-skill',
           name: s.display_name || s.skill_name,
           description: s.description || 'Professional AI tool for advanced automation logic.',
-          visibility: s.is_public ? 'public' : 'private',
-          credits_per_call: s.is_public ? (s.credits_per_call || 1) : 1, // 私人技能固化 1 积分展示
+          visibility: s.status === 'Community' ? 'public' : 'private',
+          credits_per_call: s.status === 'Community' ? (s.credits_per_call || 1) : 1, // 私人技能固化 1 积分展示
           emoji: s.emoji || '⚙️',
-          iconBg: s.gradient_from ? (s.gradient_from.startsWith('bg-') ? s.gradient_from : `bg-[${s.gradient_from}]`) : (s.is_public ? 'bg-purple-600' : 'bg-blue-600'),
-          tags: s.tags || []
+          iconBg: s.gradient_from ? (s.gradient_from.startsWith('bg-') ? s.gradient_from : `bg-[${s.gradient_from}]`) : (s.status === 'Community' ? 'bg-purple-600' : 'bg-blue-600'),
+          tags: s.tags || [],
+          status: s.status || 'Official',
+          state: s.state || 'active'
         }));
 
         setSkills(formattedSkills);
@@ -94,6 +98,24 @@ export default function SkillsPage() {
 
     fetchData();
   }, [session?.user?.id]);
+
+  const confirmDelete = async () => {
+    if (!skillToDelete) return;
+    try {
+      const { error } = await supabase
+        .from('skills')
+        .delete()
+        .eq('skill_uid', skillToDelete.uid);
+
+      if (error) throw error;
+      setSkills(prev => prev.filter(s => s.id !== skillToDelete.uid));
+    } catch (err: any) {
+      console.error("[Delete Error]", err.message);
+      alert("Failed to delete the skill. Please try again.");
+    } finally {
+      setSkillToDelete(null);
+    }
+  };
 
   // ------------------------------------------------------------------
   // 核心逻辑：基于名称、ID 及 隐藏标签的搜索算法
@@ -177,7 +199,7 @@ export default function SkillsPage() {
                       : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
                   }`}
                 >
-                  {filter}
+                  {filter === 'public' ? 'community' : filter}
                 </button>
               ))}
             </div>
@@ -201,58 +223,107 @@ export default function SkillsPage() {
               {filteredSkills.map((skill) => (
                 <div 
                   key={skill.id}
-                  className="group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-[32px] p-8 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex flex-col min-h-[300px]"
+                  onClick={() => {
+                    if (skill.state === 'testing') {
+                      window.location.href = `/dashboard/skills/new?resume=${skill.id}`;
+                    } else {
+                      window.location.href = `/dashboard/skills/${skill.slug}`;
+                    }
+                  }}
+                  className={`group relative bg-white dark:bg-slate-900/40 border rounded-[32px] p-8 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex flex-col min-h-[300px] cursor-pointer ${
+                    skill.state === 'testing' 
+                      ? 'border-2 border-dashed border-amber-500/30 bg-amber-500/[0.02]' 
+                      : 'border-slate-200 dark:border-slate-800'
+                  }`}
                 >
                   {/* Card Top: 图标背景 + 状态徽章 */}
                   <div className="flex items-start justify-between mb-8">
-                    <div className={`w-16 h-16 rounded-2xl ${skill.iconBg} flex items-center justify-center text-3xl shadow-lg group-hover:scale-110 transition-transform`}>
+                    <div className={`w-16 h-16 rounded-2xl ${skill.iconBg} flex items-center justify-center text-3xl shadow-lg group-hover:scale-110 transition-transform ${skill.state === 'testing' ? 'grayscale opacity-50' : ''}`}>
                       {skill.emoji}
                     </div>
-                    {skill.visibility === 'private' ? (
-                      <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-slate-200 dark:border-slate-700">
-                        <Lock size={12} /> Private
+                    <div className="flex flex-col items-end gap-2">
+                      <span className={`flex items-center gap-1.5 px-3 py-1 border text-[9px] font-black uppercase tracking-widest rounded-lg ${
+                        skill.state === 'testing' 
+                          ? 'bg-amber-500/10 text-amber-600 border-amber-500/20 animate-pulse' 
+                          : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                      }`}>
+                        {skill.state === 'testing' ? <AlertCircle size={10} /> : <CheckCircle2 size={10} />}
+                        {skill.state}
                       </span>
-                    ) : (
-                      <span className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-purple-500/20">
-                        <Globe size={12} /> Published
+                      <span className={`flex items-center gap-1.5 px-3 py-1 border text-[9px] font-black uppercase tracking-widest rounded-lg ${
+                        skill.status === 'Community'
+                          ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                          : skill.status === 'Official'
+                            ? 'bg-blue-600/10 text-blue-600 border-blue-600/20'
+                            : 'bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                      }`}>
+                        {skill.status === 'Community' ? <Globe size={10} /> : skill.status === 'Official' ? <ShieldCheck size={10} /> : <Lock size={10} />}
+                        {skill.status}
                       </span>
-                    )}
+                    </div>
                   </div>
 
                   {/* Title & Description */}
-                  <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-3 tracking-tight group-hover:text-blue-500 transition-colors uppercase">
+                  <h3 className={`text-2xl font-black text-slate-900 dark:text-white mb-3 tracking-tight transition-colors uppercase ${skill.state === 'testing' ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'}`}>
                     {skill.name}
                   </h3>
                   <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-3 mb-10 flex-1 font-medium italic">
-                    {skill.description}
+                    {skill.state === 'testing' 
+                      ? "This skill hasn't been finalized. Complete the sandbox test to activate the global endpoint."
+                      : skill.description}
                   </p>
 
                   <div className="w-full h-px bg-slate-100 dark:bg-slate-800/80 mb-6 transition-colors"></div>
 
-                  {/* Footer: ID & 计费展示 */}
-                  <div className="flex items-center justify-between">
-                    <div 
-                      onClick={(e) => handleCopyId(skill.id, e)}
-                      className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-mono font-bold text-slate-400 cursor-pointer hover:border-blue-500/30 transition-all flex items-center gap-2"
-                    >
-                      <span className="uppercase">ID: {skill.id.substring(0, 8)}</span>
-                      {copiedId === skill.id ? <CheckCircle2 size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                  {/* Footer Logic: 如果是测试状态，显示 Resume 和删除 按钮 */}
+                  {skill.state === 'testing' ? (
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSkillToDelete({ uid: skill.id, name: skill.name });
+                        }}
+                        className="flex items-center justify-center p-3 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all border border-slate-200 dark:border-slate-800 hover:border-red-500/30 bg-slate-50 dark:bg-slate-900/40"
+                        title="Delete Draft"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.location.href = `/dashboard/skills/new?resume=${skill.id}`;
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-xl transition-all shadow-lg active:scale-95"
+                      >
+                        <PlayCircle size={16} />
+                        Resume
+                      </button>
                     </div>
-                    
-                    <div className="flex flex-col items-end">
-                      <div className="flex items-center gap-1.5">
-                        <Zap size={14} className="text-amber-500 fill-amber-500/20" />
-                        <span className="text-lg font-black text-slate-900 dark:text-white">{skill.credits_per_call}</span>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Credits</span>
+                  ) : (
+                    /* 正常状态页脚 (Normal status footer) */
+                    <div className="flex items-center justify-between">
+                      <div 
+                        onClick={(e) => handleCopyId(skill.id, e)}
+                        className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-mono font-bold text-slate-400 cursor-pointer hover:border-blue-500/30 transition-all flex items-center gap-2"
+                      >
+                        <span className="uppercase">ID: {skill.id.substring(0, 8)}</span>
+                        {copiedId === skill.id ? <CheckCircle2 size={12} className="text-emerald-500" /> : <Copy size={12} />}
                       </div>
-                      {/* 私人技能显示固定费率提示 */}
-                      {skill.visibility === 'private' && (
-                        <div className="text-[9px] font-bold text-blue-500 uppercase tracking-widest mt-0.5 opacity-80 flex items-center gap-1">
-                          <Info size={10} /> Fixed Infra Fee
+                      
+                      <div className="flex flex-col items-end">
+                        <div className="flex items-center gap-1.5">
+                          <Zap size={14} className="text-amber-500 fill-amber-500/20" />
+                          <span className="text-lg font-black text-slate-900 dark:text-white">{skill.credits_per_call}</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Credits</span>
                         </div>
-                      )}
+                        {skill.visibility === 'private' && (
+                          <div className="text-[9px] font-bold text-blue-500 uppercase tracking-widest mt-0.5 opacity-80 flex items-center gap-1">
+                            <Info size={10} /> Fixed Infra Fee
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               ))}
               {filteredSkills.length === 0 && !loading && (
@@ -273,14 +344,23 @@ export default function SkillsPage() {
                <table className="w-full text-left">
                   <thead className="bg-slate-50/50 dark:bg-slate-900/50 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 dark:border-slate-800">
                     <tr>
+                      <th className="px-8 py-5 tracking-widest">Display Name</th>
                       <th className="px-8 py-5 tracking-widest">Skill Name</th>
-                      <th className="px-8 py-5 tracking-widest">Tool ID</th>
+                      <th className="px-8 py-5 tracking-widest text-center">Status</th>
+                      <th className="px-8 py-5 tracking-widest text-center">State</th>
                       <th className="px-8 py-5 tracking-widest text-right">Cost</th>
+                      <th className="px-8 py-5 tracking-widest text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                     {filteredSkills.map(skill => (
-                      <tr key={skill.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors cursor-pointer group">
+                      <tr key={skill.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors cursor-pointer group" onClick={() => {
+                        if (skill.state === 'testing') {
+                          window.location.href = `/dashboard/skills/new?resume=${skill.id}`;
+                        } else {
+                          window.location.href = `/dashboard/skills/${skill.slug}`;
+                        }
+                      }}>
                         <td className="px-8 py-6 text-left">
                           <div className="flex items-center gap-4">
                             <span className="text-2xl group-hover:scale-110 transition-transform">{skill.emoji}</span>
@@ -290,15 +370,66 @@ export default function SkillsPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-8 py-6 font-mono text-xs text-slate-400 group-hover:text-blue-500 transition-colors text-left uppercase font-bold">{skill.id}</td>
+                        <td className="px-8 py-6 font-mono text-xs text-slate-400 group-hover:text-blue-500 transition-colors text-left font-bold">{skill.slug}</td>
+                        <td className="px-8 py-6 text-center">
+                           <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border ${
+                             skill.status === 'Community'
+                               ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+                               : skill.status === 'Official'
+                                 ? 'bg-blue-600/10 text-blue-600 border-blue-600/20'
+                                 : 'bg-slate-50 dark:bg-slate-800/50 text-slate-500 border-slate-200 dark:border-slate-700'
+                           }`}>
+                             {skill.status}
+                           </span>
+                        </td>
+                        <td className="px-8 py-6 text-center">
+                           <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border ${
+                             skill.state === 'testing'
+                               ? 'bg-amber-500/10 text-amber-600 border-amber-500/20 animate-pulse'
+                               : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                           }`}>
+                             {skill.state}
+                           </span>
+                        </td>
                         <td className="px-8 py-6 text-right font-black text-slate-900 dark:text-white text-lg">
                           {skill.credits_per_call} <span className="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">Credits</span>
+                        </td>
+                        <td className="px-8 py-6 text-right w-32">
+                          {skill.state === 'testing' ? (
+                            <div className="flex items-center justify-end gap-2">
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSkillToDelete({ uid: skill.id, name: skill.name });
+                                }}
+                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
+                                title="Delete Draft"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.location.href = `/dashboard/skills/new?resume=${skill.id}`;
+                                }}
+                                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black rounded-lg transition-all flex items-center gap-1.5 shadow-lg shadow-amber-500/20 active:scale-95"
+                              >
+                                <PlayCircle size={12} /> Resume
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex justify-end pr-2">
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-300 group-hover:text-blue-500">
+                                 <ChevronRight size={18} />
+                              </div>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}
                     {filteredSkills.length === 0 && !loading && (
                       <tr className="border-none">
-                        <td colSpan={3} className="py-24 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest italic">
+                        <td colSpan={6} className="py-24 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest italic">
                           Database is empty. No records found.
                         </td>
                       </tr>
@@ -324,6 +455,13 @@ export default function SkillsPage() {
         </footer>
 
       </main>
+
+      <DeleteSkillModal
+        isOpen={!!skillToDelete}
+        skillName={skillToDelete?.name || ''}
+        onClose={() => setSkillToDelete(null)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }
