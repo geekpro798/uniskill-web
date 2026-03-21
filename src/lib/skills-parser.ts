@@ -33,14 +33,14 @@ export function parseSkillFile(skillId: string): SkillData | null {
     const fileContent = fs.readFileSync(filePath, "utf-8");
     const { data: frontmatter, content } = matter(fileContent);
 
-    // 逻辑：通过正则精准提取 "## Description" 下方的纯文本描述
-    const descMatch = content.match(/## Description\n([\s\S]*?)(?=\n##|$)/);
+    // 逻辑：通过正则精准提取 "Description" 下方的纯文本描述
+    const descMatch = content.match(/#+\s*Description\s+([\s\S]*?)(?=\n#+|$)/i);
     const description = descMatch ? descMatch[1].trim() : "";
 
     // 逻辑：提取参数、返回示例和实现方案
-    const paramsMatch = content.match(/## Parameters\s+```json\s+([\s\S]*?)\s+```/);
-    const returnsMatch = content.match(/## Returns\s+```json\s+([\s\S]*?)\s+```/);
-    const implMatch = content.match(/## Implementation YAML\s+```yaml\s+([\s\S]*?)\s+```/);
+    const paramsMatch = content.match(/#+\s*Parameters\s+```json\s+([\s\S]*?)\s+```/i);
+    const returnsMatch = content.match(/#+\s*Returns\s+```json\s+([\s\S]*?)\s+```/i);
+    const implMatch = content.match(/#+\s*(?:Implementation|Implementation YAML)\s+```yaml\s+([\s\S]*?)\s+```/i);
 
     const parameters = paramsMatch ? JSON.parse(paramsMatch[1]) : {};
     const returns = returnsMatch ? JSON.parse(returnsMatch[1]) : null;

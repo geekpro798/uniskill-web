@@ -65,7 +65,7 @@ export async function POST(req: Request) {
     const descMatch = content.match(/## Description\s+([\s\S]*?)(?=\n##|$)/i);
     const parsedDescription = descMatch ? descMatch[1].trim() : "";
 
-    // 解析最新的 Parameters (提取 ## Parameters 下方的 JSON)
+    // 解析最新的 Parameters (提取 Parameters 下方的 JSON，兼容 # / ## 等)
     const paramMatch = content.match(/#+\s*Parameters[\s\S]*?```(?:json)?\s*([\s\S]*?)```/i);
     let parsedParameters = { type: "object", properties: {} };
     try {
@@ -83,6 +83,19 @@ export async function POST(req: Request) {
     
     const finalDisplayName = dNameMatch ? dNameMatch[1].replace(/['"]/g, '').trim() : skill.display_name;
     const finalEmoji = emojiMatch ? emojiMatch[1].replace(/['"]/g, '').trim() : skill.emoji;
+
+    // 解析最新的 Implementation (提取 ## Implementation 下方的 YAML)
+    const implMatch = content.match(/#+\s*(?:Implementation|Implementation YAML)[\s\S]*?```(?:yaml)?\s*([\s\S]*?)```/i);
+    let parsedImplementation = { type: "unknown" };
+    if (implMatch) {
+       try {
+          // ⚠️ 使用工程已有的 js-yaml
+          const yaml = (await import('js-yaml')).default.load(implMatch[1].trim()) as any;
+          parsedImplementation = yaml;
+       } catch (e) {
+          console.warn("[Compiler] Failed to parse Implementation YAML, using fallback.");
+       }
+    }
 
     // 计算最新的内容指纹 (DID)
     const contentHash = crypto.createHash('sha256').update(content).digest('hex');
@@ -120,6 +133,7 @@ export async function POST(req: Request) {
         description: parsedDescription // 使用刚才解析出的最新描述
       },
       config: {
+        ...parsedImplementation, // 融合可执行逻辑
         parameters: parsedParameters,
         tier: skill.status 
       },

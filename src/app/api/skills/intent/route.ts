@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       if (anyObjectBlock) {
         schemaStr = anyObjectBlock[1].trim();
       } else {
-        return NextResponse.json({ error: 'No JSON Schema found in manifest. Please ensure you have a ## Parameters section with a ```json block.' }, { status: 400 });
+        return NextResponse.json({ error: 'No JSON Schema found in manifest. Please ensure you have a Parameters section (e.g. # Parameters) with a ```json block.' }, { status: 400 });
       }
     }
 

@@ -274,7 +274,7 @@ export default function CreateSkillPage() {
         }
       }
 
-      const descMatch = bodyStr.match(/# Description\n([^#]+)/);
+      const descMatch = bodyStr.match(/#+\s*Description\s*\n([\s\S]*?)(?=\n#+|$)/i);
       if (descMatch) setDescription(descMatch[1].trim());
 
       setMarkdownBody(bodyStr.trim());

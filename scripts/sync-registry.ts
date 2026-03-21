@@ -95,16 +95,16 @@ async function syncRegistry() {
             const status = (frontmatter.status || "Official").toLowerCase();
 
             // Extract Description
-            const descMatch = content.match(/## Description\s+([\s\S]*?)(?=\n##|$)/i);
+            const descMatch = content.match(/#+\s*Description\s+([\s\S]*?)(?=\n#+|$)/i);
             const description = descMatch ? descMatch[1].trim() : "";
 
             // Extract Parameters
-            const paramMatch = content.match(/## Parameters\s+```json\s+([\s\S]*?)```/i);
+            const paramMatch = content.match(/#+\s*Parameters\s+```json\s+([\s\S]*?)```/i);
             const parameters = paramMatch ? JSON.parse(paramMatch[1]) : { type: "object", properties: {} };
 
             // Extract Implementation
-            const implMatch = content.match(/## Implementation YAML\s+```yaml\s+([\s\S]*?)```/i);
-            if (!implMatch) throw new Error("Missing '## Implementation YAML' block");
+            const implMatch = content.match(/#+\s*(?:Implementation|Implementation YAML)\s+```yaml\s+([\s\S]*?)```/i);
+            if (!implMatch) throw new Error("Missing 'Implementation' block");
             const implementationJson = yaml.load(implMatch[1]);
 
             allTools.push({
