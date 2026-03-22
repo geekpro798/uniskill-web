@@ -66,11 +66,13 @@ export async function POST(req: Request) {
     const parsedDescription = descMatch ? descMatch[1].trim() : "";
 
     // 解析最新的 Parameters (提取 Parameters 下方的 JSON，兼容 # / ## 等)
-    const paramMatch = content.match(/#+\s*Parameters[\s\S]*?```(?:json)?\s*([\s\S]*?)```/i);
+    const paramMatch = content.match(/#+\s*Parameters[\s\S]*?```(?:json)?\s*([\s\S]*?)\n?\s*```/i);
     let parsedParameters = { type: "object", properties: {} };
     try {
       if (paramMatch) {
-         const jsonStr = paramMatch[1].trim();
+         let jsonStr = paramMatch[1].trim();
+         // 🌟 净化 JSON：去除可能的尾部逗号 (Basic cleaning)
+         jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');
          parsedParameters = JSON.parse(jsonStr);
       }
     } catch (e) {
