@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
+import { Settings } from "lucide-react";
 import ThemeToggle from "../ThemeToggle";
 
 interface DashboardNavbarProps {
@@ -190,6 +191,20 @@ export default function DashboardNavbar({ credits, totalCredits = 500 }: Dashboa
                                             <line x1="5" y1="12" x2="19" y2="12" />
                                         </svg>
                                         Create New Skill
+                                    </Link>
+
+                                    {/* Settings 链接 */}
+                                    <Link
+                                        href="/settings"
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className={`flex items-center gap-2.5 px-4 py-2 text-xs font-medium transition-colors ${isActive("/settings")
+                                            ? "text-blue-500 bg-blue-500/10"
+                                            : "hover:bg-[var(--color-menu-hover-bg)]"
+                                            }`}
+                                        style={{ color: isActive("/settings") ? "var(--color-blue)" : "var(--color-text-secondary)" }}
+                                    >
+                                        <Settings size={14} />
+                                        Settings
                                     </Link>
 
                                     {/* 分割线 */}

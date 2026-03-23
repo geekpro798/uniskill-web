@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     // 2. 获取数据库最新记录 (Fetch the latest raw data)
     const { data: skill, error: fetchError } = await supabaseAdmin
       .from('skills')
-      .select('skill_name, display_name, markdown_manifest, status, emoji')
+      .select('skill_name, display_name, markdown_manifest, status, emoji, secrets')
       .eq('skill_uid', skillUid)
       .eq('owner_uid', userUid)
       .single();
@@ -157,6 +157,7 @@ export async function POST(req: Request) {
           skill_name: skill.skill_name,
           status: skill.status, // 使用数据库 status (Private/Community)
           manifest: skillManifest,
+          secrets: skill.secrets, // 🔑 同步加密后的私钥到网关
           type: 'skill_activation'
         })
       });

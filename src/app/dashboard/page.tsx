@@ -13,7 +13,7 @@ import {
   Plus, Layers, ExternalLink, Activity, ShieldCheck, 
   Copy, CheckCircle2, ChevronRight, Eye, EyeOff,
   History, Monitor, Code2, Globe, Lock, MoreVertical,
-  Trash2, PlayCircle, Edit3
+  Trash2, PlayCircle, Edit3, KeyRound, Save
 } from 'lucide-react';
 
 // ==========================================
@@ -155,6 +155,151 @@ const RecentActivity = ({ logs, loading }: { logs: any[], loading: boolean }) =>
             No activity yet
           </div>
         )}
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// Component: Personal Secrets Vault
+// Logic: 管理全局通用的 API Keys (Tavily, OpenAI 等)
+// ==========================================
+const PersonalSecretsVault = ({ userUid }: { userUid?: string }) => {
+  const [secrets, setSecrets] = useState<{key: string, value: string}[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // 🔄 初始获取
+  useEffect(() => {
+    if (!userUid) return;
+    const fetchVault = async () => {
+      try {
+        const res = await fetch('/api/user/secrets');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.secrets && data.secrets.length > 0) {
+            setSecrets(data.secrets);
+          } else {
+            setSecrets([{ key: '', value: '' }]);
+          }
+        }
+      } catch (err) {
+        console.error("Fetch Vault Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchVault();
+  }, [userUid]);
+
+  const handleAdd = () => setSecrets([...secrets, { key: '', value: '' }]);
+  const handleRemove = (index: number) => setSecrets(secrets.filter((_, i) => i !== index));
+  const handleChange = (index: number, field: 'key' | 'value', val: string) => {
+    const newSecrets = [...secrets];
+    newSecrets[index][field] = val;
+    setSecrets(newSecrets);
+  };
+
+  const handleSave = async () => {
+    if (!userUid) return;
+    setIsSaving(true);
+    setSaveSuccess(false);
+
+    try {
+      // 🌟 1. 过滤 (Filter)
+      const validSecrets = secrets.filter(s => s.key.trim() !== '' && s.value.trim() !== '');
+
+      // 🌟 2. 保存 (Save)
+      const res = await fetch('/api/user/secrets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secrets: validSecrets })
+      });
+
+      if (res.ok) {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      } else {
+        const err = await res.json();
+        alert("Failed to save vault: " + err.error);
+      }
+    } catch (err) {
+      console.error("Vault Save Error:", err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (loading && userUid) {
+     return <div className="h-[300px] border border-slate-100 dark:border-slate-800 rounded-[28px] animate-pulse bg-slate-50/50 dark:bg-slate-900/20" />;
+  }
+
+  return (
+    <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-[28px] p-6 shadow-sm text-left relative group transition-all">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-amber-50 dark:bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500">
+            <ShieldCheck size={20} />
+          </div>
+          <div>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Personal Vault</h3>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Global Secret Registry</p>
+          </div>
+        </div>
+        <button 
+          onClick={handleSave}
+          disabled={isSaving}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            saveSuccess 
+              ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
+              : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:scale-105 active:scale-95'
+          } disabled:opacity-50`}
+        >
+          {isSaving ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : (saveSuccess ? <CheckCircle2 size={14} /> : <Save size={14} />)}
+          {saveSuccess ? 'Synced' : 'Sync to Cloud'}
+        </button>
+      </div>
+
+      <div className="space-y-3 mb-4 max-h-[220px] overflow-y-auto pr-2 scrollbar-thin">
+        {secrets.map((secret, idx) => (
+          <div key={idx} className="flex gap-2 items-center group/item">
+            <input 
+              type="text"
+              placeholder="KEY_NAME"
+              value={secret.key}
+              onChange={(e) => handleChange(idx, 'key', e.target.value.toUpperCase())}
+              className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[11px] font-mono outline-none focus:ring-1 focus:ring-amber-500/30 transition-all placeholder:opacity-30"
+            />
+            <input 
+              type="password"
+              placeholder={secret.value.startsWith('enc:') ? '•••••••• (Encrypted)' : '••••••••'}
+              value={secret.value.startsWith('enc:') ? '' : secret.value}
+              onChange={(e) => handleChange(idx, 'value', e.target.value)}
+              className="flex-[1.5] px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[11px] font-mono outline-none focus:ring-1 focus:ring-amber-500/30 transition-all"
+            />
+            <button 
+              onClick={() => handleRemove(idx)}
+              className="p-2 text-slate-400 hover:text-red-500 opacity-0 group-hover/item:opacity-100 transition-opacity"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-100 dark:border-slate-800/50">
+        <button 
+          onClick={handleAdd}
+          className="flex items-center gap-1.5 text-[11px] font-bold text-amber-500 hover:text-amber-600 transition-colors"
+        >
+          <Plus size={14} />
+          Add Global Variable
+        </button>
+        <div className="flex items-center gap-1.5 opacity-50">
+           <KeyRound size={12} className="text-slate-400" />
+           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">AES-256-GCM Secure</span>
+        </div>
       </div>
     </div>
   );
@@ -673,6 +818,10 @@ export default function DashboardPage() {
             </div>
 
             <IntegrationTerminal apiKey={finalRawKey || undefined} />
+
+            <PersonalSecretsVault 
+              userUid={session?.user?.userUid} 
+            />
 
             <RecentActivity logs={recentLogs} loading={loadingLogs} />
 

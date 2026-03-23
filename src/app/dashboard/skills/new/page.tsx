@@ -318,76 +318,35 @@ export default function CreateSkillPage() {
     try {
       const validSecrets = secrets.filter(s => s.key.trim() !== '' && s.value.trim() !== '');
       const payload = {
+        skill_uid: resumeSkillUid, // 传给后端以便 upsert
         skill_name: skillName,
         display_name: displayName,
         description,
         markdown_manifest: markdownBody,
-        visibility: isPublic ? 'public' : 'private',
-        secrets: validSecrets 
+        status: isPublic ? 'Community' : 'Private',
+        state: originalState === 'active' ? 'active' : 'testing',
+        secrets: validSecrets,
+        emoji: markdownBody.match(/emoji:\s*([^\s\n]+)/)?.[1] || '⚙️',
+        owner_uid: (session as any)?.user?.userUid // API 会校验
       };
+
+      // 🌟 调用安全后端接口 (Use secure backend API)
+      const res = await fetch('/api/skills/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to save skill");
+      }
+      
+      const insertedSkill = await res.json();
 
       console.log('Deploying Initial Skill State:', payload);
 
-      // 🌟 物理入库逻辑 (Insert to Supabase as 'testing' state)
-      let ownerUid = (session as any)?.user?.userUid;
-      if (!ownerUid && session?.user?.id) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('user_uid')
-          .eq('github_id', session.user.id)
-          .maybeSingle();
-        ownerUid = profile?.user_uid;
-      }
-      
-      if (!ownerUid) {
-        throw new Error('Required: User Profile UID not found.');
-      }
-      
-      // 提取 Emoji 用于概览展示
-      const emojiMatch = markdownBody.match(/emoji:\s*([^\s\n]+)/);
-      const extractedEmoji = emojiMatch ? emojiMatch[1] : '⚙️';
-      
-      const skillPayload = {
-        skill_name: payload.skill_name,
-        display_name: payload.display_name,
-        description: payload.description,
-        markdown_manifest: payload.markdown_manifest,
-        status: isPublic ? 'Community' : 'Private',
-        owner_uid: ownerUid,
-        // 🌟 影子更新逻辑 (Shadow Update Logic)：
-        // 如果原本就是 active，则保持 active，仅更新源码，决不降级为 testing。
-        state: originalState === 'active' ? 'active' : 'testing',
-        secrets: payload.secrets,
-        credits_per_call: 1,
-        usd_per_call: 0.001,
-        emoji: extractedEmoji,
-        gradient_from: 'from-blue-500', 
-        gradient_to: 'to-indigo-500' 
-      };
-
-      let insertedSkill;
-      if (resumeSkillUid) {
-        // Resume mode: Update the existing draft record
-        const { data, error } = await supabase.from('skills')
-          .update(skillPayload)
-          .eq('skill_uid', resumeSkillUid)
-          .select().single();
-        
-        if (error) {
-          throw new Error("Database update failed: " + error.message);
-        }
-        insertedSkill = data;
-      } else {
-        // Initial creation mode: Insert new draft
-        const { data, error } = await supabase.from('skills')
-          .insert(skillPayload)
-          .select().single();
-
-        if (error) {
-          throw new Error("Database insertion failed: " + error.message);
-        }
-        insertedSkill = data;
-      }
+      // 后续逻辑保持不变 (Wait for state update)
       
       // 🌟 核心变更：不再弹窗，而是将状态置为已部署，触发沙箱 UI
       setDeployedSkill({ 
@@ -479,26 +438,31 @@ export default function CreateSkillPage() {
     setErrors({});
     
     try {
-      // 🌟 重要：在 Finalize 之前，先同步一次表单数据到数据库
-      // 理由：用户可能在点击 Done 之前修改了 Display Name 等字段，但没有再次点击 Deploy
-      const { error: syncError } = await supabase.from('skills')
-        .update({
+      // 🚀 保持加密一致性，强制同步一次表单数据 (Maintain consistency via Server-Side API)
+      const res = await fetch('/api/skills/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          skill_uid: deployedSkill.id,
+          skill_name: skillName,
           display_name: displayName,
           description: description,
-          markdown_manifest: markdownBody
+          markdown_manifest: markdownBody,
+          secrets: secrets.filter(s => s.key.trim() !== '' && s.value.trim() !== ''),
+          owner_uid: (session as any)?.user?.userUid
         })
-        .eq('skill_uid', deployedSkill.id);
+      });
 
-      if (syncError) throw new Error("Pre-finalize sync failed: " + syncError.message);
+      if (!res.ok) throw new Error("Pre-sync failed before finalization.");
 
-      const res = await fetch('/api/skills/finalize', {
+      const finalizeRes = await fetch('/api/skills/finalize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ skillUid: deployedSkill.id })
       });
       
-      if (!res.ok) {
-        const errorData = await res.json();
+      if (!finalizeRes.ok) {
+        const errorData = await finalizeRes.json();
         throw new Error(errorData.error || 'Failed to finalize skill');
       }
       
