@@ -24,8 +24,9 @@ export const authOptions: NextAuthOptions = {
                 const result = await handleUserRegistration({
                     id: profileObj?.id ?? user.id,
                     email: user.email,
-                    name: user.name,
+                    username: user.name,
                     image: user.image,
+                    github_url: profileObj?.html_url,
                 });
                 (user as any).rawKey = result.rawKey;
                 (user as any).credits = result.profile.credits;

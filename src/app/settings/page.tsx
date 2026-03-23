@@ -22,13 +22,16 @@ export default async function SettingsPage() {
     .eq('user_uid', userUid)
     .single();
 
-  // 这里的 profile 可能包含 bio, display_name, github_url, secrets 等数据
+  // 这里的 profile 可能包含 bio, display_name, github_url, secrets, tier 等数据
+  const githubUrl = profile?.github_url || "";
+  const handle = githubUrl.split("/").pop() || session.user.name?.replace(/\s+/g, '-').toLowerCase() || session.user.email?.split("@")[0] || "user";
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg-main)" }}>
       <DashboardNavbar 
         credits={session.user.credits} 
         totalCredits={100} 
+        userName={profile?.display_name || undefined}
       />
       <main className="max-w-5xl mx-auto px-6 py-12">
         <SettingsDashboard 
@@ -37,7 +40,9 @@ export default async function SettingsPage() {
             email: session.user.email || "",
             image: session.user.image || "",
             bio: profile?.bio || "",
-            githubUrl: profile?.github_url || "",
+            githubUrl: githubUrl,
+            handle: handle,
+            tier: profile?.tier || "Free",
             provider: (session.user as any).provider || "github",
             secrets: profile?.secrets || {}
           }} 

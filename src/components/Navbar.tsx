@@ -5,12 +5,13 @@ import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import { useSession, signIn, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { Settings } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 
 /* ─── Navbar 组件：固定在顶部的导航栏 ──────────────────────────────────
    功能：随滚动增强背景模糊效果，Logo 在左，Sign In 按钮在右
    ─────────────────────────────────────────────────────────────────── */
-export default function Navbar() {
+export default function Navbar({ initialDisplayName }: { initialDisplayName?: string | null }) {
     /* 监听页面滚动，动态调整导航栏背景透明度 */
     const { scrollY } = useScroll();
     /* 检测当前路由，用于 Skills 链接的 active 高亮 */
@@ -123,7 +124,7 @@ export default function Navbar() {
                     transition={{ duration: 0.5 }}
                 >
                     <ThemeToggle />
-                    <NavbarAuthButton />
+                    <NavbarAuthButton initialDisplayName={initialDisplayName} />
                 </motion.div>
             </nav>
         </motion.header>
@@ -134,14 +135,32 @@ export default function Navbar() {
    - 未登录：显示 Sign in with GitHub 按钮
    - 已登录：显示用户头像及其下拉菜单（包含 Dashboard 等）
    ─────────────────────────────────────────────────────────────────────── */
-function NavbarAuthButton() {
+function NavbarAuthButton({ initialDisplayName }: { initialDisplayName?: string | null }) {
     const { data: session, status } = useSession();
     const pathname = usePathname();
     const user = session?.user;
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [displayName, setDisplayName] = useState<string | null>(initialDisplayName || null);
     const menuRef = useRef<HTMLDivElement>(null);
 
     const isActive = (path: string) => pathname === path;
+
+    // 🔄 Fetch custom display name from database
+    useEffect(() => {
+        if (status !== "authenticated") return;
+        const fetchDisplayName = async () => {
+            try {
+                const res = await fetch("/api/user/credits", { headers: { 'Cache-Control': 'no-cache' } });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.displayName) setDisplayName(data.displayName);
+                }
+            } catch (e) {
+                console.warn("[Navbar] fetchDisplayName error:", e);
+            }
+        };
+        fetchDisplayName();
+    }, [status]);
 
     // 点击外部关闭菜单
     useEffect(() => {
@@ -198,7 +217,7 @@ function NavbarAuthButton() {
 
                     {/* 用户名与展开图标 */}
                     <span className="hidden md:block text-xs font-medium transition-colors" style={{ color: "var(--color-text-secondary)" }}>
-                        {user.name ?? "Account"}
+                        {displayName || user.name || "Account"}
                     </span>
                     <svg
                         width="12" height="12"
@@ -257,6 +276,20 @@ function NavbarAuthButton() {
                                     <line x1="5" y1="12" x2="19" y2="12" />
                                 </svg>
                                 Create New Skill
+                            </Link>
+
+                            {/* Settings 链接 */}
+                            <Link
+                                href="/settings"
+                                onClick={() => setIsMenuOpen(false)}
+                                className={`flex items-center gap-2.5 px-4 py-2 text-xs font-medium transition-colors ${isActive("/settings")
+                                    ? "text-blue-500 bg-blue-500/10"
+                                    : "hover:bg-[var(--color-menu-hover-bg)]"
+                                    }`}
+                                style={{ color: isActive("/settings") ? "var(--color-blue)" : "var(--color-text-secondary)" }}
+                            >
+                                <Settings size={14} />
+                                Settings
                             </Link>
 
                             {/* 分割线 */}

@@ -16,10 +16,11 @@ interface DashboardNavbarProps {
     // 当前用户剩余 credits（由父页面通过 liveCredits 传入，支持实时刷新）
     credits?: number;
     totalCredits?: number;
+    userName?: string;
 }
 
 
-export default function DashboardNavbar({ credits, totalCredits = 500 }: DashboardNavbarProps) {
+export default function DashboardNavbar({ credits, totalCredits = 500, userName }: DashboardNavbarProps) {
     const { data: session } = useSession();
     const pathname = usePathname();
     const user = session?.user;
@@ -48,17 +49,27 @@ export default function DashboardNavbar({ credits, totalCredits = 500 }: Dashboa
                 borderBottomColor: "var(--color-border)" 
             }}
         >
-            <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div className="max-w-7xl mx-auto px-6 lg:px-8 h-16 flex items-center justify-between">
 
                 {/* ── Logo 区域（左侧） ── */}
                 <div className="flex items-center gap-6">
-                    <Link href="/" className="flex items-center gap-2 shrink-0">
-                        <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
+                    <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+                        {/* Logo 图标：蓝紫渐变六边形 (与首页对齐) */}
+                        <div className="relative w-8 h-8">
+                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg rotate-3 opacity-80" />
+                            <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                    <path
+                                        d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+                                        stroke="white"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    />
+                                </svg>
+                            </div>
                         </div>
-                        <span className="font-bold text-sm" style={{ color: "var(--color-text-primary)" }}>
+                        <span className="text-lg font-bold tracking-tight" style={{ color: "var(--color-text-primary)" }}>
                             UniSkill
                         </span>
                     </Link>
@@ -127,7 +138,7 @@ export default function DashboardNavbar({ credits, totalCredits = 500 }: Dashboa
                                 className="hidden md:block text-xs font-medium transition-colors" 
                                 style={{ color: "var(--color-text-secondary)" }}
                             >
-                                {user?.name ?? "Account"}
+                                {userName || user?.name || "Account"}
                             </span>
                             <svg
                                 width="12" height="12"

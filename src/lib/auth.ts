@@ -13,8 +13,9 @@ export interface UserProfile {
     user_uid: string; // Global stable UID
     github_id: string;
     email: string | null;
-    name: string | null;
+    username: string | null;
     avatar_url: string | null;
+    github_url: string | null; // Added
     key_hash: string;
     key_preview: string | null; // Added: key preview (first 4 and last 4 chars)
     credits: number;
@@ -38,8 +39,9 @@ export async function handleUserRegistration(
     githubProfile: {
         id: string | number;
         email?: string | null;
-        name?: string | null;
+        username?: string | null;
         image?: string | null;
+        github_url?: string | null;
     }
 ): Promise<RegistrationResult> {
     const githubId = githubProfile.id.toString();
@@ -59,6 +61,19 @@ export async function handleUserRegistration(
     // 用户已存在，直接返回（不重新生成 Key）
     if (existingUser) {
         console.log("[auth] User already exists in DB:", existingUser.github_id);
+        
+        // 🌟 Sync GitHub URL if missing for existing users
+        if (!existingUser.github_url && githubProfile.github_url) {
+            const supabaseAdmin = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.SUPABASE_SERVICE_ROLE_KEY!
+            );
+            await supabaseAdmin
+                .from("profiles")
+                .update({ github_url: githubProfile.github_url })
+                .eq("github_id", githubId);
+        }
+
         return { profile: existingUser as UserProfile };
     }
 
@@ -88,8 +103,9 @@ export async function handleUserRegistration(
         .insert({
             github_id: githubId,
             email: githubProfile.email ?? null,
-            name: githubProfile.name ?? null,
+            username: githubProfile.username ?? null,
             avatar_url: githubProfile.image ?? null,
+            github_url: githubProfile.github_url ?? null,
             key_hash: keyHash,
             key_preview: keyPreview, // Store the preview
             credits: 500,
@@ -163,7 +179,7 @@ export async function handleUserRegistration(
         dispatchAccountCreatedNotification({
             userUid: newProfile.user_uid,
             githubId: newProfile.github_id,
-            name: newProfile.name,
+            name: newProfile.username,
             email: newProfile.email,
             initialCredits: 500
         });
