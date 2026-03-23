@@ -5,17 +5,20 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   User, 
-  ShieldCheck, 
   Key, 
+  Shield, 
   Save, 
   Plus, 
   Trash2, 
-  Github, 
-  Mail, 
-  AlertTriangle,
-  ExternalLink,
+  Eye, 
+  EyeOff,
+  LogOut,
+  Github,
+  Mail,
+  Info,
   CheckCircle2
 } from "lucide-react";
+import { signOut } from "next-auth/react";
 import { supabase } from "@/lib/supabase";
 
 interface UserProfile {
@@ -39,10 +42,10 @@ export default function SettingsDashboard({ initialUser }: SettingsDashboardProp
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Tabs Configuration
-  const tabs = [
+  const menuItems = [
     { id: "profile", label: "Profile", icon: User },
     { id: "vault", label: "Integrations & Vault", icon: Key },
-    { id: "security", label: "Security", icon: ShieldCheck },
+    { id: "security", label: "Account & Security", icon: Shield },
   ];
 
   // Logic: Phase 1 - Save Profile
@@ -71,37 +74,58 @@ export default function SettingsDashboard({ initialUser }: SettingsDashboardProp
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-      {/* ── Left Sidebar: Tabs ── */}
-      <div className="lg:col-span-1 space-y-2">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-              activeTab === tab.id 
-                ? "bg-blue-500/10 text-blue-500 border border-blue-500/20" 
-                : "text-[var(--color-text-secondary)] hover:bg-[var(--color-nav-bg)] border border-transparent"
-            }`}
+    <div className="w-full max-w-5xl bg-white shadow-sm rounded-xl border border-gray-200 flex flex-col md:flex-row overflow-hidden min-h-[600px] transition-colors duration-300">
+      
+      {/* ── Left Sidebar (Sidebar) ── */}
+      <div className="w-full md:w-64 bg-gray-50 border-r border-gray-200 p-4 flex flex-col">
+        <div className="mb-8 px-2">
+          <h2 className="text-lg font-bold text-gray-900">Settings</h2>
+        </div>
+        
+        <nav className="space-y-1 flex-1">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id as any)}
+                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                  isActive 
+                    ? 'bg-indigo-50 text-indigo-700' 
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
+                <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Bottom Logout Button */}
+        <div className="pt-4 border-t border-gray-200 mt-auto">
+          <button 
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="w-full flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
           >
-            <tab.icon size={18} />
-            {tab.label}
+            <LogOut className="w-5 h-5 mr-3 text-gray-400" />
+            Sign Out
           </button>
-        ))}
+        </div>
       </div>
 
-      {/* ── Right Content: Tab Panels ── */}
-      <div className="lg:col-span-3">
+      {/* ── Right Content Area ── */}
+      <div className="flex-1 p-8 overflow-y-auto bg-white">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
             transition={{ duration: 0.2 }}
-            className="glass-card p-8 min-h-[500px]"
           >
-            {activeTab === "profile" && (
+            {activeTab === 'profile' && (
               <ProfileTab 
                 user={user} 
                 onChange={(updates: Partial<UserProfile>) => setUser({ ...user, ...updates })}
@@ -110,14 +134,16 @@ export default function SettingsDashboard({ initialUser }: SettingsDashboardProp
                 saveSuccess={saveSuccess}
               />
             )}
-            {activeTab === "vault" && (
+            {activeTab === 'vault' && (
               <VaultTab 
                 secrets={user.secrets}
                 onUpdate={(newSecrets: Record<string, string>) => setUser({ ...user, secrets: newSecrets })}
               />
             )}
-            {activeTab === "security" && (
-              <SecurityTab provider={user.provider} />
+            {activeTab === 'security' && (
+              <SecurityTab 
+                user={user}
+              />
             )}
           </motion.div>
         </AnimatePresence>
@@ -128,60 +154,83 @@ export default function SettingsDashboard({ initialUser }: SettingsDashboardProp
 
 // ── SUB-COMPONENT: Profile Tab ──
 function ProfileTab({ user, onChange, onSave, isSaving, saveSuccess }: any) {
+  const MAX_BIO_LENGTH = 160;
+  const initials = user.name ? user.name.substring(0, 2).toUpperCase() : 'U';
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4 mb-8">
-        <img src={user.image} className="w-20 h-20 rounded-2xl border-2 border-blue-500/20" alt="Avatar" />
-        <div>
-          <h2 className="text-xl font-bold" style={{ color: "var(--color-text-primary)" }}>{user.name}</h2>
-          <p className="text-sm text-[var(--color-text-secondary)]">{user.email}</p>
-        </div>
+      <div>
+        <h3 className="text-lg font-medium text-gray-900">Profile Settings</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          Manage your public profile and personal information.
+        </p>
       </div>
+      <div className="h-px bg-gray-200" />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">Display Name</label>
+      <div className="space-y-4 max-w-xl">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Avatar</label>
+          <div className="mt-2 flex items-center space-x-4">
+            {user.image ? (
+              <img src={user.image} alt="Avatar" className="h-16 w-16 rounded-full border-2 border-indigo-500 object-cover shadow-sm" />
+            ) : (
+              <div className="h-16 w-16 rounded-full bg-indigo-100 flex items-center justify-center border-2 border-indigo-500">
+                <span className="text-indigo-600 font-bold text-xl">{initials}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Display Name</label>
           <input 
             type="text" 
             value={user.name}
             onChange={(e) => onChange({ name: e.target.value })}
-            className="w-full bg-black/20 border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-sm focus:border-blue-500/50 transition-colors outline-none"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 border outline-none" 
           />
         </div>
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">GitHub Profile</label>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Bio</label>
+          <div className="mt-1 relative">
+            <textarea 
+              rows={3}
+              value={user.bio}
+              onChange={(e) => onChange({ bio: e.target.value })}
+              maxLength={MAX_BIO_LENGTH}
+              placeholder="Tell us a little about yourself..."
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 border resize-none pb-7 outline-none" 
+            />
+            <div className={`absolute bottom-2 right-3 text-[10px] font-mono ${(user.bio?.length || 0) >= MAX_BIO_LENGTH ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+              {user.bio?.length || 0} / {MAX_BIO_LENGTH}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Email Address</label>
           <input 
-            type="text" 
-            value={user.githubUrl}
-            placeholder="https://github.com/username"
-            onChange={(e) => onChange({ githubUrl: e.target.value })}
-            className="w-full bg-black/20 border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-sm focus:border-blue-500/50 transition-colors outline-none"
-          />
-        </div>
-        <div className="md:col-span-2 space-y-1.5">
-          <label className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-secondary)]">Bio</label>
-          <textarea 
-            rows={4}
-            value={user.bio}
-            placeholder="Tell us about yourself..."
-            onChange={(e) => onChange({ bio: e.target.value })}
-            className="w-full bg-black/20 border border-[var(--color-border)] rounded-xl px-4 py-2.5 text-sm focus:border-blue-500/50 transition-colors outline-none resize-none"
+            type="email" 
+            value={user.email}
+            disabled
+            className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm sm:text-sm px-3 py-2 border text-gray-500 cursor-not-allowed" 
           />
         </div>
       </div>
 
-      <div className="pt-6 flex justify-end">
-        <button
+      <div className="pt-4 flex justify-start">
+        <button 
           onClick={onSave}
           disabled={isSaving}
-          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-500/20"
+          className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm font-medium shadow-sm disabled:bg-indigo-400"
         >
           {isSaving ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
           ) : saveSuccess ? (
-            <CheckCircle2 size={18} />
+            <CheckCircle2 className="w-4 h-4 mr-2" />
           ) : (
-            <Save size={18} />
+            <Save className="w-4 h-4 mr-2" />
           )}
           {isSaving ? "Saving..." : saveSuccess ? "Saved!" : "Save Changes"}
         </button>
@@ -190,26 +239,28 @@ function ProfileTab({ user, onChange, onSave, isSaving, saveSuccess }: any) {
   );
 }
 
-// ── SUB-COMPONENT: Vault Tab (Phase 2) ──
+// ── SUB-COMPONENT: Vault Tab ──
 function VaultTab({ secrets, onUpdate }: any) {
   const [newKey, setNewKey] = useState("");
   const [newValue, setNewValue] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
+  const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
+
+  const toggleVisibility = (key: string) => {
+    setVisibleKeys(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const handleAddSecret = async () => {
     if (!newKey || !newValue) return;
     setIsSyncing(true);
     try {
       const updatedSecrets = { ...secrets, [newKey]: newValue };
-      
       const res = await fetch('/api/user/secrets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedSecrets)
       });
-      
       if (!res.ok) throw new Error("Sync failed");
-      
       onUpdate(updatedSecrets);
       setNewKey("");
       setNewValue("");
@@ -220,18 +271,16 @@ function VaultTab({ secrets, onUpdate }: any) {
     }
   };
 
-  const handleDeleteSecret = async (keyToDelete: string) => {
-    if (!confirm(`Delete ${keyToDelete}?`)) return;
+  const handleDeleteSecret = async (key: string) => {
+    if (!confirm(`Delete ${key}?`)) return;
     setIsSyncing(true);
     try {
-      const { [keyToDelete]: _, ...rest } = secrets;
-      
+      const { [key]: _, ...rest } = secrets;
       const res = await fetch('/api/user/secrets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(rest)
       });
-
       if (!res.ok) throw new Error("Delete sync failed");
       onUpdate(rest);
     } catch (err) {
@@ -242,145 +291,153 @@ function VaultTab({ secrets, onUpdate }: any) {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
-          Global Vault
-          <motion.div animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: "linear" }}>
-            <ShieldCheck className="text-green-500" size={18} />
-          </motion.div>
-        </h3>
-        <p className="text-sm text-[var(--color-text-secondary)]">密钥将在服务端 AES-256 加密并同步至全球边缘节点。</p>
+        <h3 className="text-lg font-medium text-gray-900">Integrations & Global Vault</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          Manage your global API keys. These secrets are AES-256 encrypted and can be accessed by all your Agent skills.
+        </p>
+      </div>
+      <div className="h-px bg-gray-200" />
+
+      <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-200 bg-white flex justify-between items-center">
+          <span className="font-medium text-sm text-gray-900">Your Global Secrets</span>
+        </div>
+        <ul className="divide-y divide-gray-200 bg-white">
+          {Object.entries(secrets).map(([key, value]) => (
+            <li key={key} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors">
+              <div className="flex flex-col">
+                <span className="text-sm font-bold font-mono text-gray-900">{key}</span>
+                <span className="text-xs text-gray-500 font-mono mt-1">
+                  {visibleKeys[key] ? (value as string) : '••••••••••••••••••••••••'}
+                </span>
+              </div>
+              <div className="flex space-x-2">
+                <button 
+                  onClick={() => toggleVisibility(key)}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100"
+                >
+                  {visibleKeys[key] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+                <button 
+                  onClick={() => handleDeleteSecret(key)}
+                  className="p-1.5 text-red-400 hover:text-red-600 rounded-md hover:bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </li>
+          ))}
+          {Object.keys(secrets).length === 0 && (
+            <li className="px-4 py-8 text-center text-sm text-gray-500 italic">No secrets found.</li>
+          )}
+        </ul>
       </div>
 
-      {/* Secrets List */}
-      <div className="space-y-3">
-        {Object.entries(secrets).map(([key, _]) => (
-          <div key={key} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 group hover:border-blue-500/30 transition-all">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <Key size={14} className="text-blue-400" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-[var(--color-text-primary)]">{key}</p>
-                <p className="text-[10px] text-[var(--color-text-secondary)] font-mono uppercase">Value Encrypted (AES-256)</p>
-              </div>
-            </div>
-            <button 
-              onClick={() => handleDeleteSecret(key)}
-              className="p-2 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-            >
-              <Trash2 size={16} />
-            </button>
-          </div>
-        ))}
-        {Object.keys(secrets).length === 0 && (
-          <div className="text-center py-10 text-[var(--color-text-secondary)] italic text-sm">
-            No secrets found in your vault.
-          </div>
-        )}
-      </div>
-
-      {/* Add Secret Form */}
-      <div className="pt-6 border-t border-[var(--color-border)]">
-        <h4 className="text-sm font-bold mb-4 opacity-70">Add New Integration</h4>
-        <div className="flex flex-col md:flex-row gap-3">
+      <div className="p-4 bg-indigo-50/50 rounded-lg border border-indigo-100">
+        <h4 className="text-sm font-medium text-indigo-900 mb-3 flex items-center gap-2">
+          <Plus className="w-4 h-4" /> Add New Secret
+        </h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <input 
-            placeholder="KEY_NAME (e.g. OPENAI_API_KEY)"
+            placeholder="KEY_NAME"
             value={newKey}
             onChange={(e) => setNewKey(e.target.value)}
-            className="flex-1 bg-black/20 border border-[var(--color-border)] rounded-xl px-4 py-2 text-sm focus:border-blue-500/50 outline-none"
+            className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-3 py-2 border outline-none bg-white"
           />
           <input 
             type="password"
-            placeholder="api-key-value"
+            placeholder="Value"
             value={newValue}
             onChange={(e) => setNewValue(e.target.value)}
-            className="flex-1 bg-black/20 border border-[var(--color-border)] rounded-xl px-4 py-2 text-sm focus:border-blue-500/50 outline-none"
+            className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-3 py-2 border outline-none bg-white"
           />
-          <button 
-            onClick={handleAddSecret}
-            disabled={isSyncing || !newKey || !newValue}
-            className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 px-6 py-2 rounded-xl text-sm font-bold text-white transition-all flex items-center justify-center gap-2"
-          >
-            {isSyncing ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Plus size={18} />}
-            Add
-          </button>
         </div>
+        <button 
+          onClick={handleAddSecret}
+          disabled={isSyncing || !newKey || !newValue}
+          className="w-full bg-indigo-600 text-white rounded-md py-2 text-sm font-medium hover:bg-indigo-700 transition-colors disabled:bg-indigo-400"
+        >
+          {isSyncing ? "Syncing..." : "Sync to Vault"}
+        </button>
       </div>
     </div>
   );
 }
 
-// ── SUB-COMPONENT: Security Tab (Phase 3) ──
-function SecurityTab({ provider }: any) {
+// ── SUB-COMPONENT: Security Tab ──
+function SecurityTab({ user }: any) {
   const [showDeleteInfo, setShowDeleteInfo] = useState(false);
+  const displayName = user.name || user.email.split('@')[0];
 
   return (
-    <div className="space-y-12">
-      {/* Connected Accounts */}
-      <section>
-        <h3 className="text-lg font-bold mb-6">Connected Accounts</h3>
-        <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-black/40 flex items-center justify-center border border-white/5 text-white">
-              {provider === "github" ? <Github size={20} /> : <Mail size={20} />}
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium text-gray-900">Account & Security</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          Manage your connected identities and account security.
+        </p>
+      </div>
+      <div className="h-px bg-gray-200" />
+
+      <div className="space-y-4 max-w-xl">
+        <h4 className="text-sm font-medium text-gray-900">Connected Accounts</h4>
+        <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white rounded-md border border-gray-200 shadow-sm">
+              <Github className="w-5 h-5 text-gray-900" />
             </div>
             <div>
-              <p className="text-sm font-bold uppercase tracking-tight">{provider === "github" ? "GitHub Account" : "Email Login"}</p>
-              <p className="text-xs text-green-500 flex items-center gap-1">
-                <CheckCircle2 size={12} /> Connected
-              </p>
+              <p className="text-sm font-bold text-gray-900">GitHub</p>
+              <p className="text-xs text-gray-500">Connected as {displayName}</p>
             </div>
           </div>
-          <button className="text-xs font-bold text-[var(--color-text-secondary)] opacity-50 cursor-not-allowed">
-            Disconnect
-          </button>
+          <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider rounded-md border border-emerald-200">
+            Active
+          </span>
         </div>
-      </section>
+        
+        <p className="text-xs text-gray-500 mt-2 flex items-start gap-1">
+          <Shield className="w-3.5 h-3.5 mt-0.5 text-gray-400 shrink-0" />
+          <span>Your account is authenticated via GitHub. Password management and 2FA are handled by your provider.</span>
+        </p>
+      </div>
 
-      {/* Danger Zone */}
-      <section className="pt-12 border-t border-red-500/10">
-        <h3 className="text-lg font-bold text-red-500 mb-2 flex items-center gap-2">
-          <AlertTriangle size={20} />
-          Danger Zone
-        </h3>
-        <p className="text-xs text-[var(--color-text-secondary)] mb-6">Irreversible actions. Use with caution.</p>
+      <div className="h-px bg-gray-200 my-6" />
 
-        {!showDeleteInfo ? (
-          <button 
-            onClick={() => setShowDeleteInfo(true)}
-            className="px-6 py-2.5 border border-red-500/30 text-red-500 text-xs font-bold rounded-xl hover:bg-red-500/5 transition-all"
-          >
-            Delete Account
-          </button>
-        ) : (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="p-6 rounded-2xl bg-red-500/5 border border-red-500/20 space-y-4"
-          >
-            <p className="text-sm text-red-200/80 leading-relaxed font-medium">
-              为了保护 UniSkill 生态系统的完整性并防止下游 Agent 工具发生连锁失效，**账号删除目前需要人工审核。**
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 items-center">
+      <div>
+        <h4 className="text-sm font-medium text-red-600 mb-2">Danger Zone</h4>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div>
+            <p className="text-sm font-bold text-red-900">Delete Account</p>
+            <p className="text-xs text-red-700 mt-1">Once deleted, all your skills and global vault secrets will be permanently wiped.</p>
+          </div>
+          
+          {!showDeleteInfo ? (
+            <button 
+              onClick={() => setShowDeleteInfo(true)}
+              className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors shadow-sm whitespace-nowrap"
+            >
+              Delete Account
+            </button>
+          ) : (
+            <div className="bg-white p-3 rounded-md border border-red-200 shadow-sm max-w-sm">
+              <p className="text-xs text-slate-600 mb-3 flex items-start gap-1.5">
+                <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                <span>For ecosystem integrity and to prevent downstream Agent failures, account deletion currently requires manual review.</span>
+              </p>
               <a 
                 href="mailto:support@uniskill.ai?subject=Account Deletion Request"
-                className="flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all"
+                className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-slate-900 text-white rounded-md text-xs font-bold hover:bg-slate-800 transition-colors"
               >
-                <Mail size={16} />
+                <Mail className="w-4 h-4" />
                 Contact Support
               </a>
-              <button 
-                onClick={() => setShowDeleteInfo(false)}
-                className="text-xs font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-              >
-                Cancel request
-              </button>
             </div>
-          </motion.div>
-        )}
-      </section>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
