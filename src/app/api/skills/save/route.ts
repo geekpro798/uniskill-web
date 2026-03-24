@@ -39,9 +39,11 @@ export async function POST(req: Request) {
 
     try {
         // 🔒 Server-Side Encryption (仅对尚未加密的明文进行加密)
+        // AES-256-GCM 加密串格式: iv.authTag.encryptedHex (三段十六进制用点分隔)
+        const isAlreadyEncrypted = (v: string) => /^[0-9a-f]+\.[0-9a-f]+\.[0-9a-f]+$/i.test(v);
         const encryptedSecrets = Array.isArray(secrets) ? secrets.map((s: any) => ({
             key: s.key,
-            value: s.value.startsWith('enc:') ? s.value : encrypt(s.value, process.env.MASTER_ENCRYPTION_KEY!)
+            value: isAlreadyEncrypted(s.value) ? s.value : encrypt(s.value, process.env.MASTER_ENCRYPTION_KEY!)
         })) : [];
 
         const payload = {
