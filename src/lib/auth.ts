@@ -147,12 +147,17 @@ export async function handleUserRegistration(
     try {
         console.log(`[auth] [KV Sync] Attempting to sync new user: ${newProfile.user_uid} to ${targetUrl}`);
 
+        // 🌟 Add 5-second timeout to prevent server hang if Gateway is down
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
         const syncRes = await fetch(targetUrl, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${process.env.ADMIN_KEY}`,
                 "Content-Type": "application/json",
             },
+            signal: controller.signal,
             body: JSON.stringify({
                 user_uid: newProfile.user_uid,
                 total_credits: 500,
@@ -160,6 +165,8 @@ export async function handleUserRegistration(
                 key_hash: keyHash
             }),
         });
+
+        clearTimeout(timeoutId);
 
         if (!syncRes.ok) {
             const errText = await syncRes.text();
@@ -169,8 +176,12 @@ export async function handleUserRegistration(
             console.log(`[auth] [KV Sync] SUCCESS for UID: ${newProfile.user_uid}`, resData);
         }
     } catch (kvError: any) {
-        console.error("[auth] [KV Sync] FATAL ERROR:", kvError.message);
-        console.error(`[auth] [KV Sync] Failed to sync to: ${targetUrl}`);
+        if (kvError.name === 'AbortError') {
+            console.error(`[auth] [KV Sync] TIMEOUT (5s) for UID: ${newProfile.user_uid} at ${targetUrl}`);
+        } else {
+            console.error("[auth] [KV Sync] FATAL ERROR:", kvError.message);
+            console.error(`[auth] [KV Sync] Failed to sync to: ${targetUrl}`);
+        }
     }
 
     // 4. Dispatch Account Created Notification (Fire-and-Forget)

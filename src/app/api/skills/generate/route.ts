@@ -17,7 +17,13 @@ RULES:
 1. Output ONLY valid Markdown.
 2. Start with YAML frontmatter: skill_name (lowercase_underscores), display_name, secrets (array).
 3. Body must contain sections: '# Description', '# Parameters' (JSON Schema), and '# Implementation' (YAML http mapping).
-4. Use 'custom_http' type in implementation. Map variables as {{variable}} and secrets as {{SECRETS.KEY}}.`;
+4. Use 'custom_http' type in implementation. Map variables as {{variable}} and secrets as {{SECRETS.KEY}}.
+
+STRICT RULES ON PARAMETERS:
+1. LEAN PRINCIPLE: Only include parameters in the '# Parameters' section that are ABSOLUTELY NECESSARY for the API call.
+2. CONSUMPTION RULE: Every parameter defined in the JSON Schema MUST be used in the '# Implementation' section (either in the URL, Headers, or Body) using '{{parameter_name}}'.
+3. NO ORPHANS: Do not define "nice-to-have" parameters (like 'units' or 'lang') if the 'endpoint' template does not explicitly include them. Orphan parameters cause upstream 500 errors.
+4. GET REQUESTS: For GET methods, ensure the 'endpoint' string contains all required variables. Do not rely on the gateway to auto-append query strings unless intended.`;
 
 export async function POST(req: Request) {
   try {
