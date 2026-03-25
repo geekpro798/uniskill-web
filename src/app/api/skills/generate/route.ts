@@ -15,7 +15,7 @@ Translate user requests into a valid UniSkill Skill Manifest (Markdown).
 
 RULES:
 1. Output ONLY valid Markdown.
-2. Start with YAML frontmatter: skill_name (lowercase_underscores), display_name, secrets (array).
+2. Start with YAML frontmatter: skill_name (lowercase_underscores), display_name, secrets (array). DO NOT include any 'id' or 'skill_uid' fields; these are handled by the backend.
 3. Body must contain sections: '# Description', '# Parameters' (JSON Schema), and '# Implementation' (YAML http mapping).
 4. Use 'custom_http' type in implementation. Map variables as {{variable}} and secrets as {{SECRETS.KEY}}.
 

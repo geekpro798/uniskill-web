@@ -348,9 +348,10 @@ export default function CreateSkillPage() {
 
       // 后续逻辑保持不变 (Wait for state update)
       
-      // 🌟 核心变更：不再弹窗，而是将状态置为已部署，触发沙箱 UI
+      // 🌟 核心变更：不再允许使用名字 (skillName) 兜底 ID。
+      // 必须使用从后端 Supabase 返回的真实 UUID (skill_uid)。
       setDeployedSkill({ 
-        id: insertedSkill.id?.toString() || insertedSkill.skill_uid?.toString() || skillName, 
+        id: insertedSkill.skill_uid?.toString() || insertedSkill.id?.toString(), 
         name: displayName, 
         visibility: isPublic ? 'public' : 'private' 
       } as any);
