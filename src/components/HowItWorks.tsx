@@ -68,16 +68,6 @@ const steps = [
     },
 ];
 
-/* ─── 技能标签列表：展示网关支持的能力种类 ──────────────────────────── */
-const skillTags = [
-    { name: "Web Search", color: "text-blue-400 border-blue-500/30 bg-blue-500/5" },
-    { name: "Web Scrape", color: "text-purple-400 border-purple-500/30 bg-purple-500/5" },
-    { name: "News Feed", color: "text-cyan-400 border-cyan-500/30 bg-cyan-500/5" },
-    { name: "Social Media", color: "text-green-400 border-green-500/30 bg-green-500/5" },
-    { name: "Data Extract", color: "text-yellow-400 border-yellow-500/30 bg-yellow-500/5" },
-    { name: "Image Analysis", color: "text-pink-400 border-pink-500/30 bg-pink-500/5" },
-];
-
 /* ─── HowItWorks 组件：主流程说明区块 ─────────────────────────────────
    使用 useInView 钩子实现卡片滚动触发动画
    ─────────────────────────────────────────────────────────────────────── */
@@ -189,31 +179,7 @@ export default function HowItWorks() {
                     ))}
                 </div>
 
-                {/* ─── 技能标签展示区 ─── */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={isInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.6, delay: 0.6 }}
-                    className="mt-16 text-center"
-                >
-                    <p className="text-slate-500 text-sm mb-5 font-medium uppercase tracking-widest">
-                        Available Skills
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-3">
-                        {skillTags.map((tag) => (
-                            <span
-                                key={tag.name}
-                                className={`px-4 py-1.5 rounded-full text-sm font-medium border ${tag.color}`}
-                            >
-                                {tag.name}
-                            </span>
-                        ))}
-                        {/* 更多技能提示 */}
-                        <span className="px-4 py-1.5 rounded-full text-sm font-medium border border-slate-700 text-slate-500">
-                            + More coming
-                        </span>
-                    </div>
-                </motion.div>
+
             </div>
         </section>
     );

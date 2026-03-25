@@ -147,11 +147,15 @@ export async function POST(req: Request) {
     const adminKey = process.env.ADMIN_KEY || "";
 
     try {
-      console.log(`[finalize] [Gateway Sync] Attempting to sync skill: ${skill.skill_name} to ${gatewayUrl}`);
+      console.log(`[finalize] [Gateway Sync] Initiating sync for: "${skill.skill_name}" (UID: ${skillUid})`);
+      console.log(`[finalize] [Gateway Sync] Target URL: ${gatewayUrl}`);
 
-      // 🌟 Add 5-second timeout to prevent server hang and report sync failure
+      // 🌟 Timeout increased to 15s to handle cold starts or remote dev latency
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => {
+        console.error(`[finalize] [Gateway Sync] CRITICAL: Sync timed out after 15s to ${gatewayUrl}`);
+        controller.abort();
+      }, 15000);
 
       const gatewayRes = await fetch(`${gatewayUrl}/v1/admin/sync_skill`, {
         method: 'POST',
@@ -163,9 +167,9 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           user_uid: userUid,
           skill_name: skill.skill_name,
-          status: skill.status, // 使用数据库 status (Private/Community)
+          status: skill.status, 
           manifest: skillManifest,
-          secrets: skill.secrets, // 🔑 同步加密后的私钥到网关
+          secrets: skill.secrets, 
           type: 'skill_activation'
         })
       });
@@ -174,9 +178,9 @@ export async function POST(req: Request) {
 
       if (!gatewayRes.ok) {
         const errorText = await gatewayRes.text();
-        console.error("[Gateway Sync] Remote error:", errorText);
+        console.error(`[Gateway Sync] Sync failed with status ${gatewayRes.status}:`, errorText);
         return NextResponse.json({ 
-            error: `Gateway synchronization failed: ${errorText}`,
+            error: `Gateway synchronization failed (${gatewayRes.status}): ${errorText}`,
             success: false 
         }, { status: 502 });
       }

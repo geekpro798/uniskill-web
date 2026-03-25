@@ -29,8 +29,8 @@ export default async function SettingsPage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg-main)" }}>
       <DashboardNavbar 
-        credits={session.user.credits} 
-        totalCredits={100} 
+        credits={profile?.credits ?? (session.user as any).credits} 
+        totalCredits={500} 
         userName={profile?.display_name || undefined}
       />
       <main className="max-w-5xl mx-auto px-6 py-12">

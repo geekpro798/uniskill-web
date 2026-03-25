@@ -4,6 +4,7 @@
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import HowItWorks from "@/components/HowItWorks";
+import SkillShowcase from "@/components/homepage/SkillShowcase";
 import PricingSection from "@/components/PricingSection";
 import CreatorHubSection from "@/components/homepage/CreatorHubSection";
 import Footer from "@/components/Footer";
@@ -25,6 +26,18 @@ export default async function HomePage() {
     displayName = profile?.display_name || null;
   }
 
+  // 🌟 同时预取首页 Showcase 所需的真实技能 (Pre-fetching ALL active skills)
+  const { data: skills, error: skillsError } = await supabase
+    .from('skills')
+    .select('skill_name, display_name, status, emoji, tags')
+    .limit(100); // Fetch more to ensure we see them
+
+  if (skillsError) {
+    console.error("Home page skills fetch error:", skillsError);
+  } else {
+    console.log("Home page fetched skills count:", skills?.length);
+  }
+
   return (
     <main className="min-h-screen font-sans">
       {/* 固定顶部导航栏并传入预取的名字 */}
@@ -35,6 +48,9 @@ export default async function HomePage() {
 
       {/* 流程说明区块 */}
       <HowItWorks />
+
+      {/* 核心技能展示区 (Marquee Showcase) */}
+      <SkillShowcase initialSkills={skills || []} />
 
       {/* 创作者中心区块 */}
       <CreatorHubSection />
