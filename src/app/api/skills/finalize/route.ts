@@ -126,17 +126,17 @@ export async function POST(req: Request) {
     // 5. 组装数据并推送到边缘网关 (Push to Gateway v5 protocol)
     // ------------------------------------------------------------------
     const skillManifest = {
-      skill_uid: skillUid,
       skill_name: skill.skill_name,
+      display_name: finalDisplayName || skill.skill_name,
+      skill_uid: skillUid,
+      emoji: finalEmoji || "🧩",
       did: did,
       owner_uid: userUid,
       meta: {
-        name: (finalEmoji || "🧩") + " " + (finalDisplayName || skill.skill_name),
-        emoji: finalEmoji || "🧩",
-        description: parsedDescription // 使用刚才解析出的最新描述
+        description: parsedDescription 
       },
       config: {
-        ...parsedImplementation, // 融合可执行逻辑
+        ...parsedImplementation,
         parameters: parsedParameters,
         tier: skill.status 
       },
