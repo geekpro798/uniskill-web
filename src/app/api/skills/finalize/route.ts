@@ -126,8 +126,8 @@ export async function POST(req: Request) {
     // 5. 组装数据并推送到边缘网关 (Push to Gateway v5 protocol)
     // ------------------------------------------------------------------
     const skillManifest = {
-      skill_uid: skillUid, // 🌟 显式注入 UUID
-      id: skillUid,        // 🌟 兼容性：将 id 也设为 UUID，防止网关 fallback 到名字
+      skill_uid: skillUid,
+      skill_name: skill.skill_name,
       did: did,
       owner_uid: userUid,
       meta: {
@@ -147,12 +147,19 @@ export async function POST(req: Request) {
     const adminKey = process.env.ADMIN_KEY || "";
 
     try {
+      console.log(`[finalize] [Gateway Sync] Attempting to sync skill: ${skill.skill_name} to ${gatewayUrl}`);
+
+      // 🌟 Add 5-second timeout to prevent server hang and report sync failure
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
       const gatewayRes = await fetch(`${gatewayUrl}/v1/admin/sync_skill`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${adminKey}` 
         },
+        signal: controller.signal,
         body: JSON.stringify({
           user_uid: userUid,
           skill_name: skill.skill_name,
@@ -163,12 +170,26 @@ export async function POST(req: Request) {
         })
       });
 
+      clearTimeout(timeoutId);
+
       if (!gatewayRes.ok) {
         const errorText = await gatewayRes.text();
         console.error("[Gateway Sync] Remote error:", errorText);
+        return NextResponse.json({ 
+            error: `Gateway synchronization failed: ${errorText}`,
+            success: false 
+        }, { status: 502 });
       }
-    } catch (e) {
-      console.error("[Gateway Sync] Network error during synchronization.");
+
+      console.log(`[Gateway Sync] SUCCESS for skill: ${skill.skill_name}`);
+
+    } catch (e: any) {
+      if (e.name === 'AbortError') {
+          console.error(`[Gateway Sync] TIMEOUT (5s) for skill: ${skill.skill_name}`);
+          return NextResponse.json({ error: "Gateway synchronization timed out (5s). Check if Gateway is running." }, { status: 504 });
+      }
+      console.error("[Gateway Sync] Network error during synchronization:", e.message);
+      return NextResponse.json({ error: `Gateway connection failed. Ensure port 8787 is active: ${e.message}` }, { status: 503 });
     }
 
     return NextResponse.json({ 
