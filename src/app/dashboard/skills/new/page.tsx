@@ -7,11 +7,11 @@ import CreateSkillClient from "./CreateSkillClient";
 export default async function CreateSkillPage() {
   const session = await getServerSession(authOptions as any);
 
-  if (!session?.user) {
+  if (!(session as any)?.user) {
     redirect("/");
   }
 
-  const userUid = (session.user as any).userUid;
+  const userUid = (session as any).user.userUid;
 
   // 🌟 Server-side prefetch to eliminate "flicker"
   const { data: profile } = await supabase
@@ -22,7 +22,7 @@ export default async function CreateSkillPage() {
 
   return (
     <CreateSkillClient 
-      initialCredits={profile?.credits ?? (session.user as any).credits}
+      initialCredits={profile?.credits ?? (session as any).user.credits}
       initialDisplayName={profile?.display_name || null}
     />
   );
