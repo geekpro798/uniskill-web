@@ -238,11 +238,9 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skill_name, skill, isO
                                         <span className="text-xl font-black" style={{ color: "var(--color-text-primary)" }}>{skill.credits_per_call ?? skill.cost_per_call ?? 0}</span>
                                         <span className="text-[10px] font-bold uppercase" style={{ color: "var(--color-text-secondary)", opacity: 0.5 }}>CR</span>
                                      </div>
-                                     <span className="text-slate-700 font-bold opacity-30">|</span>
-                                     <span className="text-xl font-black font-mono text-emerald-500">{skill.usd_per_call ?? 0} $</span>
                                  </div>
                             </div>
-                            <p className="text-[11px] italic" style={{ color: "var(--color-text-secondary)", opacity: 0.4 }}>Billable in Credits or USD based on execution settings.</p>
+                            <p className="text-[11px] italic" style={{ color: "var(--color-text-secondary)", opacity: 0.4 }}>Billable in Credits based on execution settings.</p>
                         </motion.div>
 
                         <motion.div className="p-5 border rounded-xl" style={{ backgroundColor: "var(--color-bg-primary)", borderColor: "var(--color-border)" }}>

@@ -172,9 +172,9 @@ export default function DashboardNavbar({ credits, totalCredits = 500, userName 
                                     <Link
                                         href="/dashboard"
                                         onClick={() => setIsMenuOpen(false)}
-                                        className={`flex items-center gap-2.5 px-4 py-2 text-xs font-medium transition-colors ${isActive("/dashboard")
-                                            ? "text-blue-500 bg-blue-500/10"
-                                            : "hover:bg-[var(--color-menu-hover-bg)]"
+                                        className={`flex items-center gap-2.5 px-4 py-2 text-xs font-medium transition-colors border-l-2 ${isActive("/dashboard")
+                                            ? "text-blue-500 bg-gradient-to-r from-blue-500/10 to-purple-500/5 border-blue-500"
+                                            : "border-transparent hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-500/5"
                                             }`}
                                         style={{ color: isActive("/dashboard") ? "var(--color-blue)" : "var(--color-text-secondary)" }}
                                     >
@@ -191,9 +191,9 @@ export default function DashboardNavbar({ credits, totalCredits = 500, userName 
                                     <Link
                                         href="/dashboard/skills/new"
                                         onClick={() => setIsMenuOpen(false)}
-                                        className={`flex items-center gap-2.5 px-4 py-2 text-xs font-medium transition-colors ${isActive("/dashboard/skills/new")
-                                            ? "text-blue-500 bg-blue-500/10"
-                                            : "hover:bg-[var(--color-menu-hover-bg)]"
+                                        className={`flex items-center gap-2.5 px-4 py-2 text-xs font-medium transition-colors border-l-2 ${isActive("/dashboard/skills/new")
+                                            ? "text-blue-500 bg-gradient-to-r from-blue-500/10 to-purple-500/5 border-blue-500"
+                                            : "border-transparent hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-500/5"
                                             }`}
                                         style={{ color: isActive("/dashboard/skills/new") ? "var(--color-blue)" : "var(--color-text-secondary)" }}
                                     >
@@ -208,9 +208,9 @@ export default function DashboardNavbar({ credits, totalCredits = 500, userName 
                                     <Link
                                         href="/settings"
                                         onClick={() => setIsMenuOpen(false)}
-                                        className={`flex items-center gap-2.5 px-4 py-2 text-xs font-medium transition-colors ${isActive("/settings")
-                                            ? "text-blue-500 bg-blue-500/10"
-                                            : "hover:bg-[var(--color-menu-hover-bg)]"
+                                        className={`flex items-center gap-2.5 px-4 py-2 text-xs font-medium transition-colors border-l-2 ${isActive("/settings")
+                                            ? "text-blue-500 bg-gradient-to-r from-blue-500/10 to-purple-500/5 border-blue-500"
+                                            : "border-transparent hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-500/5"
                                             }`}
                                         style={{ color: isActive("/settings") ? "var(--color-blue)" : "var(--color-text-secondary)" }}
                                     >

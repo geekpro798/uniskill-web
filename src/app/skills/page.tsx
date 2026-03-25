@@ -314,10 +314,6 @@ export default function SkillsStorePage() {
                                                         {skill.credits_per_call ?? skill.cost_per_call ?? 1} CR
                                                     </span>
                                                 </div>
-                                                <span className="text-slate-700 font-bold text-[10px]">|</span>
-                                                <span className="text-xs font-bold text-emerald-400">
-                                                    {skill.usd_per_call || 0} $
-                                                </span>
                                             </div>
                                         </div>
                                     </motion.a>

@@ -515,9 +515,11 @@ export default function DashboardClient({ initialCredits, initialDisplayName }: 
                             <p className="text-[10px] text-slate-400 line-clamp-1 max-w-[200px] md:max-w-[400px] font-medium italic mb-1">
                               {skill.description || 'Professional AI tool for advanced automation logic.'}
                             </p>
-                            <p className="text-[9px] text-slate-500 font-mono">
-                              ID: {skill.skill_name}
-                            </p>
+                            <div className="mt-1 flex items-center">
+                              <span className="px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-[9px] font-mono font-bold text-slate-400 group-hover:border-blue-500/30 transition-all">
+                                {skill.skill_name}
+                              </span>
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">

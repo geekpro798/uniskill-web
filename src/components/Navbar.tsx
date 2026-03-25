@@ -78,9 +78,9 @@ export default function Navbar({ initialDisplayName }: { initialDisplayName?: st
                         href="/skills"
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${isSkillsActive
-                            ? "text-indigo-400 bg-indigo-500/10 border border-indigo-500/25"
-                            : "hover:bg-slate-800/40"
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${isSkillsActive
+                            ? "text-indigo-400 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-indigo-500/25"
+                            : "border-transparent hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-500/10 hover:border-blue-500/20"
                             }`}
                         style={{ color: isSkillsActive ? "var(--color-purple)" : "var(--color-text-secondary)" }}
                     >
@@ -97,7 +97,7 @@ export default function Navbar({ initialDisplayName }: { initialDisplayName?: st
                         rel="noopener noreferrer"
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-slate-800/40 transition-all"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-transparent hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-500/10 hover:border-blue-500/20 transition-all"
                         style={{ color: "var(--color-text-secondary)" }}
                     >
                         Docs
@@ -109,7 +109,7 @@ export default function Navbar({ initialDisplayName }: { initialDisplayName?: st
                     {/* Pricing 链接 */}
                     <a
                         href="/#pricing"
-                        className="px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-slate-800/40 transition-all"
+                        className="px-3 py-1.5 rounded-lg text-sm font-medium border border-transparent hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-500/10 hover:border-blue-500/20 transition-all"
                         style={{ color: "var(--color-text-secondary)" }}
                     >
                         Pricing

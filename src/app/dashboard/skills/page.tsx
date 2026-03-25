@@ -126,6 +126,7 @@ export default function SkillsPage() {
       const matchesSearch = 
         skill.name.toLowerCase().includes(query) || 
         skill.id.toLowerCase().includes(query) ||
+        skill.slug.toLowerCase().includes(query) ||
         (skill.tags && skill.tags.some((t: string) => t.toLowerCase().includes(query.replace('#', ''))));
       
       const matchesFilter = filterVisibility === 'all' || skill.visibility === filterVisibility;
@@ -230,18 +231,18 @@ export default function SkillsPage() {
                       window.location.href = `/dashboard/skills/${skill.slug}`;
                     }
                   }}
-                  className={`group relative bg-white dark:bg-slate-900/40 border rounded-[32px] p-8 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 flex flex-col min-h-[300px] cursor-pointer ${
+                  className={`glass-card border hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col p-6 min-h-[280px] cursor-pointer ${
                     skill.state === 'testing' 
                       ? 'border-2 border-dashed border-amber-500/30 bg-amber-500/[0.02]' 
-                      : 'border-slate-200 dark:border-slate-800'
+                      : ''
                   }`}
                 >
                   {/* Card Top: 图标背景 + 状态徽章 */}
-                  <div className="flex items-start justify-between mb-8">
-                    <div className={`w-16 h-16 rounded-2xl ${skill.iconBg} flex items-center justify-center text-3xl shadow-lg group-hover:scale-110 transition-transform ${skill.state === 'testing' ? 'grayscale opacity-50' : ''}`}>
+                  <div className="flex items-start justify-between mb-6">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${skill.iconBg || "from-blue-500 to-cyan-400"} flex items-center justify-center text-2xl shadow-lg group-hover:scale-110 transition-transform ${skill.state === 'testing' ? 'grayscale opacity-50' : ''}`}>
                       {skill.emoji}
                     </div>
-                    <div className="flex flex-col items-end gap-2">
+                    <div className="flex flex-col items-end gap-1.5">
                       <span className={`flex items-center gap-1.5 px-3 py-1 border text-[9px] font-black uppercase tracking-widest rounded-lg ${
                         skill.state === 'testing' 
                           ? 'bg-amber-500/10 text-amber-600 border-amber-500/20 animate-pulse' 
@@ -264,50 +265,46 @@ export default function SkillsPage() {
                   </div>
 
                   {/* Title & Description */}
-                  <h3 className={`text-2xl font-black text-slate-900 dark:text-white mb-3 tracking-tight transition-colors uppercase ${skill.state === 'testing' ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'}`}>
+                  <h3 className={`text-lg font-bold text-slate-900 dark:text-white mb-2 tracking-tight transition-colors ${skill.state === 'testing' ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'}`}>
                     {skill.name}
                   </h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-3 mb-10 flex-1 font-medium italic">
+                  <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-3 mb-6 flex-1 font-normal">
                     {skill.state === 'testing' 
                       ? "This skill hasn't been finalized. Complete the sandbox test to activate the global endpoint."
                       : skill.description}
                   </p>
 
-                  <div className="w-full h-px bg-slate-100 dark:bg-slate-800/80 mb-6 transition-colors"></div>
-
-                  {/* Footer Logic: 如果是测试状态，显示 Resume 和删除 按钮 */}
                   {skill.state === 'testing' ? (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 pt-4 border-t border-slate-100 dark:border-slate-800/80">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setSkillToDelete({ uid: skill.id, name: skill.name });
                         }}
-                        className="flex items-center justify-center p-3 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all border border-slate-200 dark:border-slate-800 hover:border-red-500/30 bg-slate-50 dark:bg-slate-900/40"
+                        className="flex items-center justify-center p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all border border-slate-200 dark:border-slate-800 hover:border-red-500/30"
                         title="Delete Draft"
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} />
                       </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           window.location.href = `/dashboard/skills/new?resume=${skill.id}`;
                         }}
-                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-xl transition-all shadow-lg active:scale-95"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-all shadow-md active:scale-95"
                       >
-                        <PlayCircle size={16} />
-                        Resume
+                        <PlayCircle size={14} />
+                        Resume Deployment
                       </button>
                     </div>
                   ) : (
-                    /* 正常状态页脚 (Normal status footer) */
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800/80">
                       <div 
-                        onClick={(e) => handleCopyId(skill.id, e)}
+                        onClick={(e) => handleCopyId(skill.slug, e)}
                         className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-mono font-bold text-slate-400 cursor-pointer hover:border-blue-500/30 transition-all flex items-center gap-2"
                       >
-                        <span className="uppercase">ID: {skill.id.substring(0, 8)}</span>
-                        {copiedId === skill.id ? <CheckCircle2 size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                        <span className="uppercase">{skill.slug}</span>
+                        {copiedId === skill.slug ? <CheckCircle2 size={12} className="text-emerald-500" /> : <Copy size={12} />}
                       </div>
                       
                       <div className="flex flex-col items-end">
