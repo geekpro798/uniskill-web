@@ -126,7 +126,8 @@ export async function POST(req: Request) {
     // 5. 组装数据并推送到边缘网关 (Push to Gateway v5 protocol)
     // ------------------------------------------------------------------
     const skillManifest = {
-      id: skill.skill_name,
+      skill_uid: skillUid, // 🌟 显式注入 UUID
+      id: skillUid,        // 🌟 兼容性：将 id 也设为 UUID，防止网关 fallback 到名字
       did: did,
       owner_uid: userUid,
       meta: {
