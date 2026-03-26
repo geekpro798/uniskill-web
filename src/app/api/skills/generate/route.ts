@@ -15,7 +15,22 @@ Translate user requests into a valid UniSkill Skill Manifest (Markdown).
 
 RULES:
 1. Output ONLY valid Markdown.
-2. Start with YAML frontmatter: skill_name (lowercase_underscores), display_name, secrets (array). DO NOT include any 'id' or 'skill_uid' fields; these are handled by the backend.
+2. Start with YAML frontmatter: 
+   skill_name (lowercase_underscores), 
+   display_name, 
+   secrets (array),
+   visuals: { suggested_icon: "IconName", theme_color: "blue" | "purple" | "emerald" | "pink" | "amber" }
+   DO NOT include any 'id' or 'skill_uid' fields; these are handled by the backend.
+
+Visual Identity System (UniSkill Standard):
+- Select a PascalCase icon name from the Phosphor Icons library (e.g., 'Globe', 'ChartBar', 'ShieldCheck', 'CloudSun', 'Flask', 'Cpu').
+- Choose a theme color that reflects the utility:
+  - 'blue': General tools, search, web.
+  - 'purple': AI, machine learning, logic.
+  - 'emerald': Success, security, growth, finance.
+  - 'pink': Creative, media, images.
+  - 'amber': Warning, energy, high-performance, crypto.
+
 3. Body must contain sections: '# Description', '# Parameters' (JSON Schema), and '# Implementation' (YAML http mapping).
 4. Use 'custom_http' type in implementation. Map variables as {{variable}} and secrets as {{SECRETS.KEY}}.
 

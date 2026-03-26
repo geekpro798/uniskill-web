@@ -1,36 +1,55 @@
-// uniskill-web/src/app/skills/[skillId]/page.tsx
-// Logic: Server Component to load skill details from the official local registry.
+'use client';
 
-import React from 'react';
-import { SkillDetail } from '@/components/SkillDetail';
-import { notFound } from 'next/navigation';
-import { parseSkillFile } from '@/lib/skills-parser';
+import React, { useState, useEffect } from 'react';
+import { SkillDetail, SkillSpec } from '@/components/SkillDetail';
+import { useParams, notFound } from 'next/navigation';
+import { resolveSkillVisuals } from '@/lib/skill-visual-identity'; // 🌟 Optimized Identity System
 
-interface PageProps {
-    params: {
-        skillId: string;
-    };
-}
+export default function SkillPage() {
+    const params = useParams();
+    const skillId = params.skillId as string;
+    const [skillData, setSkillData] = useState<any | null>(null);
+    const [loading, setLoading] = useState(true);
 
-export default async function SkillPage({ params }: PageProps) {
-    const { skillId } = await params;
+    useEffect(() => {
+        async function fetchSkill() {
+            if (!skillId) return;
+            try {
+                // 逻辑：从 API 获取技能数据
+                const response = await fetch(`/api/skills/${skillId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // 🌟 Apply unified visuals
+                    const visuals = resolveSkillVisuals(data);
+                    
+                    setSkillData({
+                        ...data,
+                        visuals: visuals
+                    });
+                }
+            } catch (err) {
+                console.error("[SKILL PAGE] Fetch error:", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchSkill();
+    }, [skillId]);
 
-    // 逻辑：直接从本地 registry 目录读取 MD 文件，确保 ID 和 Name 绝对准确
-    const skillData = parseSkillFile(skillId);
+    if (loading) return null; // Or a loader
 
     if (!skillData) {
-        console.warn(`[SKILL PAGE] Skill not found in registry: ${skillId}`);
         notFound();
     }
 
     return (
         <main className="min-h-screen transition-colors duration-500" style={{ backgroundColor: "var(--color-bg-primary)" }}>
-            {/* 逻辑：由于现在是直接读本地文件，我们将 data 结构对齐传递给客户端组件 */}
             <SkillDetail
                 skill_name={skillId}
                 skill={skillData}
                 isOfficial={skillData.status === "Official"}
-                isOwner={true} // 本地预览模式默认拥有权限
+                isOwner={true}
             />
         </main>
     );

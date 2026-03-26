@@ -4,13 +4,14 @@ import React, { useState, useRef } from 'react';
 import { 
   Save, Terminal, Globe, Lock, AlertCircle, KeyRound, 
   Plus, Trash2, Sparkles, Wand2, Loader2, CheckCircle2,
-  Activity, Edit3, Code2
+  Activity, Edit3, Code2, Link, Link2, Unlink
 } from 'lucide-react';
 import { useSession, signIn } from "next-auth/react";
 import { useEffect } from 'react';
 import { motion } from "framer-motion";
 import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
 import { supabase } from "@/lib/supabase";
+import { Modal } from "@/components/Modal";
 
 interface CreateSkillClientProps {
   initialCredits: number | undefined;
@@ -46,6 +47,29 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
     }
   }, [status, session?.user?.id]);
 
+  // 🌟 Fetch Global Secrets on Mount
+  useEffect(() => {
+    if (status === "authenticated") {
+      const fetchGlobalSecrets = async () => {
+        try {
+          const res = await fetch("/api/user/secrets");
+          if (res.ok) {
+            const data = await res.json();
+            // Transform Record<string, string> to Array for UI compatibility
+            const formatted = Object.entries(data).map(([k, v]) => ({ 
+              key_name: k, 
+              encrypted_value: v as string 
+            }));
+            setGlobalSecrets(formatted);
+          }
+        } catch (err) {
+          console.error("Failed to fetch global secrets:", err);
+        }
+      };
+      fetchGlobalSecrets();
+    }
+  }, [status]);
+
   // ==========================================
   // State: Magic Architect (AI 生成器状态)
   // ==========================================
@@ -60,7 +84,9 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
   const [skillName, setSkillName] = useState(''); 
   const [description, setDescription] = useState('');
   const [markdownBody, setMarkdownBody] = useState('');
-  const [secrets, setSecrets] = useState<{key: string, value: string}[]>([{ key: '', value: '' }]);
+  const [secrets, setSecrets] = useState<{key: string, value: string, isGlobal?: boolean, saveToGlobal?: boolean}[]>([{ key: '', value: '' }]);
+  const [globalSecrets, setGlobalSecrets] = useState<{key_name: string, encrypted_value: string}[]>([]);
+  const [showSecretPicker, setShowSecretPicker] = useState<number | null>(null);
   const [isPublic, setIsPublic] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({}); // 🌟 升级：使用字典存储字段级错误状态
@@ -77,6 +103,18 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
   const [testSuccess, setTestSuccess] = useState(false); // 🌟 新增：记录测试是否成功 (Track if test was successful)
   const [isCheckingName, setIsCheckingName] = useState(false); // 🌟 新增：正在检查名称唯一性 (Checking name uniqueness)
   
+  // 🌟 新增：全局弹窗状态 (Global Modal State)
+  const [modal, setModal] = useState<{
+    show: boolean, 
+    type: 'confirm' | 'alert', 
+    title: string, 
+    message: React.ReactNode, 
+    onConfirm?: () => void 
+  }>({ show: false, type: 'alert', title: '', message: '' });
+
+  const showAlert = (title: string, message: React.ReactNode) => {
+    setModal({ show: true, type: 'alert', title, message });
+  };
   // 🌟 二阶段部署：完结态逻辑 (Two-Stage Deployment: Finalization State)
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [finalizeSuccess, setFinalizeSuccess] = useState(false);
@@ -217,9 +255,9 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
   // 环境变量操作逻辑 (Handlers for Secrets)
   const handleAddSecret = () => setSecrets([...secrets, { key: '', value: '' }]);
   const handleRemoveSecret = (index: number) => setSecrets(secrets.filter((_, i) => i !== index));
-  const handleSecretChange = (index: number, field: 'key' | 'value', val: string) => {
+  const handleSecretChange = (index: number, field: 'key' | 'value' | 'isGlobal' | 'saveToGlobal', val: any) => {
     const newSecrets = [...secrets];
-    newSecrets[index][field] = val;
+    (newSecrets[index] as any)[field] = val;
     setSecrets(newSecrets);
   };
 
@@ -259,12 +297,11 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
       const data = JSON.parse(responseText);
       const generatedMarkdown = data.markdown;
       
+      // 🌟 Extract metadata for form fields, but PRESERVE full markdown in the editor
       const frontmatterMatch = generatedMarkdown.match(/^---\n([\s\S]+?)\n---/);
-      let bodyStr = generatedMarkdown;
       
       if (frontmatterMatch) {
         const fm = frontmatterMatch[1];
-        bodyStr = generatedMarkdown.replace(/^---\n[\s\S]+?\n---\n*/, '');
 
         const sNameMatch = fm.match(/skill_name:\s*(.+)/);
         const dNameMatch = fm.match(/display_name:\s*(.+)/);
@@ -283,10 +320,11 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
         }
       }
 
-      const descMatch = bodyStr.match(/#+\s*Description\s*\n([\s\S]*?)(?=\n#+|$)/i);
+      // Sync description for the preview/card
+      const descMatch = generatedMarkdown.match(/#+\s*Description\s*\n([\s\S]*?)(?=\n#+|$)/i);
       if (descMatch) setDescription(descMatch[1].trim());
 
-      setMarkdownBody(bodyStr.trim());
+      setMarkdownBody(generatedMarkdown.trim());
       setMagicSuccess(true);
       
       setTimeout(() => {
@@ -325,6 +363,25 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
 
     setIsSubmitting(true);
     try {
+      // 🌟 流程 A：处理“一键保存至全局”的机密 (Process 'Save to Global' secrets)
+      const secretsToVault = secrets.filter(s => !s.isGlobal && s.saveToGlobal && s.key && s.value);
+      
+      if (secretsToVault.length > 0) {
+        console.log(`Vaulting ${secretsToVault.length} secrets to global storage...`);
+        await Promise.all(secretsToVault.map(async (s) => {
+          try {
+            await fetch('/api/user/secrets', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ key_name: s.key, value: s.value })
+            });
+          } catch (vaultErr) {
+            console.error(`Failed to vault secret ${s.key}:`, vaultErr);
+            // 这里选择继续，不阻塞主流程，但在控制台记录 (Choose to continue to avoid blocking main flow)
+          }
+        }));
+      }
+
       const validSecrets = secrets.filter(s => s.key.trim() !== '' && s.value.trim() !== '');
       const payload = {
         skill_uid: resumeSkillUid, // 传给后端以便 upsert
@@ -334,7 +391,7 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
         markdown_manifest: markdownBody,
         status: isPublic ? 'Community' : 'Private',
         state: originalState === 'active' ? 'active' : 'testing',
-        secrets: validSecrets,
+        secrets: validSecrets.map(s => ({ key: s.key, value: s.value })), // 传递原始 Key/Value，后端处理加密
         emoji: markdownBody.match(/emoji:\s*([^\s\n]+)/)?.[1] || '⚙️',
         owner_uid: (session as any)?.user?.userUid // API 会校验
       };
@@ -449,6 +506,22 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
     
     try {
       // 🚀 保持加密一致性，强制同步一次表单数据 (Maintain consistency via Server-Side API)
+      // 🌟 同时处理可能存在的“一键保存至全局”勾选
+      const secretsToVault = secrets.filter(s => !s.isGlobal && s.saveToGlobal && s.key && s.value);
+      if (secretsToVault.length > 0) {
+        await Promise.all(secretsToVault.map(async (s) => {
+          try {
+            await fetch('/api/user/secrets', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ key_name: s.key, value: s.value })
+            });
+          } catch (e) {
+            console.error("Vaulting failed during finalize:", e);
+          }
+        }));
+      }
+
       const res = await fetch('/api/skills/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -458,7 +531,7 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
           display_name: displayName,
           description: description,
           markdown_manifest: markdownBody,
-          secrets: secrets.filter(s => s.key.trim() !== '' && s.value.trim() !== ''),
+          secrets: secrets.filter(s => s.key.trim() !== '' && s.value.trim() !== '').map(s => ({ key: s.key, value: s.value })),
           owner_uid: (session as any)?.user?.userUid
         })
       });
@@ -485,7 +558,7 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
       
     } catch (err: any) {
       console.error('Finalize failed:', err);
-      alert('Failed to launch skill: ' + err.message);
+      showAlert('Launch Failed', err.message);
     } finally {
       setIsFinalizing(false);
     }
@@ -737,46 +810,135 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
                   </span>
                 </div>
 
-                <div className="space-y-3 pl-8">
+                <div className="space-y-4 pl-8">
                   {secrets.map((secret, index) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          placeholder="KEY_NAME (e.g., COINGECKO_API_KEY)"
-                          value={secret.key}
-                          onChange={(e) => handleSecretChange(index, 'key', e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))}
-                          className="w-full px-3 py-2.5 border rounded-lg outline-none font-mono text-sm uppercase shadow-sm transition-colors"
-                          style={{ 
-                            backgroundColor: "var(--color-bg-primary)", 
-                            borderColor: "var(--color-border)",
-                            color: "var(--color-text-primary)"
-                          }}
-                        />
+                    <div key={index} className="space-y-2">
+                       <div className="flex items-start gap-3">
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            placeholder="KEY_NAME (e.g. OPENAI_API_KEY)"
+                            value={secret.key}
+                            onChange={(e) => {
+                              const v = e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '_').replace(/_+/g, '_');
+                              handleSecretChange(index, 'key', v);
+                            }}
+                            className="w-full px-3 py-2.5 border rounded-lg outline-none font-mono text-sm shadow-sm transition-colors"
+                            style={{ 
+                              backgroundColor: "var(--color-bg-primary)", 
+                              borderColor: "var(--color-border)",
+                              color: "var(--color-text-primary)"
+                            }}
+                          />
+                        </div>
+                        <div className="flex-[2] relative group">
+                          <input
+                            type={secret.isGlobal ? "text" : "password"}
+                            placeholder={secret.isGlobal ? "Linked from Global Secrets" : "Enter the actual secret value..."}
+                            value={secret.isGlobal ? `Linked: ${secret.key}` : secret.value}
+                            readOnly={secret.isGlobal}
+                            onChange={(e) => !secret.isGlobal && handleSecretChange(index, 'value', e.target.value)}
+                            className={`w-full px-3 py-2.5 pr-10 border rounded-lg outline-none font-mono text-sm shadow-sm transition-colors ${
+                              secret.isGlobal 
+                                ? 'bg-blue-50/10 dark:bg-blue-900/10 border-blue-500/30 text-blue-600 dark:text-blue-400 font-bold' 
+                                : secret.key && !secret.value 
+                                  ? 'ring-2 ring-amber-500/20 border-amber-500' 
+                                  : ''
+                            }`}
+                            style={{ 
+                              backgroundColor: secret.isGlobal ? undefined : "var(--color-bg-primary)", 
+                              borderColor: secret.isGlobal ? undefined : "var(--color-border)",
+                              color: secret.isGlobal ? undefined : "var(--color-text-primary)"
+                            }}
+                          />
+                          
+                          {/* 🌟 Global Secret Picker Trigger */}
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                            {secret.isGlobal ? (
+                              <button 
+                                type="button" 
+                                onClick={() => {
+                                  handleSecretChange(index, 'isGlobal', false);
+                                  handleSecretChange(index, 'value', '');
+                                }}
+                                className="p-1 hover:bg-red-500/10 text-red-500 rounded transition-colors"
+                                title="Unlink Global Secret"
+                              >
+                                <Unlink size={14} />
+                              </button>
+                            ) : (
+                              <button 
+                                type="button" 
+                                onClick={() => setShowSecretPicker(showSecretPicker === index ? null : index)}
+                                className={`p-1 rounded transition-colors ${showSecretPicker === index ? 'bg-blue-500 text-white' : 'hover:bg-blue-500/10 text-blue-500'}`}
+                                title="Link to Global Secret"
+                              >
+                                <Globe size={14} />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* 🌟 Secret Picker Dropdown */}
+                          {showSecretPicker === index && (
+                            <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl z-[100] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                               <div className="p-2 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Your Global Secrets</span>
+                                  <button onClick={() => setShowSecretPicker(null)} className="text-[10px] text-slate-400 hover:text-slate-600">Close</button>
+                               </div>
+                               <div className="max-h-48 overflow-auto">
+                                  {globalSecrets.length > 0 ? globalSecrets.map((gs, gsIdx) => (
+                                    <button
+                                      key={gsIdx}
+                                      type="button"
+                                      onClick={() => {
+                                        handleSecretChange(index, 'key', gs.key_name);
+                                        handleSecretChange(index, 'value', gs.encrypted_value);
+                                        handleSecretChange(index, 'isGlobal', true);
+                                        setShowSecretPicker(null);
+                                      }}
+                                      className="w-full text-left px-4 py-2.5 hover:bg-blue-500/5 dark:hover:bg-blue-500/10 flex items-center justify-between group transition-colors border-b last:border-0 border-slate-50 dark:border-slate-800/50"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <KeyRound size={12} className="text-blue-500" />
+                                        <span className="text-sm font-mono font-bold text-slate-700 dark:text-slate-300">{gs.key_name}</span>
+                                      </div>
+                                      <Link size={12} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
+                                    </button>
+                                  )) : (
+                                    <div className="p-8 text-center">
+                                      <p className="text-xs text-slate-400 font-medium tracking-tight">No global secrets found.</p>
+                                    </div>
+                                  )}
+                               </div>
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSecret(index)}
+                          className="p-2.5 transition-colors border border-transparent hover:bg-red-500/10 hover:text-red-500 rounded-lg"
+                          style={{ color: "var(--color-text-secondary)" }}
+                          title="Remove Secret"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                      <div className="flex-[2]">
-                        <input
-                          type="password"
-                          placeholder="Enter the actual secret value..."
-                          value={secret.value}
-                          onChange={(e) => handleSecretChange(index, 'value', e.target.value)}
-                          className={`w-full px-3 py-2.5 border rounded-lg outline-none font-mono text-sm shadow-sm transition-colors ${secret.key && !secret.value ? 'ring-2 ring-amber-500/20 border-amber-500' : ''}`}
-                          style={{ 
-                            backgroundColor: "var(--color-bg-primary)", 
-                            borderColor: "var(--color-border)",
-                            color: "var(--color-text-primary)"
-                          }}
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSecret(index)}
-                        className="p-2.5 transition-colors border border-transparent hover:bg-red-500/10 hover:text-red-500 rounded-lg"
-                        style={{ color: "var(--color-text-secondary)" }}
-                        title="Remove Secret"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+
+                      {/* 🌟 Save as Global Logic */}
+                      {!secret.isGlobal && secret.key && secret.value && (
+                        <div className="pl-1 flex items-center gap-2 animate-in fade-in slide-in-from-left-2 transition-all">
+                           <input 
+                            type="checkbox" 
+                            id={`save-global-${index}`}
+                            checked={!!secret.saveToGlobal}
+                            onChange={(e) => handleSecretChange(index, 'saveToGlobal', e.target.checked)}
+                            className="w-3.5 h-3.5 rounded border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500/20 transition-all cursor-pointer"
+                           />
+                           <label htmlFor={`save-global-${index}`} className="text-[11px] font-bold text-slate-500 dark:text-slate-400 cursor-pointer hover:text-blue-500 transition-colors">
+                              Save to Global Vault (Vault sync enabled)
+                           </label>
+                        </div>
+                      )}
                     </div>
                   ))}
                   <button
@@ -800,43 +962,40 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
                   <button
                     type="button"
                     onClick={() => setIsPublic(false)}
-                    className={`flex items-start gap-3 p-5 rounded-2xl border-2 text-left transition-all ${
-                      !isPublic 
-                        ? 'border-blue-500 bg-blue-500/5 dark:bg-blue-500/10 shadow-sm' 
-                        : 'hover:border-slate-300 dark:hover:border-slate-600'
-                    }`}
+                    className={`flex items-start gap-4 p-6 rounded-2xl border-2 transition-all relative overflow-hidden ${!isPublic ? 'border-blue-500 shadow-lg' : 'border-slate-100 dark:border-slate-800 opacity-60 grayscale'}`}
                     style={{ 
-                      backgroundColor: !isPublic ? undefined : "var(--color-bg-primary)",
+                      backgroundColor: !isPublic ? "white" : "rgba(0,0,0,0.01)",
                       borderColor: !isPublic ? undefined : "var(--color-border)"
                     }}
                   >
-                    <Lock className="w-5 h-5 mt-0.5 flex-shrink-0 transition-colors" style={{ color: !isPublic ? "var(--color-selected-private)" : "var(--color-text-secondary)" }} />
+                    <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900 border border-blue-100 dark:border-blue-800 shrink-0">
+                      <Lock className="w-5 h-5 text-blue-500" />
+                    </div>
                     <div>
-                      <h4 className="font-bold transition-colors" style={{ color: !isPublic ? "var(--color-selected-private)" : "var(--color-text-primary)" }}>Private Sandbox</h4>
-                      <p className="text-xs mt-1.5 leading-relaxed transition-colors font-medium" style={{ color: !isPublic ? "var(--color-selected-private)" : "var(--color-text-secondary)", opacity: !isPublic ? 0.8 : 1 }}>Deployed instantly to your personal MCP gateway. Only you can call this endpoint.</p>
+                      <h4 className="font-bold text-slate-900 dark:text-white text-sm">Private Sandbox</h4>
+                      <p className="text-[11px] mt-1.5 leading-relaxed text-slate-500 dark:text-slate-400 font-medium">Deployed instantly to your personal MCP gateway. Only you can call this endpoint.</p>
                     </div>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setIsPublic(true)}
-                    className={`flex items-start gap-3 p-5 rounded-2xl border-2 text-left transition-all relative overflow-hidden ${
-                      isPublic 
-                        ? 'border-purple-500 bg-purple-500/5 dark:bg-purple-500/10 shadow-sm' 
-                        : 'hover:border-slate-300 dark:hover:border-slate-600'
-                    }`}
+                    disabled={true}
+                    className="flex items-start gap-4 p-6 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 text-left relative overflow-hidden opacity-60 grayscale cursor-not-allowed transition-all shadow-inner"
                     style={{ 
-                      backgroundColor: isPublic ? undefined : "var(--color-bg-primary)",
-                      borderColor: isPublic ? undefined : "var(--color-border)"
+                      backgroundColor: "rgba(0,0,0,0.01)",
                     }}
                   >
-                    <Globe className="w-5 h-5 mt-0.5 flex-shrink-0 transition-colors" style={{ color: isPublic ? "var(--color-selected-public)" : "var(--color-text-secondary)" }} />
-                    <div>
-                      <h4 className="font-bold transition-colors" style={{ color: isPublic ? "var(--color-selected-public)" : "var(--color-text-primary)" }}>Public Marketplace</h4>
-                      <p className="text-xs mt-1.5 leading-relaxed transition-colors font-medium" style={{ color: isPublic ? "var(--color-selected-public)" : "var(--color-text-secondary)", opacity: isPublic ? 0.8 : 1 }}>Publish to the UniSkill Store. Earn crypto credits when other agents invoke your tool.</p>
+                    <div className="absolute top-0 right-0 w-24 h-24 -mr-12 -mt-12 bg-purple-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shrink-0">
+                      <Globe className="w-5 h-5 text-slate-400 dark:text-slate-600" />
                     </div>
-                    <div className="absolute top-3 right-3 bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 text-[9px] font-black px-2 py-0.5 rounded-sm uppercase tracking-widest transition-colors">
-                      Phase 2
+                    <div className="flex-1 min-w-0 pr-12">
+                      <h4 className="font-bold text-slate-500 dark:text-slate-400 text-sm">Public Marketplace</h4>
+                      <p className="text-[11px] mt-1.5 leading-relaxed text-slate-400 dark:text-slate-500 font-medium">Publish to the UniSkill Store. Earn crypto credits when other agents invoke your tool.</p>
+                    </div>
+                    <div className="absolute top-4 right-4 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700">
+                      <Lock size={8} />
+                      <span className="text-[8px] font-black uppercase tracking-widest leading-none">Phase 2</span>
                     </div>
                   </button>
                 </div>
@@ -1014,6 +1173,17 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
 
         </div>
       </main>
+
+      {/* ── Global Modal ── */}
+      <Modal 
+        show={modal.show}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        onClose={() => setModal(prev => ({ ...prev, show: false }))}
+        onConfirm={modal.onConfirm}
+        confirmText={modal.type === 'confirm' ? "Delete" : "Got it"}
+      />
     </div>
   );
 }

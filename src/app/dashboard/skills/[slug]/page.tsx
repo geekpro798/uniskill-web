@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { SkillDetail, SkillSpec } from '@/components/SkillDetail';
 import { supabase } from "@/lib/supabase";
 import { Loader2 } from 'lucide-react';
+import { resolveSkillVisuals } from '@/lib/skill-visual-identity'; // 🌟 Optimized Identity System
 
 /**
  * Dashboard Skill Detail Page
@@ -38,6 +39,9 @@ export default function UserSkillDetailPage() {
           return;
         }
 
+        // 🌟 Use unified visual mapper
+        const visuals = resolveSkillVisuals(data);
+
         // Map database record to SkillSpec protocol
         const spec: SkillSpec = {
           display_name: data.display_name || data.skill_name || "Untitled",
@@ -48,11 +52,9 @@ export default function UserSkillDetailPage() {
           returns: data.returns || null,
           implementation: {}, // Privacy: Implementation code is hidden from this view
           gradientFrom: data.gradient_from || (data.status === 'Community' ? 'from-purple-600' : 'from-blue-600'),
-          gradientTo: data.gradient_to || (data.status === 'Community' ? 'to-pink-500' : 'to-cyan-400')
+          gradientTo: data.gradient_to || (data.status === 'Community' ? 'to-pink-500' : 'to-cyan-400'),
+          visuals: visuals
         };
-        
-        // Match emoji (with fallback)
-        (spec as any).emoji = data.emoji || "⚡";
         
         setSkill(spec);
         setIsOfficial(data.status === 'Official');

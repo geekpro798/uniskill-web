@@ -1,55 +1,8 @@
 "use client";
 
 import React from 'react';
-import { 
-  Search, 
-  Globe, 
-  Share2, 
-  Database, 
-  Image as ImageIcon, 
-  Newspaper, 
-  Zap, 
-  BarChart3, 
-  Cpu, 
-  Code, 
-  Link2, 
-  Layers, 
-  Compass,
-  Activity 
-} from 'lucide-react';
-
-/**
- * Enhanced Marquee Skill Showcase (v4.3 - Fixed ReferenceError)
- * 职责：展示三条特定的技能轨道，修复了 Activity 图标未定义的错误。
- */
-
-// 1. 全局图标映射器 (Global Icon Mapper - for real skills)
-const getIconForSkill = (skill: any) => {
-  // If the database has an emoji, use it
-  if (skill.emoji) return <span className="text-lg">{skill.emoji}</span>;
-  
-  // Fallback map based on tags or name
-  const name = (skill.display_name || skill.skill_name || "").toLowerCase();
-  if (name.includes('search')) return <Globe size={18} />;
-  if (name.includes('scrape') || name.includes('find')) return <Search size={18} />;
-  if (name.includes('math') || name.includes('calc')) return <Zap size={18} />;
-  if (name.includes('art') || name.includes('gen') || name.includes('image')) return <ImageIcon size={18} />;
-  if (name.includes('crypto') || name.includes('price') || name.includes('market')) return <BarChart3 size={18} />;
-  if (name.includes('data') || name.includes('analyt')) return <Database size={18} />;
-  
-  return <Cpu size={18} />;
-};
-
-const getColorForCategory = (category: string) => {
-  const map: Record<string, { color: string, bg: string }> = {
-    'tools': { color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    'ai': { color: 'text-pink-400', bg: 'bg-pink-500/10' },
-    'data': { color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    'utilities': { color: 'text-amber-400', bg: 'bg-amber-500/10' },
-    'default': { color: 'text-indigo-400', bg: 'bg-indigo-500/10' }
-  };
-  return map[category] || map['default'];
-};
+import { resolveSkillVisuals } from '../../lib/skill-visual-identity'; // 🌟 Optimized Identity System
+import { SquaresFour, Compass } from '@phosphor-icons/react';
 
 /**
  * 单一轨道组件 (Single Marquee Track)
@@ -81,15 +34,16 @@ const MarqueeTrack = ({ skills, filter, speed = '40s', reverse = false }: { skil
         }}
       >
         {displayItems.map((skill, idx) => {
-          const { color, bg } = getColorForCategory(skill.category);
           return (
             <div 
               key={`${skill.id}-${idx}`}
               className="inline-flex items-center gap-3 mx-3 px-5 py-3 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-border)] hover:border-blue-500/20 hover:bg-[var(--color-menu-hover-bg)] transition-all cursor-pointer group shadow-sm"
               onClick={() => window.location.href = `/dashboard/skills/${skill.skill_name}`}
             >
-              <div className={`p-2 rounded-xl ${bg} ${color} group-hover:scale-105 transition-transform duration-300 flex items-center justify-center`}>
-                {skill.icon}
+              <div className={`p-2 rounded-xl border ${skill.visuals.styles.box} ${skill.visuals.styles.border} ${skill.visuals.styles.text} group-hover:scale-105 transition-transform duration-300 flex items-center justify-center`}>
+                <div className="w-5 h-5 flex items-center justify-center">
+                  <skill.visuals.Icon weight="duotone" />
+                </div>
               </div>
               <div className="flex flex-col">
                 <span className="text-xs font-bold text-[var(--color-text-primary)] tracking-tight">{skill.title}</span>
@@ -110,24 +64,16 @@ interface SkillShowcaseProps {
 export const SkillShowcase = ({ initialSkills = [] }: SkillShowcaseProps) => {
   // 将数据转换为跑马灯所需的格式 (Map skills to marquee format)
   const formattedSkills = initialSkills.map(s => {
-    const status = s.status || "Community"; // Default to Community if missing
-    const tags = s.tags || [];
-    
-    // Explicitly check for data category
-    const isData = tags.includes('data') || (s.skill_name || "").toLowerCase().includes('data') || (s.display_name || "").toLowerCase().includes('data');
-    
-    const category = isData ? 'data' : 
-                     (tags.includes('ai') || status.toLowerCase() === 'community') ? 'ai' : 
-                     status.toLowerCase() === 'official' ? 'tools' : 'default';
+    const status = s.status || "Community";
+    const visuals = resolveSkillVisuals(s);
     
     return {
       id: s.skill_uid || s.skill_name,
       skill_name: s.skill_name,
       title: s.display_name || s.skill_name,
       status: status,
-      category: category,
-      icon: getIconForSkill(s),
-      emoji: s.emoji
+      category: (s.tags && s.tags.includes('data')) ? 'data' : 'default', // Keep simple category for track filtering
+      visuals: visuals
     };
   });
 
@@ -151,7 +97,7 @@ export const SkillShowcase = ({ initialSkills = [] }: SkillShowcaseProps) => {
 
       <div className="max-w-7xl mx-auto px-6 mb-8 text-center">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-[9px] font-black text-blue-500 dark:text-blue-400 uppercase tracking-[0.2em] mb-4">
-          <Layers size={10} />
+          <SquaresFour size={10} />
           Autonomous Ecosystem
         </div>
         

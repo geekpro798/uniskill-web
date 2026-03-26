@@ -8,9 +8,10 @@ import DeleteSkillModal from "@/components/Dashboard/DeleteSkillModal";
 import { 
   Plus, Lock, Globe, 
   Copy, CheckCircle2, LayoutGrid, List, Search, 
-  Zap, ChevronRight, Trash2,
+  Zap, ChevronRight, Trash2, Pencil,
   ShieldCheck, Info, AlertCircle, PlayCircle
 } from 'lucide-react';
+import { resolveSkillVisuals } from '@/lib/skill-visual-identity'; // 🌟 Optimized Identity System
 
 /**
  * UniSkill 资产管理中心 (v3.3 - Production Version)
@@ -83,19 +84,23 @@ export default function SkillsPage({ initialCredits, initialDisplayName }: Skill
         if (error) throw error;
 
         // 4. 格式化数据以适配 v3.3 UI 协议
-        const formattedSkills = (skillsData || []).map(s => ({
-          id: s.skill_uid || s.id,
-          slug: s.skill_name || 'unknown-skill',
-          name: s.display_name || s.skill_name,
-          description: s.description || 'Professional AI tool for advanced automation logic.',
-          visibility: s.status === 'Community' ? 'public' : 'private',
-          credits_per_call: s.status === 'Community' ? (s.credits_per_call || 1) : 1, // 私人技能固化 1 积分展示
-          emoji: s.emoji || '⚙️',
-          iconBg: s.gradient_from ? (s.gradient_from.startsWith('bg-') ? s.gradient_from : `bg-[${s.gradient_from}]`) : (s.status === 'Community' ? 'bg-purple-600' : 'bg-blue-600'),
-          tags: s.tags || [],
-          status: s.status || 'Official',
-          state: s.state || 'active'
-        }));
+        const formattedSkills = (skillsData || []).map(s => {
+          const visuals = resolveSkillVisuals(s);
+          return {
+            id: s.skill_uid || s.id,
+            slug: s.skill_name || 'unknown-skill',
+            name: s.display_name || s.skill_name,
+            description: s.description || 'Professional AI tool for advanced automation logic.',
+            visibility: s.status === 'Community' ? 'public' : 'private',
+            credits_per_call: s.status === 'Community' ? (s.credits_per_call || 1) : 1, // 私人技能固化 1 积分展示
+            emoji: s.emoji || '⚙️',
+            visuals: visuals,
+            tags: s.tags || [],
+            status: s.status || 'Official',
+            state: s.state || 'active',
+            total_calls: s.total_calls || 0
+          };
+        });
 
         setSkills(formattedSkills);
       } catch (e) {
@@ -229,7 +234,7 @@ export default function SkillsPage({ initialCredits, initialDisplayName }: Skill
              </div>
           ) : viewMode === 'grid' ? (
             /* 网格视图：参照图片样式的极简卡片 */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[18px]">
               {filteredSkills.map((skill) => (
                 <div 
                   key={skill.id}
@@ -240,7 +245,7 @@ export default function SkillsPage({ initialCredits, initialDisplayName }: Skill
                       window.location.href = `/dashboard/skills/${skill.slug}`;
                     }
                   }}
-                  className={`glass-card border hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col p-6 min-h-[280px] cursor-pointer ${
+                  className={`glass-card border hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col p-[18px] min-h-[280px] cursor-pointer ${
                     skill.state === 'testing' 
                       ? 'border-2 border-dashed border-amber-500/30 bg-amber-500/[0.02]' 
                       : ''
@@ -248,11 +253,13 @@ export default function SkillsPage({ initialCredits, initialDisplayName }: Skill
                 >
                   {/* Card Top: 图标背景 + 状态徽章 */}
                   <div className="flex items-start justify-between mb-6">
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${skill.iconBg || "from-blue-500 to-cyan-400"} flex items-center justify-center text-2xl shadow-lg group-hover:scale-110 transition-transform ${skill.state === 'testing' ? 'grayscale opacity-50' : ''}`}>
-                      {skill.emoji}
+                    <div className={`w-12 h-12 rounded-xl border ${skill.visuals.styles.box} ${skill.visuals.styles.border} flex items-center justify-center text-2xl shadow-lg group-hover:scale-110 transition-transform ${skill.state === 'testing' ? 'grayscale opacity-50' : ''}`}>
+                      <div className={`w-6 h-6 flex items-center justify-center ${skill.visuals.styles.text}`}>
+                        <skill.visuals.Icon weight="duotone" />
+                      </div>
                     </div>
                     <div className="flex flex-col items-end gap-1.5">
-                      <span className={`flex items-center gap-1.5 px-3 py-1 border text-[9px] font-black uppercase tracking-widest rounded-lg ${
+                      <span className={`flex items-center gap-1.5 px-3 py-0.5 border text-[9px] font-black uppercase tracking-widest rounded-lg ${
                         skill.state === 'testing' 
                           ? 'bg-amber-500/10 text-amber-600 border-amber-500/20 animate-pulse' 
                           : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
@@ -260,7 +267,7 @@ export default function SkillsPage({ initialCredits, initialDisplayName }: Skill
                         {skill.state === 'testing' ? <AlertCircle size={10} /> : <CheckCircle2 size={10} />}
                         {skill.state}
                       </span>
-                      <span className={`flex items-center gap-1.5 px-3 py-1 border text-[9px] font-black uppercase tracking-widest rounded-lg ${
+                      <span className={`flex items-center gap-1.5 px-3 py-0.5 border text-[9px] font-black uppercase tracking-widest rounded-lg ${
                         skill.status === 'Community'
                           ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
                           : skill.status === 'Official'
@@ -277,14 +284,14 @@ export default function SkillsPage({ initialCredits, initialDisplayName }: Skill
                   <h3 className={`text-lg font-bold text-slate-900 dark:text-white mb-2 tracking-tight transition-colors ${skill.state === 'testing' ? 'group-hover:text-amber-500' : 'group-hover:text-blue-500'}`}>
                     {skill.name}
                   </h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-3 mb-6 flex-1 font-normal">
+                  <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-3 mb-3 flex-1 font-normal">
                     {skill.state === 'testing' 
                       ? "This skill hasn't been finalized. Complete the sandbox test to activate the global endpoint."
                       : skill.description}
                   </p>
 
                   {skill.state === 'testing' ? (
-                    <div className="flex items-center gap-2 pt-4 border-t border-slate-100 dark:border-slate-800/80">
+                    <div className="flex items-center gap-2 pt-3 border-t border-slate-100 dark:border-slate-800/80">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -307,7 +314,7 @@ export default function SkillsPage({ initialCredits, initialDisplayName }: Skill
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800/80">
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/80">
                       <div 
                         onClick={(e) => handleCopyId(skill.slug, e)}
                         className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-mono font-bold text-slate-400 cursor-pointer hover:border-blue-500/30 transition-all flex items-center gap-2"
@@ -350,12 +357,13 @@ export default function SkillsPage({ initialCredits, initialDisplayName }: Skill
                <table className="w-full text-left">
                   <thead className="bg-slate-50/50 dark:bg-slate-900/50 text-[10px] font-black uppercase text-slate-500 border-b border-slate-200 dark:border-slate-800">
                     <tr>
-                      <th className="px-8 py-5 tracking-widest">Display Name</th>
-                      <th className="px-8 py-5 tracking-widest">Skill Name</th>
-                      <th className="px-8 py-5 tracking-widest text-center">Status</th>
-                      <th className="px-8 py-5 tracking-widest text-center">State</th>
-                      <th className="px-8 py-5 tracking-widest text-right">Cost</th>
-                      <th className="px-8 py-5 tracking-widest text-right">Actions</th>
+                      <th className="px-8 py-2.5 tracking-widest">Skill</th>
+                      <th className="px-8 py-2.5 tracking-widest">Summary</th>
+                      <th className="px-8 py-2.5 tracking-widest text-center">Status</th>
+                      <th className="px-8 py-2.5 tracking-widest text-center">State</th>
+                      <th className="px-8 py-2.5 tracking-widest text-right">Cost</th>
+                      <th className="px-8 py-2.5 tracking-widest text-right">Total Calls</th>
+                      <th className="px-8 py-2.5 tracking-widest text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
@@ -367,18 +375,25 @@ export default function SkillsPage({ initialCredits, initialDisplayName }: Skill
                           window.location.href = `/dashboard/skills/${skill.slug}`;
                         }
                       }}>
-                        <td className="px-8 py-6 text-left">
+                        <td className="px-8 py-2.5 text-left">
                           <div className="flex items-center gap-4">
-                            <span className="text-2xl group-hover:scale-110 transition-transform">{skill.emoji}</span>
-                            <div>
-                                <span className="font-black text-[13px] text-slate-900 dark:text-white uppercase tracking-tight">{skill.name}</span>
-                                <div className="text-[10px] text-slate-400 font-medium italic line-clamp-1">{skill.description}</div>
+                            {/* List View Icon with Glow */}
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${skill.visuals.styles.box} ${skill.visuals.styles.border} ${skill.visuals.styles.glow} premium-icon-glow`}>
+                              <div className={`text-lg ${skill.visuals.styles.text}`}>
+                                <skill.visuals.Icon weight="duotone" />
+                              </div>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-black text-[13px] text-slate-900 dark:text-white uppercase tracking-tight">{skill.name}</span>
+                              <span className="text-[10px] text-slate-400 font-mono font-bold leading-none mt-0.5">{skill.slug}</span>
                             </div>
                           </div>
                         </td>
-                        <td className="px-8 py-6 font-mono text-xs text-slate-400 group-hover:text-blue-500 transition-colors text-left font-bold">{skill.slug}</td>
-                        <td className="px-8 py-6 text-center">
-                           <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border ${
+                        <td className="px-8 py-2.5 text-left">
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed line-clamp-2 max-w-xs">{skill.description}</div>
+                        </td>
+                        <td className="px-8 py-2.5 text-center">
+                           <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${
                              skill.status === 'Community'
                                ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
                                : skill.status === 'Official'
@@ -388,8 +403,8 @@ export default function SkillsPage({ initialCredits, initialDisplayName }: Skill
                              {skill.status}
                            </span>
                         </td>
-                        <td className="px-8 py-6 text-center">
-                           <span className={`px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border ${
+                        <td className="px-8 py-2.5 text-center">
+                           <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${
                              skill.state === 'testing'
                                ? 'bg-amber-500/10 text-amber-600 border-amber-500/20 animate-pulse'
                                : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
@@ -397,13 +412,16 @@ export default function SkillsPage({ initialCredits, initialDisplayName }: Skill
                              {skill.state}
                            </span>
                         </td>
-                        <td className="px-8 py-6 text-right font-black text-slate-900 dark:text-white text-lg">
+                        <td className="px-8 py-2.5 text-right font-black text-slate-900 dark:text-white text-lg">
                           {skill.credits_per_call} <span className="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">Credits</span>
                         </td>
-                        <td className="px-8 py-6 text-right w-32">
+                        <td className="px-8 py-2.5 text-right font-mono text-sm text-slate-500 dark:text-slate-400 font-bold">
+                          {(skill.total_calls ?? 0).toLocaleString()}
+                        </td>
+                        <td className="px-8 py-2.5 text-right w-32">
                           {skill.state === 'testing' ? (
                             <div className="flex items-center justify-end gap-2">
-                              <button 
+                              <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSkillToDelete({ uid: skill.id, name: skill.name });
@@ -413,7 +431,7 @@ export default function SkillsPage({ initialCredits, initialDisplayName }: Skill
                               >
                                 <Trash2 size={16} />
                               </button>
-                              <button 
+                              <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   window.location.href = `/dashboard/skills/new?resume=${skill.id}`;
@@ -424,7 +442,17 @@ export default function SkillsPage({ initialCredits, initialDisplayName }: Skill
                               </button>
                             </div>
                           ) : (
-                            <div className="flex justify-end pr-2">
+                            <div className="flex items-center justify-end gap-2 pr-2">
+                               <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.location.href = `/dashboard/skills/new?resume=${skill.id}`;
+                                }}
+                                className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all"
+                                title="Edit Skill"
+                              >
+                                <Pencil size={16} />
+                              </button>
                               <div className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-slate-300 group-hover:text-blue-500">
                                  <ChevronRight size={18} />
                               </div>
@@ -435,7 +463,7 @@ export default function SkillsPage({ initialCredits, initialDisplayName }: Skill
                     ))}
                     {filteredSkills.length === 0 && !loading && (
                       <tr className="border-none">
-                        <td colSpan={6} className="py-24 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest italic">
+                        <td colSpan={7} className="py-24 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest italic">
                           Database is empty. No records found.
                         </td>
                       </tr>
@@ -453,10 +481,7 @@ export default function SkillsPage({ initialCredits, initialDisplayName }: Skill
               <span>Private skills are billed at a flat 1-credit rate to cover secure gateway infrastructure costs. Public skills include custom markups set by authors. Check our <button className="text-blue-500 hover:underline">billing policies</button> for more details.</span>
            </div>
            <div className="flex gap-4">
-             <button className="text-[11px] font-black text-slate-400 hover:text-blue-500 uppercase tracking-widest transition-colors">Pricing FAQ</button>
-             <button className="text-[11px] font-black text-slate-400 hover:text-blue-500 uppercase tracking-widest flex items-center gap-1 group transition-colors">
-               API Docs <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-             </button>
+             {/* Footer Links Removed per Request */}
            </div>
         </footer>
 

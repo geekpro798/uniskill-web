@@ -1,7 +1,7 @@
 // src/components/Settings.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   User, 
@@ -16,11 +16,13 @@ import {
   Github,
   Mail,
   Info,
-  CheckCircle2,
-  ExternalLink
+  ExternalLink,
+  AlertTriangle,
+  X 
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { supabase } from "@/lib/supabase";
+import { Modal } from "@/components/Modal";
 
 interface UserProfile {
   name: string;
@@ -43,6 +45,21 @@ export default function SettingsDashboard({ initialUser }: SettingsDashboardProp
   const [user, setUser] = useState<UserProfile>(initialUser);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [modal, setModal] = useState<{
+    show: boolean, 
+    type: 'confirm' | 'alert', 
+    title: string, 
+    message: React.ReactNode, 
+    onConfirm?: () => void 
+  }>({ show: false, type: 'alert', title: '', message: '' });
+
+  const showAlert = (title: string, message: React.ReactNode) => {
+    setModal({ show: true, type: 'alert', title, message });
+  };
+
+  const showConfirm = (title: string, message: React.ReactNode, onConfirm: () => void) => {
+    setModal({ show: true, type: 'confirm', title, message, onConfirm });
+  };
 
   // Tabs Configuration
   const menuItems = [
@@ -70,7 +87,7 @@ export default function SettingsDashboard({ initialUser }: SettingsDashboardProp
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
       console.error("Failed to save profile:", err);
-      alert("Failed to save changes.");
+      showAlert("Save Failed", "We couldn't save your profile changes. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -141,6 +158,8 @@ export default function SettingsDashboard({ initialUser }: SettingsDashboardProp
               <VaultTab 
                 secrets={user.secrets}
                 onUpdate={(newSecrets: Record<string, string>) => setUser({ ...user, secrets: newSecrets })}
+                showConfirm={showConfirm}
+                showAlert={showAlert}
               />
             )}
             {activeTab === 'security' && (
@@ -151,6 +170,17 @@ export default function SettingsDashboard({ initialUser }: SettingsDashboardProp
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* ── Global Modal ── */}
+      <Modal 
+        show={modal.show}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        onClose={() => setModal(prev => ({ ...prev, show: false }))}
+        onConfirm={modal.onConfirm}
+        confirmText={modal.type === 'confirm' ? "Delete" : "Got it"}
+      />
     </div>
   );
 }
@@ -344,54 +374,85 @@ function ProfileTab({ user, onChange, onSave, isSaving, saveSuccess }: any) {
 }
 
 // ── SUB-COMPONENT: Vault Tab ──
-function VaultTab({ secrets, onUpdate }: any) {
+function VaultTab({ secrets, onUpdate, showConfirm, showAlert }: any) {
+  const [localSecrets, setLocalSecrets] = useState<Record<string, string>>(secrets || {});
   const [newKey, setNewKey] = useState("");
   const [newValue, setNewValue] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
   const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
 
+  const formatSecretName = (name: string) => {
+    return name.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+  };
+
   const toggleVisibility = (key: string) => {
     setVisibleKeys(prev => ({ ...prev, [key]: !prev[key] }));
   };
+
+  // Fetch secrets on mount
+  useEffect(() => {
+    const fetchSecrets = async () => {
+      try {
+        const res = await fetch('/api/user/secrets');
+        if (res.ok) {
+          const data = await res.json();
+          setLocalSecrets(data);
+          onUpdate(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch vault secrets:", err);
+      }
+    };
+    fetchSecrets();
+  }, []);
 
   const handleAddSecret = async () => {
     if (!newKey || !newValue) return;
     setIsSyncing(true);
     try {
-      const updatedSecrets = { ...secrets, [newKey]: newValue };
       const res = await fetch('/api/user/secrets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedSecrets)
+        body: JSON.stringify({ key_name: newKey, value: newValue })
       });
       if (!res.ok) throw new Error("Sync failed");
+      
+      const updatedSecrets = await res.json();
+      setLocalSecrets(updatedSecrets);
       onUpdate(updatedSecrets);
       setNewKey("");
       setNewValue("");
     } catch (err) {
-      alert("Failed to sync secret.");
+      showAlert("Sync Failed", "We couldn't reach the vault service. Please check your connection.");
     } finally {
       setIsSyncing(false);
     }
   };
 
   const handleDeleteSecret = async (key: string) => {
-    if (!confirm(`Delete ${key}?`)) return;
-    setIsSyncing(true);
-    try {
-      const { [key]: _, ...rest } = secrets;
-      const res = await fetch('/api/user/secrets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(rest)
-      });
-      if (!res.ok) throw new Error("Delete sync failed");
-      onUpdate(rest);
-    } catch (err) {
-      alert("Failed to delete secret.");
-    } finally {
-      setIsSyncing(false);
-    }
+    showConfirm(
+      "Delete Secret?", 
+      <span>
+        Are you sure you want to permanently remove <strong className="text-slate-900 dark:text-white font-bold">{formatSecretName(key)}</strong> from your global vault? This action cannot be undone.
+      </span>,
+      async () => {
+        setIsSyncing(true);
+        try {
+          const res = await fetch(`/api/user/secrets?key_name=${encodeURIComponent(key)}`, {
+            method: 'DELETE'
+          });
+          if (!res.ok) throw new Error("Delete sync failed");
+          
+          const updatedSecrets = await res.json();
+          setLocalSecrets(updatedSecrets);
+          onUpdate(updatedSecrets);
+        } catch (err) {
+          showAlert("Delete Failed", "We couldn't remove the secret. Please try again later.");
+        } finally {
+          setIsSyncing(false);
+        }
+      }
+    );
   };
 
   return (
@@ -409,12 +470,24 @@ function VaultTab({ secrets, onUpdate }: any) {
           <span className="font-medium text-sm text-gray-900 dark:text-white">Your Global Secrets</span>
         </div>
         <ul className="divide-y divide-gray-200 dark:divide-slate-800 bg-white dark:bg-[#0f172a]">
-          {Object.entries(secrets).map(([key, value]) => (
+          {Object.entries(localSecrets).map(([key, value]) => (
             <li key={key} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors">
               <div className="flex flex-col">
-                <span className="text-sm font-bold font-mono text-gray-900 dark:text-white">{key}</span>
-                <span className="text-xs text-gray-500 dark:text-slate-500 font-mono mt-1">
-                  {visibleKeys[key] ? (value as string) : '••••••••••••••••••••••••'}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold font-mono text-gray-900 dark:text-white truncate max-w-[150px] sm:max-w-xs transition-opacity">
+                    {formatSecretName(key)}
+                  </span>
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800 tracking-tighter">
+                    AES-256
+                  </span>
+                </div>
+                <span className="text-xs text-gray-500 dark:text-slate-500 font-mono mt-1 break-all max-w-[280px] sm:max-w-md">
+                  {visibleKeys[key] === true 
+                    ? (value as string) 
+                    : (value as string).length > 8 
+                      ? `${(value as string).slice(0, 4)}••••••••${(value as string).slice(-4)}`
+                      : '••••••••••••'
+                  }
                 </span>
               </div>
               <div className="flex space-x-2">
@@ -422,7 +495,7 @@ function VaultTab({ secrets, onUpdate }: any) {
                   onClick={() => toggleVisibility(key)}
                   className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 rounded-md hover:bg-gray-100 dark:hover:bg-slate-800"
                 >
-                  {visibleKeys[key] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {visibleKeys[key] === true ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
                 <button 
                   onClick={() => handleDeleteSecret(key)}
@@ -433,7 +506,7 @@ function VaultTab({ secrets, onUpdate }: any) {
               </div>
             </li>
           ))}
-          {Object.keys(secrets).length === 0 && (
+          {Object.keys(localSecrets).length === 0 && (
             <li className="px-4 py-8 text-center text-sm text-gray-500 italic">No secrets found.</li>
           )}
         </ul>
@@ -445,10 +518,10 @@ function VaultTab({ secrets, onUpdate }: any) {
         </h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <input 
-            placeholder="KEY_NAME"
+            placeholder="KEY_NAME (e.g. GEMINI_API_KEY)"
             value={newKey}
-            onChange={(e) => setNewKey(e.target.value)}
-            className="rounded-md border-gray-300 dark:border-slate-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-3 py-2 border outline-none bg-white dark:bg-slate-900 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600"
+            onChange={(e) => setNewKey(formatSecretName(e.target.value))}
+            className="rounded-md border-gray-300 dark:border-slate-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-3 py-2 border outline-none bg-white dark:bg-slate-900 text-gray-900 dark:text-white font-mono placeholder:text-gray-400 dark:placeholder:text-slate-600"
           />
           <input 
             type="password"

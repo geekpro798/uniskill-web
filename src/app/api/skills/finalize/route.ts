@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     // 2. 获取数据库最新记录 (Fetch the latest raw data)
     const { data: skill, error: fetchError } = await supabaseAdmin
       .from('skills')
-      .select('skill_name, display_name, markdown_manifest, status, emoji, secrets')
+      .select('skill_name, display_name, description, markdown_manifest, status, emoji, secrets')
       .eq('skill_uid', skillUid)
       .eq('owner_uid', userUid)
       .single();
@@ -61,9 +61,25 @@ export async function POST(req: Request) {
     // 3. 核心编译器逻辑：动态提取最新元数据 (Extract latest Meta & Config)
     // ------------------------------------------------------------------
     
-    // 解析最新的 Description (提取 ## Description 下方的内容)
-    const descMatch = content.match(/## Description\s+([\s\S]*?)(?=\n##|$)/i);
-    const parsedDescription = descMatch ? descMatch[1].trim() : "";
+    // 解析最新的 Description (提取 # Description 下方的内容，兼容多级标题)
+    const descMatch = content.match(/#+\s*Description\s+([\s\S]*?)(?=\n#+|$)/i);
+    const parsedDescription = descMatch ? descMatch[1].trim() : (skill.description || "");
+
+    // 🌟 解析最新的 Frontmatter (使用 js-yaml)
+    const frontmatterMatch = content.match(/^---\n([\s\S]+?)\n---/);
+    let frontmatter: any = {};
+    if (frontmatterMatch) {
+      try {
+        const jsYaml = (await import('js-yaml')).default;
+        frontmatter = jsYaml.load(frontmatterMatch[1]) as any;
+      } catch (e) {
+        console.warn("[Compiler] Failed to parse Frontmatter YAML");
+      }
+    }
+
+    const finalDisplayName = frontmatter.display_name?.trim() || skill.display_name;
+    const finalEmoji = frontmatter.emoji?.trim() || skill.emoji;
+    const finalVisuals = frontmatter.visuals || null;
 
     // 解析最新的 Parameters (提取 Parameters 下方的 JSON，兼容 # / ## 等)
     const paramMatch = content.match(/#+\s*Parameters[\s\S]*?```(?:json)?\s*([\s\S]*?)\n?\s*```/i);
@@ -79,21 +95,13 @@ export async function POST(req: Request) {
       console.warn("[Compiler] Failed to parse Parameters JSON, using fallback.");
     }
 
-    // 解析最新的 Frontmatter (提取 display_name 和 emoji)
-    const dNameMatch = content.match(/display_name:\s*(.+)/);
-    const emojiMatch = content.match(/emoji:\s*([^\s\n]+)/);
-    
-    const finalDisplayName = dNameMatch ? dNameMatch[1].replace(/['"]/g, '').trim() : skill.display_name;
-    const finalEmoji = emojiMatch ? emojiMatch[1].replace(/['"]/g, '').trim() : skill.emoji;
-
     // 解析最新的 Implementation (提取 ## Implementation 下方的 YAML)
     const implMatch = content.match(/#+\s*(?:Implementation|Implementation YAML)[\s\S]*?```(?:yaml)?\s*([\s\S]*?)```/i);
     let parsedImplementation = { type: "unknown" };
     if (implMatch) {
        try {
-          // ⚠️ 使用工程已有的 js-yaml
-          const yaml = (await import('js-yaml')).default.load(implMatch[1].trim()) as any;
-          parsedImplementation = yaml;
+          const jsYaml = (await import('js-yaml')).default;
+          parsedImplementation = jsYaml.load(implMatch[1].trim()) as any;
        } catch (e) {
           console.warn("[Compiler] Failed to parse Implementation YAML, using fallback.");
        }
@@ -132,13 +140,14 @@ export async function POST(req: Request) {
       emoji: finalEmoji || "🧩",
       did: did,
       owner_uid: userUid,
-      meta: {
-        description: parsedDescription 
+      metadata: { // 🌟 Updated to match requested structure
+        description: parsedDescription,
+        visuals: finalVisuals 
       },
       config: {
         ...parsedImplementation,
         parameters: parsedParameters,
-        tier: skill.status 
+        tier: skill.status
       },
       source: content 
     };
