@@ -161,9 +161,10 @@ const RecentActivity = ({ logs, loading }: { logs: any[], loading: boolean }) =>
 interface DashboardClientProps {
   initialCredits: number | undefined;
   initialDisplayName: string | null;
+  initialSkills?: any[];
 }
 
-export default function DashboardClient({ initialCredits, initialDisplayName }: DashboardClientProps) {
+export default function DashboardClient({ initialCredits, initialDisplayName, initialSkills }: DashboardClientProps) {
   const { data: session, status } = useSession();
   const [showKey, setShowKey] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
@@ -177,8 +178,8 @@ export default function DashboardClient({ initialCredits, initialDisplayName }: 
   
   const [resetRawKey, setResetRawKey] = useState<string | undefined>(undefined);
   const [resetKeyPreview, setResetKeyPreview] = useState<string | undefined>(undefined);
-  const [skills, setSkills] = useState<any[]>([]);
-  const [loadingSkills, setLoadingSkills] = useState(true);
+  const [skills, setSkills] = useState<any[]>(initialSkills || []);
+  const [loadingSkills, setLoadingSkills] = useState(!initialSkills);
   const [invocationStats, setInvocationStats] = useState({ daily: 0, lifetime: 0 });
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
@@ -300,12 +301,17 @@ export default function DashboardClient({ initialCredits, initialDisplayName }: 
   useEffect(() => {
     if (status !== "authenticated") return;
     fetchLiveCredits();
-    fetchSkills();
+    
+    // 🌟 如果已经有服务端下发的数据，则跳过初次加载请求 (Skip initial fetch if SSR data exists)
+    if (!initialSkills || initialSkills.length === 0) {
+      fetchSkills();
+    }
+    
     fetchInvocations();
     fetchRecentActivity();
     window.addEventListener("focus", fetchLiveCredits);
     return () => window.removeEventListener("focus", fetchLiveCredits);
-  }, [status, session?.user?.id]);
+  }, [status, session?.user?.id, initialSkills]);
 
   const handleConfirmReset = async () => {
     try {

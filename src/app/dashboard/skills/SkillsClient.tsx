@@ -21,14 +21,34 @@ import { resolveSkillVisuals } from '@/lib/skill-visual-identity'; // 🌟 Optim
 interface SkillsClientProps {
   initialCredits: number | undefined;
   initialDisplayName: string | null;
+  initialSkills?: any[];
 }
 
-export default function SkillsPage({ initialCredits, initialDisplayName }: SkillsClientProps) {
+export default function SkillsPage({ initialCredits, initialDisplayName, initialSkills }: SkillsClientProps) {
   const { data: session } = useSession();
   const [liveCredits, setLiveCredits] = useState<number | undefined>(initialCredits);
   const [displayName, setDisplayName] = useState<string | null>(initialDisplayName);
-  const [skills, setSkills] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  // 🌟 使用服务端下发的数据初始化，避免二次闪烁 (Initialize with SSR data)
+  const [skills, setSkills] = useState<any[]>(() => {
+    if (!initialSkills) return [];
+    return initialSkills.map(s => ({
+      ...s,
+      id: s.skill_uid || s.id,
+      slug: s.skill_name || 'unknown-skill',
+      name: s.display_name || s.skill_name,
+      description: s.description || 'Professional AI tool for advanced automation logic.',
+      visibility: s.status === 'Community' ? 'public' : 'private',
+      credits_per_call: s.status === 'Community' ? (s.credits_per_call || 1) : 1,
+      emoji: s.emoji || '⚙️',
+      visuals: resolveSkillVisuals(s),
+      tags: s.tags || [],
+      status: s.status || 'Official',
+      state: s.state || 'active',
+    }));
+  });
+  
+  const [loading, setLoading] = useState(!initialSkills);
   const [skillToDelete, setSkillToDelete] = useState<{uid: string, name: string} | null>(null);
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -45,7 +65,7 @@ export default function SkillsPage({ initialCredits, initialDisplayName }: Skill
       if (!session?.user?.id) return;
       
       try {
-        setLoading(true);
+        if (!initialSkills) setLoading(true);
 
         // 1. 获取实时积分 (Live Credits)
         const credRes = await fetch("/api/user/credits");
@@ -55,6 +75,12 @@ export default function SkillsPage({ initialCredits, initialDisplayName }: Skill
           if (credData.displayName) {
             setDisplayName(credData.displayName);
           }
+        }
+
+        // 2. 如果已经有服务端下发的数据，跳过技能列表的重复查询
+        if (initialSkills && initialSkills.length > 0 && skills.length > 0) {
+          setLoading(false);
+          return;
         }
 
         // 2. 提取 UUID (UID Fallback Logic to handle GitHub numeric IDs)
@@ -111,7 +137,7 @@ export default function SkillsPage({ initialCredits, initialDisplayName }: Skill
     };
 
     fetchData();
-  }, [session?.user?.id]);
+  }, [session?.user?.id, initialSkills]);
 
   const confirmDelete = async () => {
     if (!skillToDelete) return;
