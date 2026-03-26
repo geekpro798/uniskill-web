@@ -384,7 +384,7 @@ export default function DashboardClient({ initialCredits, initialDisplayName }: 
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="text-left">
             <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-cyan-400">{displayName || session?.user?.name?.split(" ")[0] || session?.user?.email?.split("@")[0] || "uniskillai"}</span> 👋
+              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-cyan-400">{displayName && displayName.trim() !== "" ? displayName : (session?.user?.name?.split(" ")[0] || session?.user?.email?.split("@")[0] || "uniskillai")}</span> 👋
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Your UniSkill API Gateway dashboard.</p>
           </div>

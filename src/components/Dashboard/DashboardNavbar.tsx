@@ -138,7 +138,7 @@ export default function DashboardNavbar({ credits, totalCredits = 500, userName 
                                 className="hidden md:block text-xs font-medium transition-colors" 
                                 style={{ color: "var(--color-text-secondary)" }}
                             >
-                                {userName || user?.name || "Account"}
+                                {userName && userName.trim() !== "" ? userName : (user?.name || "Account")}
                             </span>
                             <svg
                                 width="12" height="12"
