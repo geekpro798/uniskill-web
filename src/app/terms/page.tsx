@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function TermsPage() {
-    const session = await getServerSession(authOptions as any);
+    const session: any = await getServerSession(authOptions as any);
     let initialCredits = undefined;
     let initialDisplayName = null;
 

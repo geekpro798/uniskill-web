@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
     request: Request,
-    { params }: { params: { skillId: string } }
+    { params }: { params: Promise<{ skillId: string }> }
 ) {
     // Next.js 15+ convention for dynamic params in route handlers
     const { skillId } = await params;

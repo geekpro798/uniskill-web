@@ -14,7 +14,7 @@ import { supabase } from "@/lib/supabase";
 import { createClient } from "@supabase/supabase-js";
 
 export default async function HomePage() {
-  const session = await getServerSession(authOptions);
+  const session: any = await getServerSession(authOptions as any);
   
   // 🌟 特权预取器：如果已登录，获取真实的显示名称和积分 (Privileged pre-fetcher)
   let profile = null;
