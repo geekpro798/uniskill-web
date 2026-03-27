@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { useSession, signIn } from "next-auth/react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
+import UnifiedNavbar from "@/components/UnifiedNavbar";
 import { formatDateTime } from "@/lib/utils";
 
 interface CreditEvent {
@@ -104,9 +104,12 @@ export default function BillingPage({ initialCredits, initialDisplayName }: Bill
 
     return (
         <div className="min-h-screen bg-grid" style={{ backgroundColor: "var(--color-bg-primary)" }}>
-            <DashboardNavbar credits={credits} totalCredits={500} userName={displayName || undefined} />
+            <UnifiedNavbar 
+                initialCredits={credits} 
+                initialDisplayName={displayName} 
+            />
 
-            <main className="max-w-3xl mx-auto px-6 py-10">
+            <main className="max-w-3xl mx-auto px-6 pt-[88px] md:pt-[100px] pb-10">
                 <div className="flex items-end justify-between mb-8">
                     <motion.div
                         initial={{ opacity: 0, y: 16 }}

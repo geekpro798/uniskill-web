@@ -1,10 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Navbar from "@/components/Navbar";
+import UnifiedNavbar from "@/components/UnifiedNavbar";
 import Footer from "@/components/Footer";
 
-export default function TermsClient() {
+export default function TermsClient({ initialCredits, initialDisplayName, initialAvatarUrl }: { initialCredits?: number, initialDisplayName?: string | null, initialAvatarUrl?: string | null }) {
     const sections = [
         {
             title: "Description of Service",
@@ -58,16 +58,16 @@ export default function TermsClient() {
     ];
 
     return (
-        <main className="min-h-screen bg-[#0a0f1e] text-slate-300 selection:bg-blue-500/30">
-            <Navbar />
+        <main className="min-h-screen selection:bg-blue-500/30" style={{ backgroundColor: "var(--color-bg-primary)", color: "var(--color-text-secondary)" }}>
+            <UnifiedNavbar initialCredits={initialCredits} initialDisplayName={initialDisplayName} initialAvatarUrl={initialAvatarUrl} />
 
             {/* Background Decoration */}
             <div className="fixed inset-0 pointer-events-none">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-blue-600/5 blur-[120px] rounded-full" />
             </div>
 
-            <section className="relative z-10 pt-32 pb-20 px-6 lg:px-8">
-                <div className="max-w-3xl mx-auto">
+            <section className="relative z-10">
+                <main className="max-w-4xl mx-auto px-6 pt-[88px] md:pt-[100px] pb-24">
                     {/* Header */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -75,7 +75,7 @@ export default function TermsClient() {
                         transition={{ duration: 0.5 }}
                         className="mb-12"
                     >
-                        <h1 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">
+                        <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tight" style={{ color: "var(--color-text-primary)" }}>
                             Terms of Service
                         </h1>
                         <p className="text-blue-400 font-medium">Effective Date: March 1, 2026</p>
@@ -86,16 +86,17 @@ export default function TermsClient() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.1 }}
-                        className="glass-card p-8 md:p-12 border-white/5"
+                        className="glass-card p-8 md:p-12 mb-10"
+                        style={{ backgroundColor: "var(--color-bg-card)", borderColor: "var(--color-border-subtle)" }}
                     >
-                        <p className="text-lg leading-relaxed text-slate-300 mb-10">
+                        <p className="text-lg leading-relaxed mb-10" style={{ color: "var(--color-text-secondary)" }}>
                             By accessing UniSkill (<a href="https://uniskill.ai" className="text-blue-400 hover:text-blue-300 transition-colors">uniskill.ai</a>) or using our &quot;Skill Layer&quot; API, you agree to be bound by these Terms of Service. If you do not agree, please do not use our services.
                         </p>
 
                         <div className="space-y-12">
                             {sections.map((section, index) => (
                                 <section key={index} className="scroll-mt-24">
-                                    <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-3">
+                                    <h3 className="text-xl font-bold mb-4 flex items-center gap-3" style={{ color: "var(--color-text-primary)" }}>
                                         <span className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-sm flex-shrink-0">
                                             {index + 1}
                                         </span>
@@ -103,13 +104,13 @@ export default function TermsClient() {
                                     </h3>
 
                                     {section.content && (
-                                        <p className="leading-relaxed text-slate-400 mb-4">
+                                        <p className="leading-relaxed mb-4" style={{ color: "var(--color-text-secondary)", opacity: 0.8 }}>
                                             {section.content}
                                         </p>
                                     )}
 
                                     {section.list && (
-                                        <ul className="list-disc pl-6 space-y-3 marker:text-blue-500 text-slate-400">
+                                        <ul className="list-disc pl-6 space-y-3 marker:text-blue-500" style={{ color: "var(--color-text-secondary)", opacity: 0.8 }}>
                                             {section.list.map((item, i) => (
                                                 <li key={i}>{item}</li>
                                             ))}
@@ -119,7 +120,7 @@ export default function TermsClient() {
                             ))}
                         </div>
                     </motion.div>
-                </div>
+                </main>
             </section>
 
             <Footer />

@@ -18,7 +18,8 @@ import {
   Info,
   ExternalLink,
   AlertTriangle,
-  X 
+  X,
+  CheckCircle2
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { supabase } from "@/lib/supabase";
@@ -258,7 +259,7 @@ function ProfileTab({ user, onChange, onSave, isSaving, saveSuccess }: any) {
             {/* 右侧身份信息 */}
             <div className="flex flex-col justify-center">
               <div className="flex items-center">
-                <span className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight">
+                <span className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight truncate max-w-[200px]" title={user.name}>
                   {user.name}
                 </span>
                 {/* 渲染 PRO/Unlimited 铭牌 */}
@@ -316,13 +317,19 @@ function ProfileTab({ user, onChange, onSave, isSaving, saveSuccess }: any) {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Nickname (Display Name)</label>
-          <input 
-            type="text" 
-            value={user.name}
-            onChange={(e) => onChange({ name: e.target.value })}
-            placeholder="How should we call you?"
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 border outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white" 
-          />
+          <div className="mt-1 relative">
+            <input 
+              type="text" 
+              value={user.name}
+              onChange={(e) => onChange({ name: e.target.value })}
+              maxLength={32}
+              placeholder="How should we call you?"
+              className="block w-full rounded-md border-gray-300 dark:border-slate-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-3 py-2 border outline-none bg-white dark:bg-slate-950 text-gray-900 dark:text-white pr-12" 
+            />
+            <div className={`absolute bottom-2.5 right-3 text-[10px] font-mono ${(user.name?.length || 0) >= 32 ? 'text-red-500 font-bold' : 'text-gray-400 dark:text-slate-500'}`}>
+              {user.name?.length || 0} / 32
+            </div>
+          </div>
         </div>
 
         <div>

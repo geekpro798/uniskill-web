@@ -87,7 +87,7 @@ export default function CreatorHubSection() {
         {/* Footer CTA */}
         <footer className="mt-14 sm:mt-16 text-center">
           <div className="inline-block p-[1px] rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 transition-all shadow-xl shadow-blue-900/10 active:scale-95">
-            <Link href="/dashboard/skills/new">
+            <Link href="/dashboard/myskills/new">
               <button 
                 className="flex items-center gap-2 px-10 py-4 font-extrabold rounded-[15px] transition-colors leading-none tracking-tight group no-underline"
                 style={{ backgroundColor: "var(--color-bg-primary)", color: "var(--color-text-primary)" }}

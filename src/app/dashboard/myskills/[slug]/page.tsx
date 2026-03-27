@@ -1,4 +1,4 @@
-// src/app/dashboard/skills/[slug]/page.tsx
+// src/app/dashboard/myskills/[slug]/page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';

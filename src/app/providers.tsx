@@ -6,7 +6,14 @@
 // 所以需要单独提取成一个客户端组件
 
 import { SessionProvider } from "next-auth/react";
+import { UserProvider } from "@/context/UserContext";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-    return <SessionProvider>{children}</SessionProvider>;
+    return (
+        <SessionProvider>
+            <UserProvider>
+                {children}
+            </UserProvider>
+        </SessionProvider>
+    );
 }

@@ -6,7 +6,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, LayoutGrid, List } from 'lucide-react';
-import Navbar from "@/components/Navbar";
+import UnifiedNavbar from "@/components/UnifiedNavbar";
 import { resolveSkillVisuals } from "@/lib/skill-visual-identity"; // 🌟 Optimized Identity System
 
 // ── 1. 全局数据字典 (Data Dictionaries) ──
@@ -115,7 +115,7 @@ export default function SkillsStorePage() {
 
     return (
         <div className="min-h-screen transition-colors duration-500 flex flex-col font-sans" style={{ backgroundColor: "var(--color-bg-primary)", color: "var(--color-text-secondary)" }}>
-            <Navbar />
+            <UnifiedNavbar />
 
             <main className="max-w-7xl mx-auto px-6 lg:px-8 pt-28 pb-20 w-full flex-grow flex flex-col lg:flex-row gap-6">
 

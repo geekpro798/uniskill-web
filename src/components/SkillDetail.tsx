@@ -8,7 +8,7 @@ import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 // Navbar 需要确保是透明/深色底，去除毛玻璃白光
-import Navbar from "@/components/Navbar";
+import UnifiedNavbar from "@/components/UnifiedNavbar";
 
 // 逻辑：升级后的平台化标准数据规范，新增 returns 字段
 export interface SkillSpec {
@@ -122,7 +122,7 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skill_name, skill, isO
 
     return (
         <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--color-bg-primary)", color: "var(--color-text-secondary)" }}>
-            <Navbar />
+            <UnifiedNavbar />
 
             <main className="max-w-6xl mx-auto px-6 pt-32 pb-20 w-full flex-grow">
                 <div className="grid grid-cols-1 lg:grid-cols-10 gap-10">

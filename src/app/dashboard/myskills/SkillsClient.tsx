@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSession } from "next-auth/react";
-import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
+import UnifiedNavbar from "@/components/UnifiedNavbar";
 import { supabase } from "@/lib/supabase";
 import DeleteSkillModal from "@/components/Dashboard/DeleteSkillModal";
 import { 
@@ -192,9 +192,12 @@ export default function SkillsPage({ initialCredits, initialDisplayName, initial
       <div className="absolute inset-0 opacity-[0.15] dark:opacity-[0.05] pointer-events-none bg-grid"></div>
 
       {/* Persistent Navbar */}
-      <DashboardNavbar credits={liveCredits} userName={displayName || undefined} />
+      <UnifiedNavbar 
+        initialCredits={liveCredits} 
+        initialDisplayName={displayName} 
+      />
 
-      <main className="max-w-7xl mx-auto p-6 md:p-10 space-y-8 relative z-10">
+      <main className="max-w-7xl mx-auto pt-[88px] pb-6 md:pt-[100px] md:pb-10 px-6 md:px-10 space-y-8 relative z-10">
         
         {/* Header Section */}
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -207,7 +210,7 @@ export default function SkillsPage({ initialCredits, initialDisplayName, initial
             </p>
           </div>
           <button 
-            onClick={() => window.location.href = '/dashboard/skills/new'}
+            onClick={() => window.location.href = '/dashboard/myskills/new'}
             className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition-all shadow-lg active:scale-95 w-full md:w-auto"
           >
             <Plus className="w-5 h-5" />
@@ -266,9 +269,9 @@ export default function SkillsPage({ initialCredits, initialDisplayName, initial
                   key={skill.id}
                   onClick={() => {
                     if (skill.state === 'testing') {
-                      window.location.href = `/dashboard/skills/new?resume=${skill.id}`;
+                      window.location.href = `/dashboard/myskills/new?resume=${skill.id}`;
                     } else {
-                      window.location.href = `/dashboard/skills/${skill.slug}`;
+                      window.location.href = `/dashboard/myskills/${skill.slug}`;
                     }
                   }}
                   className={`glass-card border hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col p-[18px] min-h-[280px] cursor-pointer ${
@@ -331,7 +334,7 @@ export default function SkillsPage({ initialCredits, initialDisplayName, initial
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          window.location.href = `/dashboard/skills/new?resume=${skill.id}`;
+                          window.location.href = `/dashboard/myskills/new?resume=${skill.id}`;
                         }}
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-all shadow-md active:scale-95"
                       >
@@ -396,9 +399,9 @@ export default function SkillsPage({ initialCredits, initialDisplayName, initial
                     {filteredSkills.map(skill => (
                       <tr key={skill.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors cursor-pointer group" onClick={() => {
                         if (skill.state === 'testing') {
-                          window.location.href = `/dashboard/skills/new?resume=${skill.id}`;
+                          window.location.href = `/dashboard/myskills/new?resume=${skill.id}`;
                         } else {
-                          window.location.href = `/dashboard/skills/${skill.slug}`;
+                          window.location.href = `/dashboard/myskills/${skill.slug}`;
                         }
                       }}>
                         <td className="px-8 py-2.5 text-left">
@@ -460,7 +463,7 @@ export default function SkillsPage({ initialCredits, initialDisplayName, initial
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  window.location.href = `/dashboard/skills/new?resume=${skill.id}`;
+                                  window.location.href = `/dashboard/myskills/new?resume=${skill.id}`;
                                 }}
                                 className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black rounded-lg transition-all flex items-center gap-1.5 shadow-lg shadow-amber-500/20 active:scale-95"
                               >
@@ -472,7 +475,7 @@ export default function SkillsPage({ initialCredits, initialDisplayName, initial
                                <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  window.location.href = `/dashboard/skills/new?resume=${skill.id}`;
+                                  window.location.href = `/dashboard/myskills/new?resume=${skill.id}`;
                                 }}
                                 className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all"
                                 title="Edit Skill"

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/authOptions";
 import { supabase } from "@/lib/supabase";
 import SettingsDashboard from "../../components/Settings";
-import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
+import UnifiedNavbar from "@/components/UnifiedNavbar";
 
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions);
@@ -28,12 +28,12 @@ export default async function SettingsPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg-main)" }}>
-      <DashboardNavbar 
-        credits={profile?.credits ?? (session.user as any).credits} 
-        totalCredits={500} 
-        userName={profile?.display_name || undefined}
+      <UnifiedNavbar 
+        initialCredits={profile?.credits ?? (session.user as any).credits} 
+        initialDisplayName={profile?.display_name || session.user.name || null}
+        initialAvatarUrl={session.user.image || null}
       />
-      <main className="max-w-5xl mx-auto px-6 py-12">
+      <main className="max-w-5xl mx-auto pt-[88px] md:pt-[100px] pb-12 px-6">
         <SettingsDashboard 
           initialUser={{
             name: profile?.display_name || session.user.name || "User",

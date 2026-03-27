@@ -21,7 +21,7 @@ export default function MySkillsSection() {
                 <div className="flex items-center gap-5">
                     {/* 快捷按钮：新建私有技能 */}
                     <Link 
-                        href="/dashboard/skills/new"
+                        href="/dashboard/myskills/new"
                         className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1.5 transition-colors font-medium group"
                     >
                         <Plus size={14} className="group-hover:rotate-90 transition-transform" />
@@ -75,7 +75,7 @@ export default function MySkillsSection() {
                         <div className="flex flex-wrap items-center justify-center gap-3">
                             {/* 主按钮：创建私有技能 (CTA) */}
                             <Link 
-                                href="/dashboard/skills/new"
+                                href="/dashboard/myskills/new"
                                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-blue-900/10 active:scale-95"
                             >
                                 <Plus size={14} />

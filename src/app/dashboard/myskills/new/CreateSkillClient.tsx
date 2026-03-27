@@ -9,7 +9,7 @@ import {
 import { useSession, signIn } from "next-auth/react";
 import { useEffect } from 'react';
 import { motion } from "framer-motion";
-import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
+import UnifiedNavbar from "@/components/UnifiedNavbar";
 import { supabase } from "@/lib/supabase";
 import { Modal } from "@/components/Modal";
 
@@ -553,7 +553,7 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
       
       // 稍微延迟让用户看到成功视图，然后返回面板
       setTimeout(() => {
-         window.location.href = '/dashboard/skills';
+         window.location.href = '/dashboard/myskills';
       }, 3500);
       
     } catch (err: any) {
@@ -566,9 +566,9 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
 
   return (
     <div className="min-h-screen bg-grid" style={{ backgroundColor: "var(--color-bg-primary)" }}>
-      <DashboardNavbar credits={liveCredits} totalCredits={500} userName={profileDisplayName || undefined} />
+      <UnifiedNavbar initialCredits={liveCredits} initialDisplayName={profileDisplayName} />
 
-      <main className="max-w-5xl mx-auto px-6 py-10">
+      <main className="max-w-5xl mx-auto px-6 pt-[88px] md:pt-[100px] pb-10">
         <div className="max-w-4xl mx-auto space-y-8">
           
           {/* Header section for Shadow Edit Mode */}

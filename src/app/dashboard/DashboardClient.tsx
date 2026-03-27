@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import DashboardNavbar from "@/components/Dashboard/DashboardNavbar";
+import UnifiedNavbar from "@/components/UnifiedNavbar";
 import TopUpModal from "@/components/Dashboard/TopUpModal";
 import ResetKeyModal from "@/components/Dashboard/ResetKeyModal";
 import DeleteSkillModal from "@/components/Dashboard/DeleteSkillModal";
@@ -382,10 +382,12 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
   return (
     <div className="min-h-screen transition-colors duration-500 font-sans relative" style={{ backgroundColor: "var(--color-bg-primary)" }}>
       <div className="absolute inset-0 opacity-[0.15] dark:opacity-[0.05] pointer-events-none bg-grid"></div>
-      
-      <DashboardNavbar credits={liveCredits} totalCredits={500} userName={displayName || undefined} />
+      <UnifiedNavbar 
+        initialCredits={liveCredits} 
+        initialDisplayName={displayName} 
+      />
 
-      <div className="max-w-7xl mx-auto p-6 md:p-8 space-y-6">
+      <div className="max-w-7xl mx-auto pt-[88px] pb-6 md:pt-[100px] md:pb-8 px-6 md:px-8 space-y-6 relative z-10">
         
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="text-left">
@@ -399,7 +401,7 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
                 <BarChart3 size={14} /> Analytics
              </button>
              <button 
-               onClick={() => window.location.href = '/dashboard/skills/new'}
+               onClick={() => window.location.href = '/dashboard/myskills/new'}
                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-md active:scale-95 text-xs"
              >
                 <Plus size={16} /> Deploy Skill
@@ -466,8 +468,8 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
                   My Skills
                 </h2>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => window.location.href='/dashboard/skills/new'} className="text-[11px] font-bold text-slate-400 hover:text-blue-500">+ New</button>
-                  <button onClick={() => window.location.href='/dashboard/skills'} className="text-[11px] font-bold text-blue-500 hover:underline flex items-center gap-1">Manage All <ChevronRight size={12} /></button>
+                  <button onClick={() => window.location.href='/dashboard/myskills/new'} className="text-[11px] font-bold text-slate-400 hover:text-blue-500">+ New</button>
+                  <button onClick={() => window.location.href='/dashboard/myskills'} className="text-[11px] font-bold text-blue-500 hover:underline flex items-center gap-1">Manage All <ChevronRight size={12} /></button>
                 </div>
               </div>
               <div className="p-0">
@@ -492,9 +494,9 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
                         }`}
                         onClick={() => {
                           if (isTesting) {
-                            window.location.href = `/dashboard/skills/new?resume=${skill.skill_uid}`;
+                            window.location.href = `/dashboard/myskills/new?resume=${skill.skill_uid}`;
                           } else {
-                            window.location.href = `/dashboard/skills/${skill.skill_name}`;
+                            window.location.href = `/dashboard/myskills/${skill.skill_name}`;
                           }
                         }}
                       >
@@ -562,7 +564,7 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
                               <button 
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  window.location.href = `/dashboard/skills/new?resume=${skill.skill_uid}`;
+                                  window.location.href = `/dashboard/myskills/new?resume=${skill.skill_uid}`;
                                 }}
                                 className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black rounded-lg transition-all flex items-center gap-1.5 shadow-lg shadow-amber-500/20 active:scale-95"
                               >
@@ -575,7 +577,7 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
                                 <button 
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    window.location.href = `/dashboard/skills/new?resume=${skill.skill_uid}`;
+                                    window.location.href = `/dashboard/myskills/new?resume=${skill.skill_uid}`;
                                   }}
                                   className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all"
                                   title="Edit Live Skill"
@@ -603,7 +605,7 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
                       Build your own private AI tools using Markdown, or install community skills from the marketplace.
                     </p>
                     <div className="flex gap-2">
-                      <button onClick={() => window.location.href='/dashboard/skills/new'} className="px-5 py-2.5 bg-blue-600 text-white text-[11px] font-black rounded-xl shadow-md active:scale-95 transition-all">+ Create Private Skill</button>
+                      <button onClick={() => window.location.href='/dashboard/myskills/new'} className="px-5 py-2.5 bg-blue-600 text-white text-[11px] font-black rounded-xl shadow-md active:scale-95 transition-all">+ Create Private Skill</button>
                       <button className="px-5 py-2.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-black rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 hover:bg-slate-50 transition-all">
                         <Globe size={12} strokeWidth={3} /> Visit Store
                       </button>
