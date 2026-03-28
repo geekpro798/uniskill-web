@@ -23,8 +23,13 @@ export async function GET(
             return NextResponse.json({ error: "Skill not found" }, { status: 404 });
         }
 
-        // Return raw data to be resolved by resolveSkillVisuals(skill) in the UI
-        return NextResponse.json(skill);
+        // Return formatted data for UI consistency
+        const formattedSkill = {
+            ...skill,
+            invocations: skill.total_calls || 0
+        };
+
+        return NextResponse.json(formattedSkill);
     } catch (error) {
         console.error(`[API] Failed to fetch skill details for ${skillId}:`, error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

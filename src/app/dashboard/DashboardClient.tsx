@@ -431,15 +431,11 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
               <div className="flex items-baseline justify-between mb-3">
                 <span className="text-2xl font-black text-slate-900 dark:text-white">{stat.value}</span>
                 
-                {stat.label === 'Live Skills' ? (
+                {stat.label === 'Live Skills' && (
                   <div className="text-[9px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded flex items-center gap-1.5 uppercase tracking-tighter">
                     <span>{stat.breakdown?.private}P</span>
                     <span className="opacity-30">|</span>
                     <span className="text-purple-400">{stat.breakdown?.community}C</span>
-                  </div>
-                ) : (
-                  <div className="text-[9px] font-black text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                    <ArrowUpRight size={8} /> 12%
                   </div>
                 )}
               </div>
@@ -656,19 +652,20 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
                       ? (showKey ? finalRawKey : "us-••••••••••••••••••••••••••••••••") 
                       : (finalKeyPreview || "us-••••••••••••••••••••••••••••••••")}
                   </code>
-                  <div className="flex items-center gap-1">
+                   <div className="flex items-center gap-1">
                     {finalRawKey && (
-                      <button onClick={() => setShowKey(!showKey)} className="p-1 text-slate-400 hover:text-slate-600 transition-colors">
-                        {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
-                      </button>
+                      <>
+                        <button onClick={() => setShowKey(!showKey)} className="p-1 text-slate-400 hover:text-slate-600 transition-colors">
+                          {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                        <button 
+                          onClick={handleCopyKey} 
+                          className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                          {copiedKey ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                        </button>
+                      </>
                     )}
-                    <button 
-                      onClick={finalRawKey ? handleCopyKey : undefined} 
-                      disabled={!finalRawKey}
-                      className={`p-1 transition-colors ${finalRawKey ? 'text-slate-400 hover:text-slate-600' : 'text-slate-200 dark:text-slate-800 cursor-not-allowed'}`}
-                    >
-                      {copiedKey ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Copy size={14} />}
-                    </button>
                   </div>
                 </div>
                 <p className="text-[9px] text-slate-400 italic font-sans leading-none">

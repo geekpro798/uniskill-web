@@ -17,7 +17,14 @@
   --color-blue-rgb: 37, 99, 235;
   --color-purple: #7c3aed;
   --color-purple-rgb: 124, 58, 237;
-  --color-cyan: #0891b2;
+  --color-emerald-rgb: 16, 185, 129;
+  --color-pink-rgb: 236, 72, 153;
+  --color-amber-rgb: 245, 158, 11;
+  --color-indigo-rgb: 99, 102, 241;
+  --color-rose-rgb: 244, 63, 94;
+  --color-slate-rgb: 100, 116, 139;
+  --color-cyan-rgb: 6, 182, 212;
+  --color-sky-rgb: 14, 165, 233;
   
   --color-selected-private: #1e40af; /* Blue-800 for light mode selection */
   --color-selected-public: #7e22ce; /* Purple-800 for light mode selection */
@@ -56,6 +63,14 @@
 
   --color-blue-rgb: 59, 130, 246; /* blue-500 */
   --color-purple-rgb: 168, 85, 247; /* purple-500 */
+  --color-emerald-rgb: 52, 211, 153; /* emerald-400 */
+  --color-pink-rgb: 244, 114, 182; /* pink-400 */
+  --color-amber-rgb: 251, 191, 36; /* amber-400 */
+  --color-indigo-rgb: 129, 140, 248; /* indigo-400 */
+  --color-rose-rgb: 251, 113, 133; /* rose-400 */
+  --color-slate-rgb: 148, 163, 184; /* slate-400 */
+  --color-cyan-rgb: 34, 211, 238; /* cyan-400 */
+  --color-sky-rgb: 56, 189, 248; /* sky-400 */
 
   --color-selected-private: #ffffff; /* Brighter for dark mode selection */
   --color-selected-public: #ffffff; /* Brighter for dark mode selection */

@@ -89,67 +89,76 @@ export interface SkillVisuals {
  * 实现级联匹配逻辑：显式 > AI 建议 > 关键词 > 分类
  */
 const resolveSkillVisuals = (skill: any): SkillVisuals => {
-  const name = (skill.skill_name || '').toLowerCase();
-  const displayName = (skill.display_name || '').toLowerCase();
-  const tags = (skill.tags || []).map((t: string) => t.toLowerCase());
+    const name = (skill.skill_name || '').toLowerCase();
+    const displayName = (skill.display_name || '').toLowerCase();
+    const tags = (skill.tags || []).map((t: string) => t.toLowerCase());
 
-  // --- 🌟 阶段 1: 显式表情符号 (Legacy Emoji) ---
-  if (skill.emoji) {
-    return {
-      Icon: () => <span className="text-lg leading-none">{skill.emoji}</span>,
-      styles: THEME_MAP.indigo,
-      isAiAssigned: false
-    };
-  }
+    // --- 🌟 阶段 1: 视觉元数据提取 (Metadata & Identification) ---
+    const aiVisuals = skill.visuals || skill.metadata?.visuals || {};
+    const searchStr = `${name} ${displayName} ${tags.join(' ')}`;
 
-  // --- 🌟 阶段 2: AI 建议的视觉身份 (AI-Driven Metadata) ---
-  let aiVisuals = skill.visuals || skill.metadata?.visuals || {};
+    // --- 🌟 阶段 2: 确定主色调 (Determine Theme Color) ---
+    let themeColor: ThemeColor = 'blue'; // 默认底色
+    let colorSource: 'metadata' | 'keyword' | 'fallback' = 'fallback';
 
-  // 🌟 Fallback: 如果没有结构化元数据，从 markdown 源码中抓取
-  if (!aiVisuals.suggested_icon && skill.markdown_manifest) {
-    const iconMatch = skill.markdown_manifest.match(/suggested_icon:\s*([^\s\n]+)/);
-    const themeMatch = skill.markdown_manifest.match(/theme_color:\s*([^\s\n]+)/);
-    if (iconMatch) {
-      aiVisuals = {
-        suggested_icon: iconMatch[1].replace(/['"]/g, '').trim(),
-        theme_color: themeMatch ? themeMatch[1].replace(/['"]/g, '').trim() : 'blue'
-      };
+    // 1. 优先采用 AI/Manifest 指定的颜色
+    if (aiVisuals.theme_color && THEME_MAP[aiVisuals.theme_color as ThemeColor]) {
+        themeColor = aiVisuals.theme_color as ThemeColor;
+        colorSource = 'metadata';
+    } 
+    // 2. 其次通过关键词匹配倾向
+    else {
+        for (const [key, config] of Object.entries(KEYWORD_RULES)) {
+            if (searchStr.includes(key)) {
+                themeColor = config.color;
+                colorSource = 'keyword';
+                break;
+            }
+        }
     }
-  }
 
-  if (aiVisuals.suggested_icon && (Phosphor as any)[aiVisuals.suggested_icon]) {
-    const aiColor = (aiVisuals.theme_color || 'blue') as ThemeColor;
-    return {
-      Icon: (Phosphor as any)[aiVisuals.suggested_icon],
-      styles: THEME_MAP[aiColor] || THEME_MAP.blue,
-      isAiAssigned: true
-    };
-  }
+    // --- 🌟 阶段 3: 确定图标元件 (Determine Icon Component) ---
+    let IconComponent: any = Phosphor.Cube;
+    let isAiAssigned = false;
 
-  // --- 🌟 阶段 3: 关键词模糊匹配 (Keyword Match) ---
-  const searchStr = `${name} ${displayName} ${tags.join(' ')}`;
-  for (const [key, config] of Object.entries(KEYWORD_RULES)) {
-    if (searchStr.includes(key)) {
-      return {
-        Icon: (Phosphor as any)[config.icon] || Phosphor.Cube,
-        styles: THEME_MAP[config.color],
-        isAiAssigned: false
-      };
+    // 1. 如果有 Emoji，它是第一优先级的图标表现
+    if (skill.emoji) {
+        IconComponent = () => <span className="text-lg leading-none">{skill.emoji}</span>;
     }
-  }
+    // 2. 其次检查 AI 建议的 Phosphor 图标
+    else if (aiVisuals.suggested_icon && (Phosphor as any)[aiVisuals.suggested_icon]) {
+        IconComponent = (Phosphor as any)[aiVisuals.suggested_icon];
+        isAiAssigned = true;
+    }
+    // 3. 最后通过关键词匹配图标
+    else {
+        for (const [key, config] of Object.entries(KEYWORD_RULES)) {
+            if (searchStr.includes(key)) {
+                IconComponent = (Phosphor as any)[config.icon] || Phosphor.Cube;
+                break;
+            }
+        }
+    }
 
-  // --- 🌟 阶段 4: 分类降级 (Category Fallback) ---
-  const primaryTag = tags.length > 0 ? tags[0] : null;
-  if (primaryTag && CATEGORY_FALLBACKS[primaryTag]) {
-    const config = CATEGORY_FALLBACKS[primaryTag];
+    // --- 🌟 阶段 4: 分类与兜底 (Fallbacks) ---
+    // 如果仍然是 fallback (无明确匹配)，根据分类映射
+    if (colorSource === 'fallback') {
+        const primaryTag = tags.length > 0 ? tags[0] : null;
+        if (primaryTag && CATEGORY_FALLBACKS[primaryTag]) {
+            const config = CATEGORY_FALLBACKS[primaryTag];
+            themeColor = config.color;
+            if (!skill.emoji) IconComponent = (Phosphor as any)[config.icon] || IconComponent;
+        } else if ((skill.status || "").toLowerCase() === 'official') {
+            themeColor = 'blue';
+            if (!skill.emoji) IconComponent = Phosphor.Wrench;
+        }
+    }
+
     return {
-      Icon: (Phosphor as any)[config.icon] || Phosphor.Cube,
-      styles: THEME_MAP[config.color],
-      isAiAssigned: false
+        Icon: IconComponent,
+        styles: THEME_MAP[themeColor],
+        isAiAssigned
     };
-  }
-
-  // --- 🌟 阶段 5: 全局兜底 (Final Fallback) ---
   const status = (skill.status || "").toLowerCase();
   if (status === 'official') {
     return { Icon: Phosphor.Wrench, styles: THEME_MAP.blue, isAiAssigned: false };

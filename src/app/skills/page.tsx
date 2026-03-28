@@ -43,27 +43,30 @@ export default function SkillsStorePage() {
     const [realSkills, setRealSkills] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // 🔴 核心改动 2：组件挂载时，从您的后端网关拉取真实技能列表
+    // ── 2. 加载数据逻辑 (Data Fetching) ──
     useEffect(() => {
         const fetchSkills = async () => {
+            setIsLoading(true);
             try {
-                // 逻辑：这个接口会在后端遍历 /skills 目录下的所有 .md 文件
-                // 并使用 parser.ts 将它们解析为标准的 JSON 数组返回
-                const response = await fetch('/api/skills');
+                // 🌟 使用服务端排序参数
+                const params = new URLSearchParams({
+                    sortBy: sortBy,
+                    order: sortOrder
+                });
+                
+                const response = await fetch(`/api/skills?${params.toString()}`);
                 if (response.ok) {
-                    const json = await response.json();
-                    // 逻辑：支持 json 直接是数组或者包装在 data 字段中
-                    const data = Array.isArray(json) ? json : (json.data || []);
+                    const data = await response.json();
                     
                     // 🌟 Apply unified visuals to all skills
-                    const formatted = data.map((s: any) => ({
+                    const formatted = (data || []).map((s: any) => ({
                         ...s,
                         visuals: resolveSkillVisuals(s)
                     }));
                     setRealSkills(formatted);
                 }
             } catch (error) {
-                console.error("Failed to load skills from MD files:", error);
+                console.error("Failed to load skills from Supabase:", error);
             } finally {
                 setIsLoading(false);
             }
@@ -246,7 +249,7 @@ export default function SkillsStorePage() {
                                     <button
                                         key={filter}
                                         onClick={() => setFilterVisibility(filter)}
-                                        className={`px-4 py-1.5 rounded-lg text-[11px] font-bold uppercase transition-all ${
+                                        className={`px-4 py-1.5 rounded-lg text-[11px] font-bold capitalize transition-all ${
                                             filterVisibility === filter
                                             ? 'shadow-sm'
                                             : 'hover:opacity-80'
@@ -271,7 +274,7 @@ export default function SkillsStorePage() {
                                     <select 
                                         value={sortBy}
                                         onChange={(e) => setSortBy(e.target.value as any)}
-                                        className="bg-transparent border-none outline-none text-[11px] font-bold uppercase tracking-widest cursor-pointer appearance-none"
+                                        className="bg-transparent border-none outline-none text-[11px] font-bold tracking-widest cursor-pointer appearance-none"
                                         style={{ color: "var(--color-text-primary)" }}
                                     >
                                         <option value="popularity">Popularity</option>
@@ -383,8 +386,20 @@ export default function SkillsStorePage() {
                                                 animate={{ opacity: 1, scale: 1 }}
                                                 exit={{ opacity: 0, scale: 0.95 }}
                                                 transition={{ duration: 0.2, delay: index * 0.03 }}
-                                                className={`glass-card border ${skill.borderColor || ""} hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group block cursor-pointer flex flex-col h-full p-[18px]`}
-                                                style={{ border: `1px solid var(--color-border)` }}
+                                                className={`glass-card border transition-all duration-300 group block cursor-pointer flex flex-col h-full p-[18px] 
+                                                    hover:shadow-2xl hover:-translate-y-1`}
+                                                style={{ 
+                                                    border: `1px solid var(--color-border)`,
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    const color = skill.visuals.styles.text.split('-')[1]; // e.g., 'blue'
+                                                    e.currentTarget.style.borderColor = `rgba(var(--color-${color}-rgb), 0.4)`;
+                                                    e.currentTarget.style.boxShadow = `0 10px 30px -5px rgba(var(--color-${color}-rgb), 0.2)`;
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.borderColor = 'var(--color-border)';
+                                                    e.currentTarget.style.boxShadow = 'none';
+                                                }}
                                             >
                                                 <div className="flex items-start justify-between mb-4">
                                                     <div className={`w-12 h-12 text-2xl rounded-xl border flex items-center justify-center shadow-lg transition-transform group-hover:scale-105 ${skill.visuals.styles.box} ${skill.visuals.styles.border} ${skill.visuals.styles.text}`}>
@@ -397,10 +412,24 @@ export default function SkillsStorePage() {
                                                         {skill.status || "Community"}
                                                     </span>
                                                 </div>
-
+ 
                                                 <div className="flex flex-col flex-grow">
                                                     <div className="flex items-center gap-3 mb-1">
-                                                        <h3 className="text-base font-bold group-hover:text-blue-500 transition-colors" style={{ color: "var(--color-text-primary)" }}>{skill.display_name}</h3>
+                                                        <h3 className={`text-base font-bold transition-colors group-hover:brightness-125`} 
+                                                            style={{ 
+                                                                color: "var(--color-text-primary)",
+                                                                // Use JS to handle the dynamic hover color to keep it reliable
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                const color = skill.visuals.styles.text.split('-')[1];
+                                                                e.currentTarget.style.color = `var(--color-${color}-400)`;
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                e.currentTarget.style.color = "var(--color-text-primary)";
+                                                            }}
+                                                        >
+                                                            {skill.display_name}
+                                                        </h3>
                                                     </div>
 
                                                     <p className="text-sm leading-relaxed mb-3 flex-grow line-clamp-3" style={{ color: "var(--color-text-secondary)" }}>{skill.description}</p>
