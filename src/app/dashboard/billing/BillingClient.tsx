@@ -8,6 +8,7 @@ import { useSession, signIn } from "next-auth/react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import UnifiedNavbar from "@/components/UnifiedNavbar";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import { formatDateTime } from "@/lib/utils";
 
 interface CreditEvent {
@@ -115,18 +116,12 @@ export default function BillingPage({ initialCredits, initialDisplayName }: Bill
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
                     >
-                        <Link
-                            href="/dashboard"
-                            className="inline-flex items-center gap-1.5 text-xs transition-colors mb-4"
-                            style={{ color: "var(--color-text-secondary)" }}
-                            onMouseEnter={(e) => e.currentTarget.style.color = "var(--color-text-primary)"}
-                            onMouseLeave={(e) => e.currentTarget.style.color = "var(--color-text-secondary)"}
-                        >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M19 12H5M12 5l-7 7 7 7" />
-                            </svg>
-                            Back to Dashboard
-                        </Link>
+                        <Breadcrumbs 
+                            items={[
+                                { label: "Dashboard", href: "/dashboard" },
+                                { label: "Billing & Credits" }
+                            ]} 
+                        />
                         <h1 className="text-2xl font-black mb-1" style={{ color: "var(--color-text-primary)" }}>Billing & Credits</h1>
                         <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>Full credit usage history</p>
                     </motion.div>

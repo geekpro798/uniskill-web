@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import UnifiedNavbar from "@/components/UnifiedNavbar";
 import { supabase } from "@/lib/supabase";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import DeleteSkillModal from "@/components/Dashboard/DeleteSkillModal";
 import { 
   Plus, Lock, Globe, 
@@ -198,11 +199,17 @@ export default function SkillsPage({ initialCredits, initialDisplayName, initial
       />
 
       <main className="max-w-7xl mx-auto pt-[88px] pb-6 md:pt-[100px] md:pb-10 px-6 md:px-10 space-y-8 relative z-10">
+        <Breadcrumbs 
+          items={[
+            { label: "Dashboard", href: "/dashboard" },
+            { label: "My Skills" }
+          ]} 
+        />
         
         {/* Header Section */}
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="text-left">
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase transition-colors">
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white uppercase transition-colors">
               My Skills
             </h1>
             <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium">

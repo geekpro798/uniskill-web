@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { supabase } from "@/lib/supabase";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Modal } from "@/components/Modal";
 
 interface UserProfile {
@@ -95,7 +96,15 @@ export default function SettingsDashboard({ initialUser }: SettingsDashboardProp
   };
 
   return (
-    <div className="w-full max-w-5xl bg-white dark:bg-[#0f172a] shadow-sm rounded-xl border border-gray-200 dark:border-slate-800 flex flex-col md:flex-row overflow-hidden min-h-[600px] transition-colors duration-300">
+    <div className="flex flex-col gap-4">
+      <Breadcrumbs 
+        items={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Settings" }
+        ]} 
+      />
+      
+      <div className="w-full max-w-5xl bg-white dark:bg-[#0f172a] shadow-sm rounded-xl border border-gray-200 dark:border-slate-800 flex flex-col md:flex-row overflow-hidden min-h-[600px] transition-colors duration-300">
       
       {/* ── Left Sidebar (Sidebar) ── */}
       <div className="w-full md:w-64 bg-gray-50 dark:bg-slate-900/50 border-r border-gray-200 dark:border-slate-800 p-4 flex flex-col">
@@ -183,6 +192,7 @@ export default function SettingsDashboard({ initialUser }: SettingsDashboardProp
         confirmText={modal.type === 'confirm' ? "Delete" : "Got it"}
       />
     </div>
+  </div>
   );
 }
 

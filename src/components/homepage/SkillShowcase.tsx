@@ -38,7 +38,7 @@ const MarqueeTrack = ({ skills, filter, speed = '40s', reverse = false }: { skil
             <div 
               key={`${skill.id}-${idx}`}
               className="inline-flex items-center gap-3 mx-3 px-5 py-3 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-border)] hover:border-blue-500/20 hover:bg-[var(--color-menu-hover-bg)] transition-all cursor-pointer group shadow-sm"
-              onClick={() => window.location.href = `/dashboard/myskills/${skill.skill_name}`}
+              onClick={() => window.location.href = `/skills/${skill.skill_name}`}
             >
               <div className={`p-2 rounded-xl border ${skill.visuals.styles.box} ${skill.visuals.styles.border} ${skill.visuals.styles.text} group-hover:scale-105 transition-transform duration-300 flex items-center justify-center`}>
                 <div className="w-5 h-5 flex items-center justify-center">

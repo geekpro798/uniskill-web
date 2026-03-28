@@ -9,6 +9,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 // Navbar 需要确保是透明/深色底，去除毛玻璃白光
 import UnifiedNavbar from "@/components/UnifiedNavbar";
+import Breadcrumbs, { BreadcrumbItem } from "@/components/Breadcrumbs";
 
 // 逻辑：升级后的平台化标准数据规范，新增 returns 字段
 export interface SkillSpec {
@@ -32,6 +33,8 @@ export interface SkillSpec {
             glow: string;
         };
     };
+    customBreadcrumbs?: BreadcrumbItem[];
+    tags?: string[];
 }
 
 export interface SkillDetailProps {
@@ -129,9 +132,16 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skill_name, skill, isO
 
                     {/* ── 左侧：主内容区 (7/10) ── */}
                     <div className="lg:col-span-7 space-y-12">
+                        <Breadcrumbs 
+                            items={skill.customBreadcrumbs || [
+                                { label: "Store", href: "/skills" },
+                                { label: skill.display_name || skill_name }
+                            ]} 
+                        />
 
-                        {/* 1. 顶部 Header */}
-                            <div className="flex items-center gap-6 mb-4">
+                        {/* 1. 核心信息与参数组 (Wrapped to isolate from parent space-y-12) */}
+                        <div className="flex flex-col">
+                            <div className="flex items-center gap-6">
                                 <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center text-4xl shadow-2xl border transition-all duration-500 ${skill.visuals?.styles.box || 'bg-blue-500/10'} ${skill.visuals?.styles.border || 'border-blue-500/20'} ${skill.visuals?.styles.glow || 'shadow-blue-500/20'} premium-icon-glow shimmer-active`}>
                                     {skill.visuals ? (
                                         <div className={`w-10 h-10 flex items-center justify-center ${skill.visuals.styles.text}`}>
@@ -179,8 +189,28 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skill_name, skill, isO
                                 {skill.description}
                             </p>
 
+                            {/* 1.1 标签展示 (Tags) */}
+                            {skill.tags && skill.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-2 mb-2">
+                                    {skill.tags.map((tag) => (
+                                        <span 
+                                            key={tag} 
+                                            className="px-2.5 py-1 border rounded-lg text-[10px] font-mono font-bold tracking-wider transition-colors uppercase"
+                                            style={{ 
+                                                backgroundColor: "var(--color-bg-secondary)", 
+                                                borderColor: "var(--color-border)",
+                                                color: "var(--color-text-secondary)",
+                                                opacity: 0.8
+                                            }}
+                                        >
+                                            #{tag}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+
                         {/* 2. 参数表区域 */}
-                        <div className="border rounded-xl p-6" style={{ backgroundColor: "var(--color-bg-primary)", borderColor: "var(--color-border)" }}>
+                        <div className="border rounded-xl p-6 mt-2" style={{ backgroundColor: "var(--color-bg-primary)", borderColor: "var(--color-border)" }}>
                             <h3 className="text-[11px] font-bold uppercase tracking-widest mb-6" style={{ color: "var(--color-text-secondary)", opacity: 0.6 }}>Parameters Specification</h3>
                             {parameterList.length > 0 ? (
                                 <div className="overflow-x-auto">
@@ -210,6 +240,7 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skill_name, skill, isO
                             ) : (
                                 <p className="text-sm italic py-4" style={{ color: "var(--color-text-secondary)", opacity: 0.5 }}>No parameters required for this skill.</p>
                             )}
+                        </div>
                         </div>
 
                         {/* 3. 返回结果示例 (NEW: Response Schema) */}
@@ -287,9 +318,6 @@ export const SkillDetail: React.FC<SkillDetailProps> = ({ skill_name, skill, isO
                         </motion.div>
 
                         <div className="pt-2">
-                            <Link href="/skills" className="inline-flex items-center text-xs transition-colors" style={{ color: "var(--color-text-secondary)" }}>
-                                ← Back to store
-                            </Link>
                         </div>
                     </div>
                 </div>

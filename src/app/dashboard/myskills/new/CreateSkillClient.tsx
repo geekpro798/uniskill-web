@@ -11,6 +11,7 @@ import { useEffect } from 'react';
 import { motion } from "framer-motion";
 import UnifiedNavbar from "@/components/UnifiedNavbar";
 import { supabase } from "@/lib/supabase";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import { Modal } from "@/components/Modal";
 
 interface CreateSkillClientProps {
@@ -569,12 +570,20 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
       <UnifiedNavbar initialCredits={liveCredits} initialDisplayName={profileDisplayName} />
 
       <main className="max-w-5xl mx-auto px-6 pt-[88px] md:pt-[100px] pb-10">
+        <Breadcrumbs 
+          items={[
+            { label: "Dashboard", href: "/dashboard" },
+            { label: "My Skills", href: "/dashboard/myskills" },
+            { label: originalState === 'active' ? 'Edit Skill' : 'Deploy New' }
+          ]} 
+          className="max-w-4xl mx-auto"
+        />
         <div className="max-w-4xl mx-auto space-y-8">
           
           {/* Header section for Shadow Edit Mode */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
             <div>
-              <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                 {originalState === 'active' ? 'Edit Live Skill' : 'Deploy New Skill'}
               </h1>
               <p className="text-sm text-slate-500 font-medium mt-1">

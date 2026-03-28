@@ -56,7 +56,14 @@ export default function UserSkillDetailPage() {
           visuals: visuals
         };
         
-        setSkill(spec);
+        setSkill({
+          ...spec,
+          customBreadcrumbs: [
+            { label: "Dashboard", href: "/dashboard" },
+            { label: "My Skills", href: "/dashboard/myskills" },
+            { label: spec.display_name }
+          ]
+        });
         setIsOfficial(data.status === 'Official');
         setSkillStatus(data.status || '');
       } catch (err) {

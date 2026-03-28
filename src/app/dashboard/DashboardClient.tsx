@@ -15,6 +15,7 @@ import {
   History, Monitor, Code2, Globe, Lock, MoreVertical,
   Trash2, PlayCircle, Edit3, KeyRound, Save
 } from 'lucide-react';
+import { resolveSkillVisuals } from "@/lib/skill-visual-identity";
 
 // ==========================================
 // Component: Tool Suite Integration
@@ -183,6 +184,14 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
   const [invocationStats, setInvocationStats] = useState({ daily: 0, lifetime: 0 });
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
+
+  // 🌟 将技能数据实时包装上视觉属性 (Decorate skills with visual visuals)
+  const richSkills = React.useMemo(() => {
+    return skills.map(s => ({
+      ...s,
+      visuals: resolveSkillVisuals(s)
+    }));
+  }, [skills]);
 
   const fetchLiveCredits = async () => {
     if (!session?.user?.id) return;
@@ -480,9 +489,9 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">Loading Workspace...</span>
                     </div>
                   </div>
-                ) : skills.length > 0 ? (
+                ) : richSkills.length > 0 ? (
                   <div className="divide-y divide-slate-50 dark:divide-slate-800/50">
-                    {skills.map((skill) => {
+                    {richSkills.map((skill) => {
                       const isTesting = skill.state === 'testing';
                       return (
                       <div 
@@ -501,8 +510,8 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
                         }}
                       >
                         <div className="flex items-center gap-4">
-                          <div className="w-11 h-11 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center border border-slate-200/50 dark:border-slate-700/50 group-hover:border-blue-500/30 transition-all shadow-sm">
-                            <span className="text-xl">{skill.emoji || '⚙️'}</span>
+                          <div className={`w-11 h-11 rounded-xl flex items-center justify-center border transition-all shadow-sm ${skill.visuals.styles.box} ${skill.visuals.styles.border} ${skill.visuals.styles.text} group-hover:scale-105`}>
+                            <skill.visuals.Icon size={20} weight="duotone" />
                           </div>
                           <div className="text-left">
                             <div className="flex items-center gap-2 mb-0.5">

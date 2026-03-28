@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import { useSession, signIn, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Settings, Zap, Monitor, LayoutGrid, Plus, LogOut, ChevronDown } from "lucide-react";
+import { Settings, Zap, Monitor, LayoutGrid, Plus, LogOut, ChevronDown, Menu, X, DollarSign, BookOpen, ExternalLink } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { useUser } from "@/context/UserContext";
 
@@ -33,6 +33,47 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
     const activeCredits = initialCredits !== undefined ? initialCredits : context.credits;
     const activeDisplayName = initialDisplayName !== undefined ? initialDisplayName : context.displayName;
 
+    // Mobile Menu State
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const mobileMenuRef = useRef<HTMLDivElement>(null);
+    const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+    // 🌟 移动端交互逻辑优化 (Mobile UX Logic)
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                isMobileMenuOpen &&
+                mobileMenuRef.current &&
+                !mobileMenuRef.current.contains(event.target as Node) &&
+                menuButtonRef.current &&
+                !menuButtonRef.current.contains(event.target as Node)
+            ) {
+                setIsMobileMenuOpen(false);
+            }
+        };
+
+        const handleEscKey = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && isMobileMenuOpen) {
+                setIsMobileMenuOpen(false);
+            }
+        };
+
+        if (isMobileMenuOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('keydown', handleEscKey);
+        
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleEscKey);
+            document.body.style.overflow = 'unset';
+        };
+    }, [isMobileMenuOpen]);
+
     // 自动判定模式
     const isDashboard = pathname.startsWith("/dashboard") || pathname === "/settings";
     
@@ -55,7 +96,7 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
         >
             <nav className="max-w-7xl mx-auto px-6 lg:px-8 h-full flex items-center justify-between relative">
                 
-                {/* ─── 左侧：品牌 Logo (绝对一致) ─── */}
+                {/* ─── 左侧：品牌 Logo ─── */}
                 <div className="flex items-center gap-6">
                     <Link href="/" className="flex items-center gap-2.5 group shrink-0">
                         <LogoIcon />
@@ -65,7 +106,7 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
                     </Link>
                 </div>
 
-                {/* ─── 中间：模式切换导航 ─── */}
+                {/* ─── 中间：模式切换导航 (桌面端) ─── */}
                 <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-1">
                     {isDashboard ? (
                         <DashboardLinks pathname={pathname} />
@@ -75,20 +116,67 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
                 </div>
 
                 {/* ─── 右侧：资产 + 主题 + 用户菜单 ─── */}
-                <div className="flex items-center gap-3 ml-auto">
+                <div className="flex items-center gap-3">
                     {(status === "authenticated" || initialCredits !== undefined) && (
                         <CreditsBadge credits={activeCredits} />
                     )}
                     
-                    <ThemeToggle />
+                    <div className="hidden sm:block">
+                        <ThemeToggle />
+                    </div>
                     
                     <AuthSection 
                         status={initialCredits !== undefined ? "authenticated" : status} 
                         displayName={activeDisplayName} 
                         initialAvatarUrl={initialAvatarUrl}
                     />
+
+                    {/* 移动端菜单触发器 */}
+                    <button 
+                        ref={menuButtonRef}
+                        className="md:hidden p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors ml-1" 
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    >
+                        {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                    </button>
                 </div>
             </nav>
+
+            {/* 移动端下拉抽屉 (Mobile Menu Drawer) */}
+            <AnimatePresence>
+                {isMobileMenuOpen && (
+                    <motion.div 
+                        ref={mobileMenuRef}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="md:hidden absolute top-full left-0 right-0 glass-card border-b overflow-hidden shadow-2xl z-[60]"
+                        style={{ backgroundColor: "var(--color-bg-card)", borderColor: "var(--color-border)" }}
+                    >
+                        <div className="p-6 space-y-3">
+                            {isDashboard ? (
+                                <MobileDashboardLinks pathname={pathname} onClose={() => setIsMobileMenuOpen(false)} />
+                            ) : (
+                                <MobileMarketingLinks pathname={pathname} onClose={() => setIsMobileMenuOpen(false)} />
+                            )}
+                            
+                            <div className="pt-4 border-t" style={{ borderColor: "var(--color-border)" }}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className="text-xs font-bold uppercase tracking-widest opacity-50">Theme</span>
+                                    <ThemeToggle />
+                                </div>
+                                {status === "authenticated" && activeCredits !== undefined && (
+                                    <div className="flex justify-between items-center bg-blue-500/5 p-4 rounded-xl border border-blue-500/10">
+                                        <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Available Credits</span>
+                                        <span className="font-mono font-bold text-blue-500">{activeCredits.toLocaleString()}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </motion.header>
     );
 }
@@ -115,10 +203,10 @@ function LogoIcon() {
     );
 }
 
-// 2. 积分徽章 (Global Integrated)
+// 2. 积分徽章 (Responsive)
 function CreditsBadge({ credits }: { credits: number | undefined }) {
     if (credits === undefined) {
-        return <div className="h-7 w-20 rounded-full animate-pulse bg-blue-500/10 border border-blue-500/20" />;
+        return <div className="h-7 w-12 sm:w-20 rounded-full animate-pulse bg-blue-500/10 border border-blue-500/20" />;
     }
     return (
         <motion.div
@@ -127,7 +215,10 @@ function CreditsBadge({ credits }: { credits: number | undefined }) {
             className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-[11px] font-bold"
         >
             <Zap size={10} className="text-blue-400" fill="currentColor" />
-            <span className="text-blue-400">{credits.toLocaleString()}</span>
+            <span className="text-blue-400 hidden sm:inline">{credits.toLocaleString()}</span>
+            <span className="text-blue-400 sm:hidden">
+                {credits >= 1000 ? `${(credits / 1000).toFixed(1)}k` : credits}
+            </span>
         </motion.div>
     );
 }
@@ -244,13 +335,13 @@ function AuthSection({ status, displayName, initialAvatarUrl }: { status: string
                         </div>
                     )}
                     <span 
-                        className="hidden md:block text-xs font-medium truncate max-w-[120px]" 
+                        className="hidden lg:block text-xs font-medium truncate max-w-[120px]" 
                         title={userName}
                         style={{ color: "var(--color-text-secondary)" }}
                     >
                         {userName}
                     </span>
-                    <ChevronDown size={12} className={`transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown size={12} className={`hidden lg:block transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 <AnimatePresence>
@@ -291,10 +382,11 @@ function AuthSection({ status, displayName, initialAvatarUrl }: { status: string
     );
 }
 
-function MenuLink({ href, icon: Icon, label, active }: { href: string, icon: any, label: string, active: boolean }) {
+function MenuLink({ href, icon: Icon, label, active, onClick }: { href: string, icon: any, label: string, active: boolean, onClick?: () => void }) {
     return (
         <Link
             href={href}
+            onClick={onClick}
             className={`flex items-center gap-2.5 px-4 py-2 text-xs font-medium transition-colors border-l-2 ${
                 active
                 ? "text-blue-500 bg-gradient-to-r from-blue-500/10 to-purple-500/5 border-blue-500"
@@ -305,5 +397,68 @@ function MenuLink({ href, icon: Icon, label, active }: { href: string, icon: any
             <Icon size={14} />
             {label}
         </Link>
+    );
+}
+
+// 6. 移动端专用链接
+function MobileMarketingLinks({ pathname, onClose }: { pathname: string, onClose: () => void }) {
+    const links = [
+        { href: "/skills", label: "Skills", icon: LayoutGrid },
+        { href: "https://docs.uniskill.ai", label: "Docs", icon: BookOpen, external: true },
+        { href: "/#pricing", label: "Pricing", icon: DollarSign },
+    ];
+
+    return (
+        <div className="space-y-1">
+            {links.map(({ href, label, icon: Icon, external }) => {
+                const active = pathname === href;
+                return (
+                    <Link
+                        key={href}
+                        href={href}
+                        target={external ? "_blank" : undefined}
+                        onClick={onClose}
+                        className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-all text-sm font-bold"
+                        style={{ color: active ? "var(--color-blue)" : "var(--color-text-secondary)" }}
+                    >
+                        <div className="p-2 bg-blue-500/10 rounded-lg">
+                            <Icon size={18} className="text-blue-500" />
+                        </div>
+                        {label}
+                        {external && <ExternalLink size={12} className="opacity-30 ml-auto" />}
+                    </Link>
+                );
+            })}
+        </div>
+    );
+}
+
+function MobileDashboardLinks({ pathname, onClose }: { pathname: string, onClose: () => void }) {
+    const links = [
+        { href: '/dashboard', label: 'Stats', icon: Monitor },
+        { href: '/dashboard/myskills', label: 'My Skills', icon: LayoutGrid },
+        { href: '/dashboard/billing', label: 'Billing', icon: Zap },
+    ];
+
+    return (
+        <div className="space-y-1">
+            {links.map(({ href, label, icon: Icon }) => {
+                const active = pathname === href;
+                return (
+                    <Link
+                        key={href}
+                        href={href}
+                        onClick={onClose}
+                        className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-all text-sm font-bold"
+                        style={{ color: active ? "var(--color-blue)" : "var(--color-text-secondary)" }}
+                    >
+                        <div className="p-2 bg-blue-500/10 rounded-lg">
+                            <Icon size={18} className="text-blue-500" />
+                        </div>
+                        {label}
+                    </Link>
+                );
+            })}
+        </div>
     );
 }

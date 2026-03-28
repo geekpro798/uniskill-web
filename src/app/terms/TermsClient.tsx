@@ -75,7 +75,7 @@ export default function TermsClient({ initialCredits, initialDisplayName, initia
                         transition={{ duration: 0.5 }}
                         className="mb-12"
                     >
-                        <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tight" style={{ color: "var(--color-text-primary)" }}>
+                        <h1 className="text-2xl font-black mb-4 tracking-tight" style={{ color: "var(--color-text-primary)" }}>
                             Terms of Service
                         </h1>
                         <p className="text-blue-400 font-medium">Effective Date: March 1, 2026</p>
