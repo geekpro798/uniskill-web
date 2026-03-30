@@ -270,7 +270,7 @@ html, body {
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
-  mixed-blend-mode: normal;
+  mix-blend-mode: normal;
   height: 100%;
 }
 

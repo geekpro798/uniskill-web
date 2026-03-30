@@ -33,8 +33,43 @@ export async function GET(req: Request) {
     // 从 URL 读取 limit 参数，默认 5，最大 100
     const url = new URL(req.url);
     const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get("limit") ?? "5", 10)));
+    const isStats = url.searchParams.get("stats") === "true";
 
     try {
+        if (isStats) {
+            const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+            
+            // 查询 24h 内的抵扣记录 (amount < 0)
+            const { count: dailyCount, error: dailyError } = await supabase
+                .from('credit_events')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_uid', session.user.userUid)
+                .lt('amount', 0)
+                .gte('created_at', twentyFourHoursAgo);
+
+            if (dailyError && dailyError.code !== "42P01" && dailyError.code !== "PGRST116") {
+                throw dailyError;
+            }
+
+            // 查询历史所有的抵扣记录 (amount < 0)
+            const { count: lifetimeCount, error: lifetimeError } = await supabase
+                .from('credit_events')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_uid', session.user.userUid)
+                .lt('amount', 0);
+
+            if (lifetimeError && lifetimeError.code !== "42P01" && lifetimeError.code !== "PGRST116") {
+                throw lifetimeError;
+            }
+
+            return NextResponse.json({ 
+                count: { 
+                    daily: dailyCount || 0, 
+                    lifetime: lifetimeCount || 0 
+                } 
+            });
+        }
+
         // 3. 查询 credit_events 表
         const { data, error } = await supabase
             .from("credit_events")
@@ -42,7 +77,6 @@ export async function GET(req: Request) {
             .eq("user_uid", session.user.userUid)
             .order("created_at", { ascending: false })
             .limit(limit);
-
 
         // 若 table 尚不存在（PGRST116 或 42P01），返回空数组而非报错
         if (error) {

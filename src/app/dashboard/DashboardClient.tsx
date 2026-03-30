@@ -233,30 +233,16 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
   };
 
   const fetchInvocations = async () => {
-    const uid = (session?.user as any)?.userUid || session?.user?.id;
-    if (!uid) return;
     try {
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { count: dailyCount, error: dailyError } = await supabase
-        .from('credit_events')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_uid', uid)
-        .lt('amount', 0)
-        .gte('created_at', twentyFourHoursAgo);
-
-      if (dailyError) throw dailyError;
-
-      const { count: lifetimeCount, error: lifetimeError } = await supabase
-        .from('credit_events')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_uid', uid)
-        .lt('amount', 0);
-
-      if (lifetimeError) throw lifetimeError;
-
+      const response = await fetch('/api/user/credit-events?stats=true', {
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const { count } = await response.json();
       setInvocationStats({ 
-        daily: dailyCount || 0, 
-        lifetime: lifetimeCount || 0 
+        daily: count?.daily || 0, 
+        lifetime: count?.lifetime || 0 
       });
     } catch (e) {
       console.error("Failed to fetch invocations", e);
@@ -287,19 +273,15 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
   };
 
   const fetchRecentActivity = async () => {
-    const uid = (session?.user as any)?.userUid || session?.user?.id;
-    if (!uid) return;
     try {
       setLoadingLogs(true);
-      const { data, error } = await supabase
-        .from('credit_events')
-        .select('id, skill_name, amount, created_at')
-        .eq('user_uid', uid)
-        .order('created_at', { ascending: false })
-        .limit(3);
-
-      if (error) throw error;
-      setRecentLogs(data || []);
+      const response = await fetch('/api/user/credit-events?limit=3', {
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const { events } = await response.json();
+      setRecentLogs(events || []);
     } catch (e) {
       console.error("Failed to fetch recent activity", e);
     } finally {
