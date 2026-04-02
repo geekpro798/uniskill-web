@@ -33,6 +33,7 @@ Visual Identity System (UniSkill Standard):
 
 3. Body must contain sections: '# Description', '# Parameters' (JSON Schema), and '# Implementation' (YAML http mapping).
 4. Use 'custom_http' type in implementation. Map variables as {{variable}} and secrets as {{SECRETS.KEY}}.
+5. When generating the 'description' field for a new skill, you MUST follow the UniSkill Three-Tier Structure: Identity, Capabilities, and Boundaries. Ensure the Boundaries section explicitly handles potential overlaps with existing tools like Browser or Math skills.
 
 STRICT RULES ON PARAMETERS:
 1. LEAN PRINCIPLE: Only include parameters in the '# Parameters' section that are ABSOLUTELY NECESSARY for the API call.

@@ -388,9 +388,7 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
             <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Your UniSkill API Gateway dashboard.</p>
           </div>
           <div className="flex items-center gap-2">
-             <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-sm transition-all text-xs">
-                <BarChart3 size={14} /> Analytics
-             </button>
+
              <button 
                onClick={() => window.location.href = '/dashboard/myskills/new'}
                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-md active:scale-95 text-xs"
@@ -592,7 +590,7 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
                       Build your own private AI tools using Markdown, or install community skills from the marketplace.
                     </p>
                     <div className="flex gap-2">
-                      <button onClick={() => window.location.href='/dashboard/myskills/new'} className="px-5 py-2.5 bg-blue-600 text-white text-[11px] font-black rounded-xl shadow-md active:scale-95 transition-all">+ Create Private Skill</button>
+                      <button onClick={() => window.location.href='/dashboard/myskills/new'} className="px-5 py-2.5 bg-blue-600 text-white text-[11px] font-black rounded-xl shadow-md active:scale-95 transition-all text-nowrap">+ Deploy Private Skill</button>
                       <button className="px-5 py-2.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-black rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 hover:bg-slate-50 transition-all">
                         <Globe size={12} strokeWidth={3} /> Visit Store
                       </button>
