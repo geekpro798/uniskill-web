@@ -42,17 +42,14 @@ export default function UserSkillDetailPage() {
         // 🌟 Use unified visual mapper
         const visuals = resolveSkillVisuals(data);
 
-        // Map database record to SkillSpec protocol
+        // Map database record to SkillSpec protocol (Cleaned up for Build)
         const spec: SkillSpec = {
           display_name: data.display_name || data.skill_name || "Untitled",
           description: data.description || "No description provided.",
           credits_per_call: data.credits_per_call || 1,
-          usd_per_call: data.usd_per_call || 0.001,
           parameters: data.parameters || { type: "object", properties: {} },
           returns: data.returns || null,
-          implementation: {}, // Privacy: Implementation code is hidden from this view
-          gradientFrom: data.gradient_from || (data.status === 'Community' ? 'from-purple-600' : 'from-blue-600'),
-          gradientTo: data.gradient_to || (data.status === 'Community' ? 'to-pink-500' : 'to-cyan-400'),
+          implementation: data.implementation || {}, // Keep original implementation data for runtime dispatching
           visuals: visuals
         };
         
