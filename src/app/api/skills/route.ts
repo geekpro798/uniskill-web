@@ -6,11 +6,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     
-    // 1. 获取排序参数 (Sort Params)
+    // 1. 获取排序参数
     const sortBy = searchParams.get("sortBy") || "popularity";
     const order = searchParams.get("order") || "desc";
 
-    // 2. 数据库映射规则 (Database Mapping) - 修正：DB 真实列名为 total_calls, credits_per_call, deployed_at
+    // 2. 数据库映射规则 (Legacy DB Support)
     const sortMap: Record<string, string> = {
         popularity: "total_calls",
         recency: "deployed_at",
@@ -19,7 +19,6 @@ export async function GET(request: Request) {
     const dbSortField = sortMap[sortBy] || "total_calls";
 
     try {
-        // 核心变革：按需索取元数据，包含 markdown_manifest 用于提取视觉特性
         const { data: skills, error } = await supabase
             .from("skills")
             .select(`
@@ -44,19 +43,43 @@ export async function GET(request: Request) {
             .eq("state", "active")
             .order(dbSortField, { ascending: order === "asc" });
 
-        if (error) {
-            throw error;
-        }
+        if (error) throw error;
 
-        // 3. 逻辑转换：提取视觉特性并保持 payload 轻量
+        // 3. 混合解析逻辑 (Hybrid Metadata Parsing)
         const formattedSkills = (skills || []).map(skill => {
-            // 提取 manifest 中的视觉定义 (suggested_icon, theme_color)
+            const manifest = skill.markdown_manifest || "";
             let visual_metadata: any = {};
-            if (skill.markdown_manifest) {
-                const iconMatch = skill.markdown_manifest.match(/suggested_icon:\s*([^\s\n\r]+)/);
-                const themeMatch = skill.markdown_manifest.match(/theme_color:\s*([^\s\n\r]+)/);
-                if (iconMatch) visual_metadata.suggested_icon = iconMatch[1].replace(/['"]/g, '').trim();
-                if (themeMatch) visual_metadata.theme_color = themeMatch[1].replace(/['"]/g, '').trim();
+            let implementation: any = { type: 'api' }; 
+            
+            if (manifest) {
+                // 1. 提取视觉定义
+                const iconMatch = manifest.match(/suggested_icon:\s*([^\s\n\r]+)/);
+                const themeMatch = manifest.match(/theme_color:\s*([^\s\n\r]+)/);
+                if (iconMatch) visual_metadata.suggested_icon = iconMatch[1]?.replace(/['"]/g, '').trim();
+                if (themeMatch) visual_metadata.theme_color = themeMatch[1]?.replace(/['"]/g, '').trim();
+
+                // 2. 🌟 强化版 CLI 检测 (Robust CLI Discovery)
+                // 规则 A: 显式声明 type: cli 或 runtime: cli
+                const cliTypeMatch = manifest.match(/type:\s*["']?cli["']?/i);
+                // 规则 B: 提及 lark-cli 环境变量或二进制 (作为补充判定)
+                const isLarkCli = manifest.toLowerCase().includes('lark-cli');
+                
+                if (cliTypeMatch || isLarkCli) {
+                    implementation.type = 'cli';
+                    
+                    // 尝试解析并补全渲染所需的预览路径
+                    const binaryMatch = manifest.match(/binary:\s*["']?([^"'\s\n\r]+)["']?/i);
+                    const commandMatch = manifest.match(/command:\s*["']?([^"'\n\r]+)["']?/i);
+                    implementation.binary = binaryMatch?.[1] || (isLarkCli ? 'lark-cli' : 'exec');
+                    implementation.command = commandMatch?.[1] || 'sh';
+                }
+            }
+
+            // 补充：基于名称的硬编码兜底 (确保飞书系列哪怕同步失败也能识别样式)
+            const name = (skill.skill_name || "").toLowerCase();
+            if (name.includes("lark_") || name.includes("feishu_")) {
+                implementation.type = 'cli';
+                if (!implementation.binary) implementation.binary = 'lark-cli';
             }
 
             return {
@@ -78,13 +101,14 @@ export async function GET(request: Request) {
                 gradientTo: skill.gradient_to,
                 emoji: skill.emoji,
                 deployed_at: skill.deployed_at,
-                visuals: visual_metadata // 🌟 仅返回提取后的精简视觉元数据
+                implementation: implementation,
+                visuals: visual_metadata 
             };
         });
 
         return NextResponse.json(formattedSkills);
     } catch (error) {
-        console.error("[API] Failed to fetch lean skills with visuals from Supabase:", error);
+        console.error("[API Error] Failed to fetch optimized skills:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

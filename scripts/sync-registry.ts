@@ -78,9 +78,11 @@ async function syncRegistry() {
         try {
             // A. Parse MD and Frontmatter (2.0 Standard)
             const { data: frontmatter, content } = matter(fileContent);
-            const skill_name = frontmatter.skill_name || frontmatter.id; // Compatibility
+            
+            // 🌟 鲁棒性升级：优先取 skill_name，其次取 id，最后取文件名 (Fallback to filename)
+            const skill_name = frontmatter.skill_name || frontmatter.id || file.replace(".md", "");
 
-            if (!skill_name) throw new Error("Missing 'skill_name' in frontmatter");
+            if (!skill_name) throw new Error("Could not determine skill_name for " + file);
 
             const display_name = frontmatter.display_name || frontmatter.name || skill_name;
             // Support both old (cost_per_call) and new (credits_per_call) field names

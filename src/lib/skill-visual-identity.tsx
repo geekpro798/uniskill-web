@@ -70,12 +70,17 @@ const KEYWORD_RULES: Record<string, { icon: string; color: ThemeColor }> = {
 };
 
 const CATEGORY_FALLBACKS: Record<string, { icon: string; color: ThemeColor }> = {
-  'tools':     { icon: 'Wrench',   color: 'blue' },
-  'ai':        { icon: 'Robot',    color: 'pink' },
-  'data':      { icon: 'Database', color: 'emerald' },
-  'content':   { icon: 'Newspaper',color: 'sky' },
-  'analytics': { icon: 'Activity', color: 'emerald' },
-  'finance':   { icon: 'Bank',     color: 'amber' },
+  'web_search':         { icon: 'MagnifyingGlass', color: 'blue'    },
+  'devops_infra':       { icon: 'HardDrive',       color: 'indigo'  },
+  'workspace_data':      { icon: 'Briefcase',       color: 'emerald' },
+  'media_intelligence':  { icon: 'VideoCamera',     color: 'rose'    },
+  'social_outreach':    { icon: 'ShareNetwork',     color: 'sky'     },
+  'finance_trading':    { icon: 'TrendUp',         color: 'amber'   },
+  'utilities':          { icon: 'Wrench',          color: 'blue'    },
+  // Legacy support & Other fallbacks
+  'tools':              { icon: 'Wrench',          color: 'blue'    },
+  'ai':                 { icon: 'Robot',           color: 'pink'    },
+  'data':                { icon: 'Database',        color: 'emerald' },
 };
 
 export interface SkillVisuals {

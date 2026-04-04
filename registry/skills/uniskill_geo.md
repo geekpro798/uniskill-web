@@ -3,7 +3,7 @@ skill_name: uniskill_geo
 display_name: Location & Map Engine
 emoji: "\U0001F5FA️"
 status: Official
-category: utility
+category: utilities
 tags:
   - geo
   - map
