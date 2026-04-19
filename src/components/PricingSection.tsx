@@ -5,15 +5,18 @@ import { useRef, useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 
-/* ─── Lemon Squeezy 静态跳转链接 ──────────────────────── */
-const LEMON_SQUEEZY_LINKS = {
-    starter: "https://uniskill.lemonsqueezy.com/checkout/buy/e1cb85d2-ee60-444d-9400-a4e06a3d7852",
-    pro: "https://uniskill.lemonsqueezy.com/checkout/buy/76565e2c-265d-487f-a148-a0525e372fe1",
-    scale: "https://uniskill.lemonsqueezy.com/checkout/buy/842bc7aa-02cd-4035-a125-99364215fd30",
+/* ─── Whop 静态结算链接 ────────────────────────────────────────────────
+   购买链接均通过 Whop Dashboard 创建，对应各套餐的 plan_id
+   结算时动态追加 ?metadata[user_uid]=xxx 供 Webhook 识别用户
+   ────────────────────────────────────────────────────────────────────── */
+const WHOP_LINKS = {
+    starter: "https://whop.com/checkout/plan_RoIYmx6jHwqXg",
+    pro:     "https://whop.com/checkout/plan_8Age3NspOIYdD",
+    scale:   "https://whop.com/checkout/plan_oue4bGBI3Y0LN",
 };
 
 /* ─── 定价方案数据：4 个层级，price=0 代表免费 ──────────────────────────
-   checkoutUrl 为 null 时按钮跳转 /register，否则跳转 Lemon Squeezy 结算页
+   checkoutUrl 为 null 时按钮跳转 /register，否则跳转 Whop 结算页
    ────────────────────────────────────────────────────────────────────── */
 const plans = [
     {
@@ -57,7 +60,7 @@ const plans = [
             "API access",
             "7-day Basic History",
         ],
-        checkoutUrl: LEMON_SQUEEZY_LINKS.starter,
+        checkoutUrl: WHOP_LINKS.starter,
         highlighted: false,
         gradient: "from-blue-600 to-blue-700",
         borderClass: "border-blue-500/20",
@@ -81,7 +84,7 @@ const plans = [
             "API access",
             "30-day Deep Audit Logs",
         ],
-        checkoutUrl: LEMON_SQUEEZY_LINKS.pro,
+        checkoutUrl: WHOP_LINKS.pro,
         highlighted: true,
         gradient: "from-blue-500 to-purple-600",
         borderClass: "border-blue-500/50",
@@ -105,7 +108,7 @@ const plans = [
             "API access",
             "90-day Full Compliance Logs",
         ],
-        checkoutUrl: LEMON_SQUEEZY_LINKS.scale,
+        checkoutUrl: WHOP_LINKS.scale,
         highlighted: false,
         gradient: "from-purple-600 to-pink-600",
         borderClass: "border-purple-500/20",
@@ -242,35 +245,42 @@ function PricingContent() {
             return;
         }
 
-        // 分支 3：付费档 — 动态注入 Lemon Squeezy 传参
+        // 分支 3：付费档 — 服务端创建 Whop Checkout Session（含 metadata）
+        // 由 /api/payment/create-checkout 动态生成结算链接，确保 user_uid
+        // 正确写入 Whop metadata，Webhook 才能据此识别用户并完成积分发货。
         try {
-            const baseUrl = plan.checkoutUrl;
-            if (!baseUrl) return;
+            const plan = plans.find((p) => p.id === tierId);
+            if (!plan || !plan.checkoutUrl) {
+                setLoadingTier(null);
+                return;
+            }
 
-            const urlObj = new URL(baseUrl);
+            // 从静态链接提取 plan_id（格式：https://whop.com/checkout/plan_xxx）
+            const planId = plan.checkoutUrl.split('/').pop();
 
-            // 1. 注入用户 Email
-            urlObj.searchParams.append("checkout[email]", user?.email || "");
+            const res = await fetch('/api/payment/create-checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ planId }),
+            });
 
-            // 2. 注入关键的 Supabase UID（用于 Webhook 自动发货）
-            urlObj.searchParams.append("checkout[custom][user_uid]", (user as any)?.userUid || "");
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || 'Checkout creation failed');
+            }
 
-            // 3. 注入支付成功后的回跳地址（LS 结束后自动返回 dashboard）
-            urlObj.searchParams.append("embed", "0");
-            urlObj.searchParams.append("redirect_url", `${window.location.origin}/dashboard`);
-            urlObj.searchParams.append("locale", "en"); // 强制使用英文界面，防止语种识别错误
+            const { url } = await res.json();
 
-            // 跳转前清理当前 URL 的意图参数，防止后退时反复跳转
+            // 跳转前清理 URL 的意图参数，防止后退时反复触发
             if (searchParams.get("buy")) {
                 const newParams = new URLSearchParams(searchParams.toString());
                 newParams.delete("buy");
                 router.replace(`${window.location.pathname}?${newParams.toString()}${window.location.hash}`, { scroll: false });
             }
 
-            // 执行外部跳转
-            window.location.href = urlObj.toString();
+            window.location.href = url;
         } catch (err) {
-            console.error("Failed to construct checkout URL", err);
+            console.error("Failed to create Whop checkout session", err);
             setLoadingTier(null);
         }
     };

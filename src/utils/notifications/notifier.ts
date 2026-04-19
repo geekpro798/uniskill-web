@@ -118,16 +118,38 @@ async function sendToFeishu(payload: PaymentNotificationPayload): Promise<void> 
     };
 
     try {
-        const response = await fetch(feishuUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(feishuData)
-        });
+        const https = require('https');
+        const url = new URL(feishuUrl);
+        await new Promise<void>((resolve, reject) => {
+            const req = https.request(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                timeout: 5000,
+                family: 4 // 强制使用 IPv4 避免本地 localhost DNS 解析到黑洞
+            }, (res: any) => {
+                let data = '';
+                res.on('data', (chunk: any) => data += chunk);
+                res.on('end', () => {
+                    if (res.statusCode < 200 || res.statusCode >= 300) {
+                        console.error(`[Notifier] Feishu Webhook failed [${res.statusCode}]: ${data}`);
+                    }
+                    resolve();
+                });
+            });
 
-        if (!response.ok) {
-            const errText = await response.text();
-            console.error(`[Notifier] Feishu Webhook failed [${response.status}]: ${errText}`);
-        }
+            req.on('error', (e: any) => {
+                console.error('[Notifier] Error sending to Feishu (https):', e.message);
+                reject(e);
+            });
+            req.on('timeout', () => {
+                req.destroy();
+                console.error('[Notifier] Feishu Timeout');
+                reject(new Error('Timeout'));
+            });
+
+            req.write(JSON.stringify(feishuData));
+            req.end();
+        });
     } catch (error) {
         console.error('[Notifier] Error sending to Feishu:', error);
     }
@@ -204,15 +226,38 @@ async function sendAccountCreatedToFeishu(payload: AccountCreatedPayload): Promi
     };
 
     try {
-        const response = await fetch(feishuUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(feishuData)
+        const https = require('https');
+        const url = new URL(feishuUrl);
+        await new Promise<void>((resolve, reject) => {
+            const req = https.request(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                timeout: 5000,
+                family: 4
+            }, (res: any) => {
+                let data = '';
+                res.on('data', (chunk: any) => data += chunk);
+                res.on('end', () => {
+                    if (res.statusCode < 200 || res.statusCode >= 300) {
+                        console.error(`[Notifier] Feishu AccountCreated failed [${res.statusCode}]: ${data}`);
+                    }
+                    resolve();
+                });
+            });
+
+            req.on('error', (e: any) => {
+                console.error('[Notifier] Error sending AccountCreated to Feishu (https):', e.message);
+                reject(e);
+            });
+            req.on('timeout', () => {
+                req.destroy();
+                console.error('[Notifier] Feishu Timeout');
+                reject(new Error('Timeout'));
+            });
+
+            req.write(JSON.stringify(feishuData));
+            req.end();
         });
-        if (!response.ok) {
-            const errText = await response.text();
-            console.error(`[Notifier] Feishu AccountCreated failed [${response.status}]: ${errText}`);
-        }
     } catch (error) {
         console.error('[Notifier] Error sending AccountCreated to Feishu:', error);
     }

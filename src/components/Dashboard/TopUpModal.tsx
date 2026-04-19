@@ -7,12 +7,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// ==========================================
-// Lemon Squeezy Top-up Links (已更新真实 ID)
-// ==========================================
-const TOPUP_LINKS = {
-    '10k': 'https://uniskill.lemonsqueezy.com/checkout/buy/40c7ab57-66ec-4433-9aee-9980130e568d',
-    '50k': 'https://uniskill.lemonsqueezy.com/checkout/buy/aeff7387-f0cb-4621-8e46-5b0aff77d5de',
+// =========================================================
+// Whop Top-up Checkout Links
+// Whop 积分充唃套餐购买链接（通过 Whop Dashboard 创建）
+// =========================================================
+const WHOP_TOPUP_LINKS = {
+    '10k': 'https://whop.com/checkout/plan_UFreWJKV7UlA7',
+    '50k': 'https://whop.com/checkout/plan_FRuKKZHZqIm27',
 };
 
 interface TopUpModalProps {
@@ -36,28 +37,29 @@ export default function TopUpModal({ isOpen, onClose, user }: TopUpModalProps) {
 
         try {
             setIsProcessing(true);
-            const baseUrl = TOPUP_LINKS[selectedPack];
-            const checkoutUrl = new URL(baseUrl);
 
-            // 1. Pre-fill email (预填邮箱)
-            if (user.email) {
-                checkoutUrl.searchParams.append('checkout[email]', user.email);
+            // 服务端创建 Whop Checkout Session，由后端将 user_uid 写入 metadata，
+            // 确保 Webhook 能正确识别用户并自动完成积分发货。
+            const planId = WHOP_TOPUP_LINKS[selectedPack].split('/').pop();
+
+            const res = await fetch('/api/payment/create-checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ planId }),
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || 'Checkout creation failed');
             }
 
-            // 2. Inject user_uid for Webhook (必填项：自定义数据)
-            checkoutUrl.searchParams.append('checkout[custom][user_uid]', user.userUid);
-
-            // 3. Set Redirect URL (回跳地址 - 确保支付后返回 Dashboard)
-            const currentOrigin = window.location.origin;
-            checkoutUrl.searchParams.append('embed', '0');
-            checkoutUrl.searchParams.append('redirect_url', `${currentOrigin}/dashboard`);
-            checkoutUrl.searchParams.append('locale', 'en'); 
+            const { url } = await res.json();
 
             // Simulate UI feedback before redirect
             await new Promise(resolve => setTimeout(resolve, 600));
 
-            // Execute redirect
-            window.location.href = checkoutUrl.toString();
+            // Execute redirect to Whop Checkout
+            window.location.href = url;
 
         } catch (error) {
             console.error("[Top-up Error]", error);
@@ -181,7 +183,7 @@ export default function TopUpModal({ isOpen, onClose, user }: TopUpModalProps) {
                             <svg className="w-3 h-3" style={{ color: "var(--color-text-secondary)" }} fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                             </svg>
-                            <span className="text-[10px] uppercase font-bold tracking-widest" style={{ color: "var(--color-text-secondary)" }}>Secure Lemon Squeezy Terminal</span>
+                            <span className="text-[10px] uppercase font-bold tracking-widest" style={{ color: "var(--color-text-secondary)" }}>Secure Whop Checkout</span>
                         </div>
                     </motion.div>
                 </div>
