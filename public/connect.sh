@@ -18,31 +18,51 @@ echo -e "${CYAN}╚════════════════════�
 
 # ── Parse Args ───────────────────────────────────────────────────────────────
 SESSION_ARG=""
+INLINE_DATA=""
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     --session) SESSION_ARG="$2"; shift 2;;
+    --data) INLINE_DATA="$2"; shift 2;;
     *) echo -e "${RED}Unknown option: $1${NC}"; exit 1;;
   esac
 done
 
-# ── Find session.json ────────────────────────────────────────────────────────
-echo -e "🔍 Searching for session key..."
-
-CANDIDATES=(
-  "$SESSION_ARG"
-  "./uniskill_session.json"
-  "$HOME/Downloads/uniskill_session.json"
-  "$HOME/.uniskill/session.json"
-)
-
+# ── Handle Inline Data vs Search ──────────────────────────────────────────────
 SESSION_FILE=""
-for f in "${CANDIDATES[@]}"; do
-  if [ -n "$f" ] && [ -f "$f" ]; then
-    SESSION_FILE="$f"
-    break
+
+if [ -n "$INLINE_DATA" ]; then
+  echo -e "📦 Processing inline session data..."
+  mkdir -p "$HOME/.uniskill"
+  
+  # Decode Base64 data (try portable python3 first, then base64 tool)
+  if python3 -c "import base64, sys; print(base64.b64decode('$INLINE_DATA').decode('utf-8'))" > "$HOME/.uniskill/session.json" 2>/dev/null; then
+    SESSION_FILE="$HOME/.uniskill/session.json"
+    echo -e "  ${GREEN}✔ Session data restored from command line.${NC}"
+  elif echo "$INLINE_DATA" | base64 --decode > "$HOME/.uniskill/session.json" 2>/dev/null; then
+    SESSION_FILE="$HOME/.uniskill/session.json"
+    echo -e "  ${GREEN}✔ Session data restored from command line (base64 tool).${NC}"
+  else
+    echo -e "${RED}❌ Failed to decode session data. Please ensure the command was copied correctly.${NC}"
+    exit 1
   fi
-done
+else
+  # ── Search Candidate Files ──
+  echo -e "🔍 Searching for session key..."
+  CANDIDATES=(
+    "$SESSION_ARG"
+    "./uniskill_session.json"
+    "$HOME/Downloads/uniskill_session.json"
+    "$HOME/.uniskill/session.json"
+  )
+
+  for f in "${CANDIDATES[@]}"; do
+    if [ -n "$f" ] && [ -f "$f" ]; then
+      SESSION_FILE="$f"
+      break
+    fi
+  done
+fi
 
 if [ -z "$SESSION_FILE" ]; then
   echo -e "${RED}❌ uniskill_session.json not found!${NC}"
