@@ -7729,18 +7729,20 @@ var server = import_http.default.createServer(async (clientReq, clientRes) => {
         ([k]) => !["host", "connection", "content-length"].includes(k.toLowerCase())
       )
     ),
-    ...sigHeaders,
-    "Content-Length": body.length > 0 ? body.length.toString() : void 0
+    ...sigHeaders
   };
+  const fetchOptions = {
+    method,
+    headers: forwardHeaders
+  };
+  if (body.length > 0) {
+    forwardHeaders["Content-Length"] = body.length.toString();
+    fetchOptions.body = body;
+    fetchOptions.duplex = "half";
+  }
   const targetUrl = new URL(path, GATEWAY);
   try {
-    const resp = await fetch(targetUrl.toString(), {
-      method,
-      headers: forwardHeaders,
-      body: body.length > 0 ? body : void 0,
-      // @ts-ignore
-      duplex: "half"
-    });
+    const resp = await fetch(targetUrl.toString(), fetchOptions);
     log(resp.ok ? "OK" : "WARN", `${resp.status} ${method} ${path}`);
     const resHeaders = {};
     resp.headers.forEach((val, key) => {

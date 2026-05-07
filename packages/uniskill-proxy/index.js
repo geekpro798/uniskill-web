@@ -174,21 +174,26 @@ const server = http.createServer(async (clientReq, clientRes) => {
       )
     ),
     ...sigHeaders,
-    "Content-Length": body.length > 0 ? body.length.toString() : undefined,
   };
+
+  const fetchOptions = {
+    method,
+    headers: forwardHeaders,
+  };
+
+  if (body.length > 0) {
+    forwardHeaders["Content-Length"] = body.length.toString();
+    fetchOptions.body = body;
+    // @ts-ignore
+    fetchOptions.duplex = "half";
+  }
 
   // 构造目标 URL
   const targetUrl = new URL(path, GATEWAY);
 
   // 转发到 Gateway
   try {
-    const resp = await fetch(targetUrl.toString(), {
-      method,
-      headers: forwardHeaders,
-      body: body.length > 0 ? body : undefined,
-      // @ts-ignore
-      duplex: "half",
-    });
+    const resp = await fetch(targetUrl.toString(), fetchOptions);
 
     log(resp.ok ? "OK" : "WARN", `${resp.status} ${method} ${path}`);
 
