@@ -5,113 +5,17 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import UnifiedNavbar from "@/components/UnifiedNavbar";
 import TopUpModal from "@/components/Dashboard/TopUpModal";
-import ResetKeyModal from "@/components/Dashboard/ResetKeyModal";
 import DeleteSkillModal from "@/components/Dashboard/DeleteSkillModal";
 import { supabase } from "@/lib/supabase";
 import { 
-  Zap, Key, Terminal, BarChart3, ArrowUpRight, 
+  Zap, Terminal, BarChart3, ArrowUpRight, 
   Plus, Layers, ExternalLink, Activity, ShieldCheck, 
   Copy, CheckCircle2, ChevronRight, Eye, EyeOff,
   History, Monitor, Code2, Globe, Lock, MoreVertical,
-  Trash2, PlayCircle, Edit3, KeyRound, Save
+  Trash2, PlayCircle, Edit3, Save, Wallet, Shield
 } from 'lucide-react';
 import { resolveSkillVisuals } from "@/lib/skill-visual-identity";
-
-// ==========================================
-// Component: Tool Suite Integration
-const IntegrationTerminal = ({ apiKey }: { apiKey?: string }) => {
-  const [platform, setPlatform] = useState<'mac' | 'win'>('mac');
-  const [copied, setCopied] = useState(false);
-
-  const command = platform === 'mac' 
-    ? (apiKey ? `curl -fsSL https://uniskill.ai/connect.sh | bash -s -- ${apiKey}` : 'curl -fsSL https://uniskill.ai/connect.sh | bash')
-    : (apiKey ? `$env:UNISKILL_KEY="${apiKey}"; irm https://uniskill.ai/connect.ps1 | iex` : 'irm https://uniskill.ai/connect.ps1 | iex');
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(command);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-[28px] p-6 shadow-sm text-left relative group transition-all">
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-50 dark:bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500">
-            <Monitor size={20} />
-          </div>
-          <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Tool Suite Integration</h3>
-        </div>
-        <div className="flex bg-[#f3f4f6] dark:bg-slate-800/50 rounded-[12px] p-1 border border-slate-200/50 dark:border-slate-700/50">
-          <button 
-            onClick={() => setPlatform('mac')}
-            className={`px-4 py-1.5 text-xs font-bold rounded-[8px] transition-all ${platform === 'mac' ? 'bg-[#e0e7ff] text-[#2563eb] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-          >Mac / Linux</button>
-          <button 
-            onClick={() => setPlatform('win')}
-            className={`px-4 py-1.5 text-xs font-bold rounded-[8px] transition-all ${platform === 'win' ? 'bg-[#e0e7ff] text-[#2563eb] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-          >Windows</button>
-        </div>
-      </div>
-
-      <div className="rounded-[16px] border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50 dark:bg-slate-950 shadow-sm">
-        <div className="bg-[#f1f5f9] dark:bg-slate-900 px-4 py-2.5 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
-           <div className="flex gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
-              <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-           </div>
-           <span className="text-[11px] font-mono italic text-slate-500 font-bold ml-4 user-select-none">Terminal</span>
-           <button 
-             onClick={handleCopy}
-             className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-400 hover:text-blue-500 transition-colors"
-           >
-             {copied ? <CheckCircle2 size={13} className="text-emerald-500" /> : <Copy size={13} />}
-             <span>Copy</span>
-           </button>
-        </div>
-        <div className="p-5 font-mono text-[14px] leading-relaxed break-all bg-white dark:bg-slate-950 flex gap-3">
-           <span className="text-slate-400 font-bold">$</span>
-           <div className="flex-1">
-              {platform === 'mac' ? (
-                <>
-                  <span className="text-blue-500">curl</span> 
-                  <span className="text-slate-500 ml-1.5">-fsSL</span> 
-                  <span className="text-emerald-500 ml-2">https://uniskill.ai/connect.sh</span> 
-                  <span className="text-slate-400 ml-2">|</span> 
-                  <span className="text-blue-500 ml-2">bash</span>
-                  {apiKey && (
-                    <>
-                      <span className="text-slate-400 ml-2">-s --</span> 
-                      <span className="text-emerald-500 ml-2">{apiKey}</span>
-                    </>
-                  )}
-                </>
-              ) : (
-                <>
-                  {apiKey && (
-                    <>
-                      <span className="text-slate-400">$env:UNISKILL_KEY="</span>
-                      <span className="text-emerald-500">{apiKey}</span>
-                      <span className="text-slate-400">"; </span>
-                    </>
-                  )}
-                  <span className="text-blue-500">irm</span> 
-                  <span className="text-emerald-500 ml-2">https://uniskill.ai/connect.ps1</span> 
-                  <span className="text-slate-400 ml-2">|</span> 
-                  <span className="text-blue-500 ml-2">iex</span>
-                </>
-              )}
-           </div>
-        </div>
-      </div>
-
-      <p className="text-[11px] text-slate-500 leading-relaxed font-medium mt-4">
-        One command to connect your local IDE (Cursor/Claude) to UniSkill network.
-      </p>
-    </div>
-  );
-};
+import WalletSetup from "@/components/auth/WalletSetup";
 
 // ==========================================
 // Component: Recent Activity
@@ -166,19 +70,15 @@ interface DashboardClientProps {
 }
 
 export default function DashboardClient({ initialCredits, initialDisplayName, initialSkills }: DashboardClientProps) {
-  const { data: session, status } = useSession();
-  const [showKey, setShowKey] = useState(false);
-  const [copiedKey, setCopiedKey] = useState(false);
+  const { data: session, status, update: updateSession } = useSession();
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
-  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [skillToDelete, setSkillToDelete] = useState<{uid: string, name: string} | null>(null);
+  const [showWalletSetup, setShowWalletSetup] = useState(false);
   
   // 🌟 使用初始值来避免“闪烁” (Initialize with server-side props to avoid flicker)
   const [liveCredits, setLiveCredits] = useState<number | undefined>(initialCredits);
   const [displayName, setDisplayName] = useState<string | null>(initialDisplayName);
   
-  const [resetRawKey, setResetRawKey] = useState<string | undefined>(undefined);
-  const [resetKeyPreview, setResetKeyPreview] = useState<string | undefined>(undefined);
   const [skills, setSkills] = useState<any[]>(initialSkills || []);
   const [loadingSkills, setLoadingSkills] = useState(!initialSkills);
   const [invocationStats, setInvocationStats] = useState({ daily: 0, lifetime: 0 });
@@ -293,6 +193,18 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
     if (status !== "authenticated") return;
     fetchLiveCredits();
     
+    // Check if we need to show wallet setup
+    const params = new URLSearchParams(window.location.search);
+    const needRelink = params.get('relink') === 'true';
+    const noWallet = (session?.user as any)?.authorizedWallet === null;
+    
+    if (needRelink || noWallet) {
+        setShowWalletSetup(true);
+        if (needRelink) {
+            window.history.replaceState({}, '', '/dashboard');
+        }
+    }
+
     // 🌟 如果已经有服务端下发的数据，则跳过初次加载请求 (Skip initial fetch if SSR data exists)
     if (!initialSkills || initialSkills.length === 0) {
       fetchSkills();
@@ -302,24 +214,9 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
     fetchRecentActivity();
     window.addEventListener("focus", fetchLiveCredits);
     return () => window.removeEventListener("focus", fetchLiveCredits);
-  }, [status, session?.user?.id, initialSkills]);
+  }, [status, session?.user, initialSkills]);
 
-  const handleConfirmReset = async () => {
-    try {
-      const res = await fetch("/api/user/reset-key", { method: "POST" });
-      if (res.ok) {
-        const data = await res.json();
-        setResetRawKey(data.rawKey);
-        setResetKeyPreview(data.keyPreview);
-      } else {
-        throw new Error("Failed to reset key");
-      }
-    } catch (e) {
-      console.error("Failed to reset key", e);
-      alert("Error resetting key. Please try again.");
-      throw e;
-    }
-  };
+  // Removed legacy handleConfirmReset
 
   const liveSkills = skills.filter(s => s.state === 'active');
   const privateCount = liveSkills.filter(s => s.status === 'Private').length;
@@ -354,21 +251,13 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
     },
   ];
 
-  const handleCopyKey = () => {
-    const key = resetRawKey || session?.user?.rawKey || "";
-    if (!key) return;
-    const textArea = document.createElement("textarea");
-    textArea.value = key;
-    document.body.appendChild(textArea);
-    textArea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textArea);
-    setCopiedKey(true);
-    setTimeout(() => setCopiedKey(false), 2000);
+  const handleWalletSetupComplete = async (address?: string) => {
+    setShowWalletSetup(false);
+    // 🌟 Immediatly update the session with the new wallet address to prevent the popup from reappearing
+    await updateSession({ 
+      authorizedWallet: address || null 
+    }); 
   };
-
-  const finalRawKey = resetRawKey || session?.user?.rawKey;
-  const finalKeyPreview = resetKeyPreview || session?.user?.keyPreview;
 
   return (
     <div className="min-h-screen transition-colors duration-500 font-sans relative" style={{ backgroundColor: "var(--color-bg-primary)" }}>
@@ -602,58 +491,32 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
           </div>
 
           <div className="space-y-6">
-            <div className={`p-5 bg-white dark:bg-[#0f1117] border rounded-[24px] shadow-sm text-left transition-all ${finalRawKey ? 'border-yellow-500/30' : 'border-slate-200 dark:border-slate-800'}`}>
-                <div className="flex items-center justify-between mb-3">
+            <div className="p-5 bg-white dark:bg-[#0f1117] border border-slate-200 dark:border-slate-800 rounded-[24px] shadow-sm text-left">
+               <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <div className={`p-1 rounded-md ${finalRawKey ? 'bg-yellow-500/10 text-yellow-500' : 'bg-blue-500/10 text-blue-500'}`}>
-                      <Key size={12} />
+                    <div className="p-1 rounded-md bg-blue-500/10 text-blue-500">
+                      <Wallet size={12} />
                     </div>
-                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Your API Key</span>
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sovereign Wallet</span>
                   </div>
-                  <button 
-                    onClick={() => setIsResetModalOpen(true)}
-                    className="text-[9px] font-black text-slate-400 hover:text-red-400 transition-colors uppercase tracking-widest bg-slate-50 dark:bg-slate-800/30 px-2 py-0.5 rounded border border-slate-100 dark:border-slate-800"
-                  >
-                    Reset
-                  </button>
-                </div>
+               </div>
 
-                {finalRawKey && (
-                  <div className="flex items-center gap-2 mb-3 px-2.5 py-1.5 rounded-lg bg-yellow-500/8 border border-yellow-500/20">
-                     <span className="text-[9px] text-yellow-600 font-bold uppercase tracking-tight leading-none italic">
-                        This key is shown ONCE — copy it now and store it securely
-                     </span>
+               <div className="bg-slate-50 dark:bg-[#161b22] border border-slate-100 dark:border-slate-800 rounded-lg p-3 mb-2 flex items-center justify-between">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">MPC-TSS Address</span>
+                    <span className="text-xs font-mono text-slate-900 dark:text-slate-300">
+                      {(session?.user as any)?.authorizedWallet 
+                         ? `${(session?.user as any).authorizedWallet.substring(0,6)}...${(session?.user as any).authorizedWallet.substring(38)}` 
+                         : 'Not Activated'}
+                    </span>
                   </div>
-                )}
-
-                <div className={`bg-slate-50 dark:bg-[#161b22] border rounded-lg p-2.5 mb-2 flex items-center gap-2 ${finalRawKey ? 'border-yellow-500/20' : 'border-slate-100 dark:border-slate-800'}`}>
-                  <code className={`text-[12px] font-mono truncate flex-1 ${finalRawKey && showKey ? 'text-green-500' : 'text-slate-500'}`}>
-                    {finalRawKey 
-                      ? (showKey ? finalRawKey : "us-••••••••••••••••••••••••••••••••") 
-                      : (finalKeyPreview || "us-••••••••••••••••••••••••••••••••")}
-                  </code>
-                   <div className="flex items-center gap-1">
-                    {finalRawKey && (
-                      <>
-                        <button onClick={() => setShowKey(!showKey)} className="p-1 text-slate-400 hover:text-slate-600 transition-colors">
-                          {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
-                        </button>
-                        <button 
-                          onClick={handleCopyKey} 
-                          className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
-                        >
-                          {copiedKey ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Copy size={14} />}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <p className="text-[9px] text-slate-400 italic font-sans leading-none">
-                  {finalRawKey ? 'Save this key now — it will be hidden after refresh.' : 'Key is hidden — shown once at registration.'}
-                </p>
+                  <ShieldCheck size={20} className={(session?.user as any)?.authorizedWallet ? "text-emerald-500" : "text-slate-400"} />
+               </div>
+               
+               <p className="text-[9px] text-slate-400 italic font-sans leading-relaxed">
+                 Your identity is secured by Particle Network MPC. Requests to the gateway must be signed via EIP-191.
+               </p>
             </div>
-
-            <IntegrationTerminal apiKey={finalRawKey || undefined} />
 
             <RecentActivity logs={recentLogs} loading={loadingLogs} />
           </div>
@@ -669,11 +532,9 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
         }}
       />
 
-      <ResetKeyModal 
-        isOpen={isResetModalOpen}
-        onClose={() => setIsResetModalOpen(false)}
-        onConfirm={handleConfirmReset}
-      />
+      {showWalletSetup && (
+        <WalletSetup onComplete={handleWalletSetupComplete} />
+      )}
 
       <DeleteSkillModal
         isOpen={!!skillToDelete}

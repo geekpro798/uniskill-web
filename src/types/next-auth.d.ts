@@ -9,8 +9,7 @@ declare module "next-auth" {
             id: string;
             userUid?: string;
             githubId?: string;
-            rawKey?: string;
-            keyPreview?: string;
+            authorizedWallet?: string | null;
             credits?: number;
             tier?: string;
         } & DefaultSession["user"]
@@ -19,8 +18,7 @@ declare module "next-auth" {
     interface User {
         githubId?: string;
         userUid?: string;
-        rawKey?: string;
-        keyPreview?: string;
+        authorizedWallet?: string | null;
         credits?: number;
         tier?: string;
     }
@@ -31,8 +29,7 @@ declare module "next-auth/jwt" {
     interface JWT {
         userUid?: string;
         githubId?: string;
-        rawKey?: string;
-        keyPreview?: string;
+        authorizedWallet?: string | null;
         credits?: number;
         tier?: string;
     }

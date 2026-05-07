@@ -7,13 +7,16 @@
 
 import { SessionProvider } from "next-auth/react";
 import { UserProvider } from "@/context/UserContext";
+import { ParticleAuthProvider } from "@/lib/particle";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
     return (
         <SessionProvider>
-            <UserProvider>
-                {children}
-            </UserProvider>
+            <ParticleAuthProvider>
+                <UserProvider>
+                    {children}
+                </UserProvider>
+            </ParticleAuthProvider>
         </SessionProvider>
     );
 }

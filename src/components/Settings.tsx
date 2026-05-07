@@ -19,7 +19,12 @@ import {
   ExternalLink,
   AlertTriangle,
   X,
-  CheckCircle2
+  CheckCircle2,
+  MonitorSmartphone,
+  Download,
+  RefreshCw,
+  Zap,
+  Clock
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { supabase } from "@/lib/supabase";
@@ -563,7 +568,29 @@ function VaultTab({ secrets, onUpdate, showConfirm, showAlert }: any) {
 // ── SUB-COMPONENT: Security Tab ──
 function SecurityTab({ user }: any) {
   const [showDeleteInfo, setShowDeleteInfo] = useState(false);
-  const displayName = user.name || user.email.split('@')[0];
+  const [walletAddress, setWalletAddress]   = useState<string | null>(null);
+  const [copied, setCopied]                 = useState(false);
+  const displayName = user.name || user.email?.split('@')[0];
+
+  // 组件挂载时查询当前钱包绑定状态
+  React.useEffect(() => {
+    fetch('/api/user/wallet')
+      .then(r => r.json())
+      .then(d => setWalletAddress(d.authorized_wallet ?? null))
+      .catch(() => {});
+  }, []);
+
+  const handleCopyWallet = () => {
+    if (!walletAddress) return;
+    navigator.clipboard.writeText(walletAddress);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleRelinkWallet = () => {
+    // 重定向到 Dashboard，携带 relink=true 参数触发 WalletSetup 恢复流程
+    window.location.href = '/dashboard?relink=true';
+  };
 
   return (
     <div className="space-y-6">
@@ -597,6 +624,54 @@ function SecurityTab({ user }: any) {
           <span>Your account is authenticated via GitHub. Password management and 2FA are handled by your provider.</span>
         </p>
       </div>
+
+      {/* ── Sovereign Wallet Section ── */}
+      <div className="space-y-4 max-w-xl">
+        <h4 className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+          Sovereign Wallet
+          <span className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider rounded border border-blue-100 dark:border-blue-800/50">
+            MPC-TSS
+          </span>
+        </h4>
+
+        <div className="p-4 border border-blue-200 dark:border-blue-800/40 rounded-lg bg-blue-50/50 dark:bg-blue-900/10">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Your Wallet Address</p>
+              {walletAddress ? (
+                <p className="text-sm font-mono text-gray-900 dark:text-white break-all pr-2">
+                  {walletAddress}
+                </p>
+              ) : (
+                <p className="text-sm text-gray-400 italic">Not yet activated</p>
+              )}
+            </div>
+            <div className="flex gap-2 flex-shrink-0">
+              {walletAddress && (
+                <button
+                  onClick={handleCopyWallet}
+                  className="px-3 py-1.5 text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/50 rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                >
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
+              )}
+              <button
+                onClick={handleRelinkWallet}
+                className="px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md hover:border-blue-400 hover:text-blue-600 transition-colors"
+              >
+                Re-link Wallet
+              </button>
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-gray-400 dark:text-slate-500 flex items-start gap-1.5">
+            <Shield className="w-3.5 h-3.5 shrink-0 mt-0.5 text-blue-400" />
+            <span>Managed by Particle Network MPC. Re-authenticate via GitHub to restore access on a new device.</span>
+          </p>
+        </div>
+      </div>
+
+      {/* ── Local Agent (Session Key) Section ── */}
+      <LocalAgentSection walletAddress={walletAddress} />
 
       <div className="h-px bg-gray-200 my-6" />
 
@@ -632,6 +707,267 @@ function SecurityTab({ user }: any) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── SUB-COMPONENT: Local Agent Session Key ──
+const SESSION_STORAGE_KEY = "uniskill_session_meta"; // localStorage key (stores metadata only, NOT private key)
+
+function LocalAgentSection({ walletAddress }: { walletAddress: string | null }) {
+  const [sessionMeta, setSessionMeta] = React.useState<{
+    sessionPubKey: string;
+    expiresAt: number;
+    label: string;
+  } | null>(null);
+  const [pendingKey, setPendingKey] = React.useState<{
+    privateKey: string;
+    sessionPubKey: string;
+    walletAddress: string;
+    userUid: string;
+    expiresAt: number;
+    label: string;
+    gatewayUrl: string;
+  } | null>(null);
+  const [label, setLabel]     = React.useState("Claude Desktop");
+  const [duration, setDuration] = React.useState("30d");
+  const [status, setStatus]   = React.useState<"idle" | "generating" | "success" | "revoking" | "error">("idle");
+  const [errMsg, setErrMsg]   = React.useState("");
+
+  // 从 localStorage 读取已保存的元数据
+  React.useEffect(() => {
+    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+    if (raw) {
+      try { setSessionMeta(JSON.parse(raw)); } catch { localStorage.removeItem(SESSION_STORAGE_KEY); }
+    }
+  }, []);
+
+  // 在浏览器本地生成 secp256k1 密鑰对 + 注册到 Gateway
+  const handleGenerate = async () => {
+    if (!walletAddress) return;
+    setStatus("generating");
+    setErrMsg("");
+    setPendingKey(null);
+
+    try {
+      // 1. 在浏览器生成临时密鑰对（Private Key 不离开客户端）
+      const { Wallet } = await import("ethers");
+      const tempWallet      = Wallet.createRandom();
+      const sessionPrivKey  = tempWallet.privateKey;
+      const sessionPubKey   = tempWallet.address.toLowerCase();
+
+      // 2. 通知服务端注册到 Gateway
+      const res = await fetch("/api/session/issue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionPubKey, duration, label }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Registration failed");
+
+      // 3. 将元数据（不含私钓）存入 localStorage
+      const meta = { sessionPubKey, expiresAt: data.expiresAt, label };
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(meta));
+      setSessionMeta(meta);
+
+      // 4. 将完整 session.json（含私钓）待下载
+      setPendingKey({
+        privateKey:    sessionPrivKey,
+        sessionPubKey: sessionPubKey,
+        walletAddress: data.walletAddress,
+        userUid:       data.userUid,
+        expiresAt:     data.expiresAt,
+        label:         label,
+        gatewayUrl:    data.gatewayUrl,
+      });
+
+      setStatus("success");
+    } catch (err: any) {
+      setErrMsg(err.message || "Unknown error");
+      setStatus("error");
+    }
+  };
+
+  const handleDownload = () => {
+    if (!pendingKey) return;
+    const payload = {
+      sessionPrivateKey: pendingKey.privateKey,
+      sessionPubKey:     pendingKey.sessionPubKey,
+      walletAddress:     pendingKey.walletAddress,
+      userUid:           pendingKey.userUid,
+      expiresAt:         pendingKey.expiresAt,
+      label:             pendingKey.label,
+      gatewayUrl:        pendingKey.gatewayUrl,
+      proxyPort:         7523,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url;
+    a.download = "uniskill_session.json";
+    a.click();
+    URL.revokeObjectURL(url);
+    // 下载后清除私钓（什么都不保留）
+    setPendingKey(null);
+  };
+
+  const handleRevoke = async () => {
+    if (!sessionMeta) return;
+    setStatus("revoking");
+    try {
+      const res = await fetch("/api/session/issue", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionPubKey: sessionMeta.sessionPubKey }),
+      });
+      if (!res.ok) throw new Error("Revoke failed");
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      setSessionMeta(null);
+      setPendingKey(null);
+      setStatus("idle");
+    } catch (err: any) {
+      setErrMsg(err.message);
+      setStatus("error");
+    }
+  };
+
+  const isExpired = sessionMeta ? sessionMeta.expiresAt < Date.now() : false;
+  const isLoading = status === "generating" || status === "revoking";
+
+  return (
+    <div className="space-y-4 max-w-xl">
+      <h4 className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+        <MonitorSmartphone className="w-4 h-4 text-indigo-500" />
+        Local Agent Access
+        <span className="px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold uppercase tracking-wider rounded border border-indigo-100 dark:border-indigo-800/50">
+          Session Key
+        </span>
+      </h4>
+
+      <p className="text-xs text-gray-500 dark:text-slate-400">
+        Generate a short-lived session key to authorize local agents (Claude Desktop, Cursor) without exposing your main wallet. Run <code className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded text-[11px]">npx uniskill-proxy</code> to start the local signing proxy.
+      </p>
+
+      {/* 当前状态卡片 */}
+      {sessionMeta && (
+        <div className={`p-3 rounded-lg border ${
+          isExpired
+            ? 'bg-red-50/50 dark:bg-red-900/10 border-red-200 dark:border-red-800/40'
+            : 'bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800/40'
+        }`}>
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                {isExpired
+                  ? <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
+                  : <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                }
+                <span className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                  {sessionMeta.label}
+                </span>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${
+                  isExpired
+                    ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                }`}>
+                  {isExpired ? 'Expired' : 'Active'}
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-500 dark:text-slate-500 mt-1 font-mono truncate">
+                {sessionMeta.sessionPubKey}
+              </p>
+              <p className="text-[10px] text-gray-400 dark:text-slate-600 mt-0.5 flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {isExpired ? 'Expired' : 'Expires'}: {new Date(sessionMeta.expiresAt).toLocaleDateString()}
+              </p>
+            </div>
+            <button
+              onClick={handleRevoke}
+              disabled={isLoading}
+              className="text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-700 hover:underline whitespace-nowrap disabled:opacity-50"
+            >
+              {status === 'revoking' ? 'Revoking...' : 'Revoke'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 一次性私钓下载提示 */}
+      {pendingKey && (
+        <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-700/40">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-bold text-amber-800 dark:text-amber-300">Download your session.json now — this is your only chance!</p>
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">The private key is generated locally and<strong> never sent to our servers</strong>. After you close this panel, it cannot be recovered.</p>
+            </div>
+          </div>
+          <button
+            onClick={handleDownload}
+            className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-lg transition-colors shadow-sm"
+          >
+            <Download className="w-4 h-4" />
+            Download uniskill_session.json
+          </button>
+        </div>
+      )}
+
+      {/* 生成表单 */}
+      {!walletAddress ? (
+        <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 text-xs text-gray-500 dark:text-slate-500 flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+          Activate your Sovereign Wallet first to use local agent signing.
+        </div>
+      ) : (
+        <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-800 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">Label</label>
+              <input
+                id="session-label"
+                value={label}
+                onChange={e => setLabel(e.target.value)}
+                placeholder="e.g. Claude Desktop"
+                maxLength={64}
+                className="w-full text-xs px-2.5 py-2 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">Expiry</label>
+              <select
+                id="session-duration"
+                value={duration}
+                onChange={e => setDuration(e.target.value)}
+                className="w-full text-xs px-2.5 py-2 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white outline-none focus:border-indigo-500"
+              >
+                <option value="7d">7 days</option>
+                <option value="30d">30 days</option>
+                <option value="90d">90 days</option>
+              </select>
+            </div>
+          </div>
+
+          {errMsg && (
+            <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {errMsg}
+            </p>
+          )}
+
+          <button
+            id="generate-session-key-btn"
+            onClick={handleGenerate}
+            disabled={isLoading || !label.trim()}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {status === 'generating' ? (
+              <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Generating...</>
+            ) : (
+              <><Zap className="w-4 h-4" /> Generate Session Key</>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

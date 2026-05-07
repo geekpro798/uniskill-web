@@ -28,11 +28,10 @@ export const authOptions: NextAuthOptions = {
                     image: user.image,
                     github_url: profileObj?.html_url,
                 });
-                (user as any).rawKey = result.rawKey;
                 (user as any).credits = result.profile.credits;
                 (user as any).tier = result.profile.tier;
                 (user as any).userUid = result.profile.user_uid;
-                (user as any).keyPreview = result.profile.key_preview; // New: Sync preview
+                (user as any).authorizedWallet = result.profile.authorized_wallet ?? null;
                 (user as any).githubId = (profileObj?.id ?? "").toString();
                 return true;
             } catch (error) {
@@ -40,26 +39,35 @@ export const authOptions: NextAuthOptions = {
                 return false;
             }
         },
-        async jwt({ token, user }) {
+        async jwt({ token, user, trigger, session }) {
             if (user) {
-                token.githubId = (user as any).githubId;
-                token.userUid = (user as any).userUid;
-                token.rawKey = (user as any).rawKey;
-                token.keyPreview = (user as any).keyPreview; // New
-                token.credits = (user as any).credits;
-                token.tier = (user as any).tier;
+                token.githubId       = (user as any).githubId;
+                token.userUid        = (user as any).userUid;
+                token.authorizedWallet = (user as any).authorizedWallet;
+                token.credits        = (user as any).credits;
+                token.tier           = (user as any).tier;
             }
+
+            // 🌟 Handle manual session updates (triggered by updateSession())
+            if (trigger === "update" && session) {
+                if (session.authorizedWallet !== undefined) {
+                    token.authorizedWallet = session.authorizedWallet;
+                }
+                if (session.credits !== undefined) {
+                    token.credits = session.credits;
+                }
+            }
+            
             return token;
         },
         async session({ session, token }) {
             if (session.user) {
-                session.user.id = token.sub ?? "";
-                session.user.userUid = token.userUid as string | undefined;
-                session.user.githubId = token.githubId as string | undefined;
-                session.user.rawKey = token.rawKey as string | undefined;
-                session.user.keyPreview = token.keyPreview as string | undefined; // New
-                session.user.credits = token.credits as number | undefined;
-                session.user.tier = token.tier as string | undefined;
+                session.user.id              = token.sub ?? "";
+                session.user.userUid         = token.userUid as string | undefined;
+                session.user.githubId        = token.githubId as string | undefined;
+                session.user.authorizedWallet = token.authorizedWallet as string | null | undefined;
+                session.user.credits         = token.credits as number | undefined;
+                session.user.tier            = token.tier as string | undefined;
             }
             return session;
         },

@@ -13,27 +13,18 @@ import json
 import urllib.request
 import urllib.error
 
-# 云端清单地址 — 由 connect.sh 写入，始终指向最新版本
-MANIFEST_URL = "https://uniskill-gateway.geekpro798.workers.dev/v1/skills"
-
-# 从环境变量读取 API Key，避免硬编码敏感信息
-API_KEY = os.environ.get("UNISKILL_KEY", "")
+# 从环境变量读取 Proxy URL，回落至默认 7523 端口
+PROXY_URL = os.environ.get("UNISKILL_PROXY_URL", "http://localhost:7523")
+MANIFEST_URL = f"{PROXY_URL}/v1/skills"
 
 
 def _fetch_manifest() -> dict:
     """从云端拉取技能清单 JSON，失败时抛出带有可读信息的异常。"""
-    if not API_KEY:
-        raise EnvironmentError(
-            "[UniSkill] UNISKILL_KEY is not set. "
-            "Run connect.sh first or export the variable manually."
-        )
-
-    # 构造带 Bearer 认证头与标准 User-Agent 的请求
+    # 构造请求（无需 Authorization 头，Proxy 会自动签名）
     req = urllib.request.Request(
         MANIFEST_URL,
         headers={
-            "Authorization": f"Bearer {API_KEY}",
-            "User-Agent": "UniSkill-Python-SDK/1.0"
+            "User-Agent": "UniSkill-Python-SDK/2.0"
         },
     )
 
@@ -59,8 +50,7 @@ def _make_caller(skill: dict):
     """
     endpoint = skill.get("endpoint", "")
     # 推断完整 URL（若 endpoint 已含完整地址则直接使用）
-    base = "https://uniskill-gateway.geekpro798.workers.dev"
-    url = endpoint if endpoint.startswith("http") else f"{base}{endpoint}"
+    url = endpoint if endpoint.startswith("http") else f"{PROXY_URL}{endpoint}"
 
     def caller(**kwargs) -> dict:
         # 将关键字参数序列化为 JSON 请求体
@@ -69,9 +59,8 @@ def _make_caller(skill: dict):
             url,
             data=body,
             headers={
-                "Authorization": f"Bearer {API_KEY}",
                 "Content-Type": "application/json",
-                "User-Agent": "UniSkill-Python-SDK/1.0"
+                "User-Agent": "UniSkill-Python-SDK/2.0"
             },
             method="POST",
         )

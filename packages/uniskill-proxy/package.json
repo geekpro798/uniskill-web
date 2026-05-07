@@ -1,0 +1,30 @@
+{
+  "name": "uniskill-proxy",
+  "version": "0.1.0",
+  "description": "Local signing proxy for UniSkill — enables local agents (Claude Desktop, Cursor) to use wallet-based authentication",
+  "type": "module",
+  "bin": {
+    "uniskill-proxy": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "build": "esbuild index.js --bundle --platform=node --target=node18 --outfile=../../public/proxy.js"
+  },
+  "keywords": [
+    "uniskill",
+    "ai-agent",
+    "mcp",
+    "proxy",
+    "signing"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "ethers": "^6.14.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0"
+  }
+}

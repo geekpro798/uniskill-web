@@ -7,23 +7,21 @@ import os
 import sys
 import importlib.util
 
-# 1. 确保已加载环境变量
-# 优先解析当前根目录下的 .env
+# 1. 确保环境变量（如果有额外的配置，可以放在 .env）
 if os.path.exists(".env"):
     with open(".env", "r") as f:
         for line in f:
-            if line.startswith("UNISKILL_KEY="):
-                key = line.strip().split("=", 1)[1]
-                # 去除可能的引号
-                os.environ["UNISKILL_KEY"] = key.strip("\"'")
+            if line.startswith("UNISKILL_PROXY_URL="):
+                url = line.strip().split("=", 1)[1]
+                os.environ["UNISKILL_PROXY_URL"] = url.strip("\"'")
                 break
 
 try:
-    from utils.uniskill_loader import load_skills
+    from utils.uniskill_loader import load_skills  # type: ignore[import-not-found]
 except ImportError:
     print("\n❌ [UniSkill Error] utils/uniskill_loader.py not found!", file=sys.stderr)
     print("Please run the setup script first:", file=sys.stderr)
-    print("curl -s https://uniskill.ai/connect.sh | bash -s -- <YOUR_KEY>\n", file=sys.stderr)
+    print("curl -fsSL https://uniskill.ai/connect.sh | bash\n", file=sys.stderr)
     sys.exit(1)
 
 
@@ -53,13 +51,8 @@ def find_entry_point():
 def start_with_uniskill():
     print("🚀 UniSkill: Initializing Auto-discovery...")
     
-    # 检查 Key
-    if "UNISKILL_KEY" not in os.environ:
-        print("\n❌ [UniSkill Error] UNISKILL_KEY not found in environment or .env file!", file=sys.stderr)
-        sys.exit(1)
-
-    # 2. Sync skills from cloud first
-    # 首先从云端同步技能清单，确保版本最新
+    # 2. Sync skills from local proxy first
+    # 首先从 Proxy 同步技能清单，确保版本最新
     print("🔄 Syncing remote tools from UniSkill Cloud...")
     try:
         dynamic_tools = load_skills(verbose=True)

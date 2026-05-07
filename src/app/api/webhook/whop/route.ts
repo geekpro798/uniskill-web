@@ -187,7 +187,19 @@ export async function POST(req: NextRequest): Promise<Response> {
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // ── Step 6：幂等性保护 (Idempotency Guard) ────────────────────────
+        // ── Step 6：读取当前用户 Profile ─────────────────────────────────
+        // 需提前读取 authorized_wallet 作为 payer_id
+        const { data: profile, error: fetchError } = await supabase
+            .from('profiles')
+            .select('credits, tier, authorized_wallet')
+            .eq('user_uid', userUid)
+            .single();
+
+        if (fetchError || !profile) {
+            throw new Error(`Profile not found for UID: ${userUid}`);
+        }
+
+        // ── Step 7：幂等性保护 (Idempotency Guard) ────────────────────────
         // 利用 credit_events.request_id 列的 UNIQUE 约束：
         // 同一 Whop Payment ID 重复投递时数据库抛出 23505 唯一性冲突，
         // 直接返回 200 跳过处理，避免重复加款。
@@ -198,6 +210,7 @@ export async function POST(req: NextRequest): Promise<Response> {
                 ? `WHOP_UPGRADE:${productInfo.targetTier}`
                 : 'WHOP_TOPUP',
             request_id: `WHOP_PAYMENT_${paymentId}`,
+            payer_id:   profile.authorized_wallet || userUid,
         });
 
         if (insertError) {
@@ -207,17 +220,6 @@ export async function POST(req: NextRequest): Promise<Response> {
                 return NextResponse.json({ message: 'Already processed' });
             }
             throw insertError;
-        }
-
-        // ── Step 7：读取当前用户 Profile ─────────────────────────────────
-        const { data: profile, error: fetchError } = await supabase
-            .from('profiles')
-            .select('credits, tier')
-            .eq('user_uid', userUid)
-            .single();
-
-        if (fetchError || !profile) {
-            throw new Error(`Profile not found for UID: ${userUid}`);
         }
 
         // ── Step 8：高水位线等级升级逻辑 + 积分累加 ──────────────────────

@@ -15,9 +15,8 @@ export interface UserProfile {
     email: string | null;
     username: string | null;
     avatar_url: string | null;
-    github_url: string | null; // Added
-    key_hash: string;
-    key_preview: string | null; // Added: key preview (first 4 and last 4 chars)
+    github_url: string | null;
+    authorized_wallet: string | null; // Secp256k1 EOA 钱包地址（Particle MPC 生成）
     credits: number;
     tier: string;
     created_at: string;
@@ -26,7 +25,6 @@ export interface UserProfile {
 /* ─── 首次注册返回类型 ───────────────────────────────────────────────── */
 export interface RegistrationResult {
     profile: UserProfile;
-    rawKey?: string; // 仅首次注册时返回，之后不可再查
 }
 
 /* ─── handleUserRegistration：处理用户首次登录 ─────────────────────────
@@ -86,17 +84,9 @@ export async function handleUserRegistration(
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // 1. Generate the raw API key and its unique hash ONCE
-    const rawKey = `us-${crypto.randomUUID()}`;
-    const keyHash = crypto.createHash("sha256").update(rawKey).digest("hex");
+    // 1. 对于新的钱包架构，不再在此生成 API Key
+    // authorized_wallet 字段将在稍后的 WalletSetup 组件中由前端 POST /api/user/wallet
     
-    // 生成预览字符串: us-[前4位]...[后4位]
-    // (Example: us-2e43...4r45)
-    // rawKey 格式类似 "us-38b4d834-..."
-    const keyParts = rawKey.split('-'); // ["us", "uuid..."]
-    const uuidPart = keyParts[1];
-    const keyPreview = `us-${uuidPart.substring(0, 4)}••••••••${rawKey.substring(rawKey.length - 4)}`;
-
     // 2. Insert into Supabase (using Admin client)
     const { data: newProfile, error: dbError } = await supabaseAdmin
         .from("profiles")
@@ -106,8 +96,7 @@ export async function handleUserRegistration(
             username: githubProfile.username ?? null,
             avatar_url: githubProfile.image ?? null,
             github_url: githubProfile.github_url ?? null,
-            key_hash: keyHash,
-            key_preview: keyPreview, // Store the preview
+            // authorized_wallet defaults to null automatically by Postgres schema
             credits: 500,
         })
         .select()
@@ -162,7 +151,7 @@ export async function handleUserRegistration(
                 user_uid: newProfile.user_uid,
                 total_credits: 500,
                 new_tier: "FREE",
-                key_hash: keyHash
+                authorized_wallet: null
             }),
         });
 
@@ -196,9 +185,8 @@ export async function handleUserRegistration(
         });
     }
 
-    // ─── Step 6: 返回结果，rawKey 仅此一次返回给前端展示 ───────────
+    // ─── Step 6: 返回结果 ───────────
     return {
         profile: newProfile as UserProfile,
-        rawKey, // ⚠️ 不存库，用户需立即复制保存
     };
 }
