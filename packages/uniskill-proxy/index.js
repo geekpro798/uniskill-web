@@ -218,16 +218,27 @@ const server = http.createServer(async (clientReq, clientRes) => {
     if (resp.body) {
       const reader = resp.body.getReader();
       const pump = async () => {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          clientRes.write(value);
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (clientRes.writable) {
+              clientRes.write(value);
+            }
+          }
+        } catch (e) {
+          // 忽略连接重置等常见流错误
+        } finally {
+          if (!clientRes.writableEnded) {
+            clientRes.end();
+          }
         }
-        clientRes.end();
       };
       await pump();
     } else {
-      clientRes.end();
+      if (!clientRes.writableEnded) {
+        clientRes.end();
+      }
     }
   } catch (err) {
     log("ERR", `Proxy error: ${err.message}`);
