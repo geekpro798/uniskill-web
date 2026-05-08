@@ -3,7 +3,8 @@
 # Or:    irm https://uniskill.ai/connect.ps1 -OutFile connect.ps1; .\connect.ps1 -Session .\my_session.json
 
 param(
-    [string]$Session = ""
+    [string]$Session = "",
+    [string]$Data = ""
 )
 
 # ── Colors / Banner ───────────────────────────────────────────────────────────
@@ -16,37 +17,51 @@ Write-Color "╚═════════════════════�
 Write-Host ""
 
 # ── Find session.json ─────────────────────────────────────────────────────────
-Write-Host "🔍 Searching for session key..."
 
-$candidates = @(
-    $Session,
-    ".\uniskill_session.json",
-    "$env:USERPROFILE\Downloads\uniskill_session.json",
-    "$env:USERPROFILE\.uniskill\session.json"
-)
-
-$sessionFile = ""
-foreach ($f in $candidates) {
-    if ([string]::IsNullOrWhiteSpace($f)) { continue }
-    if (Test-Path $f -PathType Leaf) {
-        $sessionFile = Resolve-Path $f
-        break
+if ($Data) {
+    Write-Host "🔍 Processing inline Base64 data (Quick Connect)..."
+    $uniskillDir = "$env:USERPROFILE\.uniskill"
+    if (-not (Test-Path $uniskillDir)) {
+        New-Item -ItemType Directory -Force -Path $uniskillDir | Out-Null
     }
+    $sessionFile = "$uniskillDir\session.json"
+    $bytes = [System.Convert]::FromBase64String($Data)
+    $jsonString = [System.Text.Encoding]::UTF8.GetString($bytes)
+    $jsonString | Out-File -FilePath $sessionFile -Encoding utf8 -Force
+    Write-Color "  ✔ Saved Quick Connect session data." "Green"
+} else {
+    Write-Host "🔍 Searching for session key..."
+    
+    $candidates = @(
+        $Session,
+        ".\uniskill_session.json",
+        "$env:USERPROFILE\Downloads\uniskill_session.json",
+        "$env:USERPROFILE\.uniskill\session.json"
+    )
+    
+    $sessionFile = ""
+    foreach ($f in $candidates) {
+        if ([string]::IsNullOrWhiteSpace($f)) { continue }
+        if (Test-Path $f -PathType Leaf) {
+            $sessionFile = Resolve-Path $f
+            break
+        }
+    }
+    
+    if (-not $sessionFile) {
+        Write-Color "❌ uniskill_session.json not found!" "Red"
+        Write-Host ""
+        Write-Color "To get a session key:" "White"
+        Write-Host "  1. Log in to https://uniskill.ai"
+        Write-Host "  2. Go to Settings → Account & Security → Local Agent Access"
+        Write-Host "  3. Click `"Generate Session Key`" and download the file."
+        Write-Host "  4. Run this script again in the folder where you downloaded it."
+        Write-Host ""
+        exit 1
+    }
+    
+    Write-Color "  ✔ Found session file at: $sessionFile" "Green"
 }
-
-if (-not $sessionFile) {
-    Write-Color "❌ uniskill_session.json not found!" "Red"
-    Write-Host ""
-    Write-Color "To get a session key:" "White"
-    Write-Host "  1. Log in to https://uniskill.ai"
-    Write-Host "  2. Go to Settings → Account & Security → Local Agent Access"
-    Write-Host "  3. Click `"Generate Session Key`" and download the file."
-    Write-Host "  4. Run this script again in the folder where you downloaded it."
-    Write-Host ""
-    exit 1
-}
-
-Write-Color "  ✔ Found session file at: $sessionFile" "Green"
 
 # ── Validate session.json ────────────────────────────────────────────────────
 try {
@@ -96,8 +111,14 @@ if (-not (Test-Path $uniskillDir)) {
 }
 
 $targetSession = "$uniskillDir\session.json"
-if ($sessionFile.Path -ne $targetSession) {
-    Copy-Item -Path $sessionFile -Destination $targetSession -Force
+if ($sessionFile -is [System.Management.Automation.PathInfo]) {
+    $srcPath = $sessionFile.Path
+} else {
+    $srcPath = $sessionFile
+}
+
+if ($srcPath -ne $targetSession) {
+    Copy-Item -Path $srcPath -Destination $targetSession -Force
     Write-Color "  ✔ Session key saved to $targetSession" "Green"
 }
 
@@ -229,6 +250,24 @@ if (Test-Path "$env:LOCALAPPDATA\Zed") {
 
 if (-not $injected) {
     Write-Color "  ⚠️  No desktop AI client detected. Run them once to initialize their config folders." "Yellow"
+}
+
+# ── Workspace Local Config (EasyClaw, etc.) ──────────────────────────────────
+$workspaceConfig = "$PWD\.mcp.json"
+$dummy = Merge-McpConfig $workspaceConfig "mcpServers" "Current Workspace"
+
+# Handle .gitignore to prevent accidental commits
+$gitignorePath = "$PWD\.gitignore"
+$gitDir = "$PWD\.git"
+if (Test-Path $gitignorePath) {
+    $content = Get-Content $gitignorePath -Raw
+    if ($content -notmatch '(?m)^\.mcp\.json$') {
+        Add-Content -Path $gitignorePath -Value ".mcp.json" -Encoding UTF8
+        Write-Color "   ✔ Appended .mcp.json to .gitignore" "Green"
+    }
+} elseif (Test-Path $gitDir) {
+    Set-Content -Path $gitignorePath -Value ".mcp.json" -Encoding UTF8
+    Write-Color "   ✔ Created .gitignore and added .mcp.json" "Green"
 }
 
 # ── Done ──────────────────────────────────────────────────────────────────────
