@@ -351,6 +351,21 @@ if [ "$INJECTED" = false ]; then
   echo -e "  ${YELLOW}⚠️  No desktop AI client detected. Run them once to initialize their config folders.${NC}"
 fi
 
+# ── Workspace Local Config (EasyClaw, etc.) ──────────────────────────────────
+WORKSPACE_CFG="$PWD/.mcp.json"
+inject_config "$WORKSPACE_CFG" "Current Workspace"
+
+# Handle .gitignore to prevent accidental commits
+if [ -f "$PWD/.gitignore" ]; then
+  if ! grep -q "^\.mcp\.json$" "$PWD/.gitignore"; then
+    echo ".mcp.json" >> "$PWD/.gitignore"
+    echo -e "   ${GREEN}✔ Appended .mcp.json to .gitignore${NC}"
+  fi
+elif [ -d "$PWD/.git" ]; then
+  echo ".mcp.json" > "$PWD/.gitignore"
+  echo -e "   ${GREEN}✔ Created .gitignore and added .mcp.json${NC}"
+fi
+
 # ── Done ─────────────────────────────────────────────────────────────────────
 echo -e "\n${GREEN}${BOLD}✅  UniSkill Superbrain is now securely connected!${NC}\n"
 echo -e "${YELLOW}${BOLD}🚀 NEXT STEPS:${NC}"
