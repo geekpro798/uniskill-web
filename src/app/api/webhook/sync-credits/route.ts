@@ -40,7 +40,7 @@ export async function POST(req: Request) {
         const { data, error } = await supabase
             .from('profiles')
             .update({ credits: newBalance })
-            .eq('authorized_wallet', hash)
+            .eq('user_uid', hash)
             .select('github_id');
 
         if (error) {
