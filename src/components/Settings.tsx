@@ -866,6 +866,9 @@ function LocalAgentSection({ walletAddress }: { walletAddress: string | null }) 
               Clear
             </button>
           </div>
+          <div className="mt-3 pt-2 border-t border-emerald-200/50 dark:border-emerald-800/30 text-[10px] text-gray-500 dark:text-slate-400">
+            * For security, the setup command is <strong>only shown once</strong> upon generation. If you lost it, please <strong>Clear</strong> this session and generate a new one.
+          </div>
         </div>
       )}
 
