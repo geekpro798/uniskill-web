@@ -60,6 +60,19 @@ export default function SettingsDashboard({ initialUser }: SettingsDashboardProp
     onConfirm?: () => void 
   }>({ show: false, type: 'alert', title: '', message: '' });
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash;
+      if (hash === '#security') {
+        setActiveTab('security');
+      } else if (hash === '#vault') {
+        setActiveTab('vault');
+      } else if (hash === '#profile') {
+        setActiveTab('profile');
+      }
+    }
+  }, []);
+
   const showAlert = (title: string, message: React.ReactNode) => {
     setModal({ show: true, type: 'alert', title, message });
   };
@@ -589,7 +602,7 @@ function SecurityTab({ user }: any) {
 
   const handleRelinkWallet = () => {
     // 重定向到 Dashboard，携带 relink=true 参数触发 WalletSetup 恢复流程
-    window.location.href = '/dashboard?relink=true';
+    router.push('/dashboard?relink=true');
   };
 
   return (
@@ -655,12 +668,16 @@ function SecurityTab({ user }: any) {
                   {copied ? 'Copied!' : 'Copy'}
                 </button>
               )}
+              {/* 暂时隐藏 Re-link Wallet 功能
               <button
+                disabled
                 onClick={handleRelinkWallet}
-                className="px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md hover:border-blue-400 hover:text-blue-600 transition-colors"
+                className="px-3 py-1.5 text-xs font-medium text-slate-400 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-md cursor-not-allowed opacity-70"
+                title="Re-linking is currently disabled"
               >
                 Re-link Wallet
               </button>
+              */}
             </div>
           </div>
           <p className="mt-3 text-xs text-gray-400 dark:text-slate-500 flex items-start gap-1.5">

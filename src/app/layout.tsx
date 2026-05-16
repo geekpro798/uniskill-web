@@ -12,13 +12,13 @@ const inter = Inter({
 
 /* ─── SEO 元数据配置 ─── */
 export const metadata: Metadata = {
-  title: "UniSkill — One Key. Infinite Skills. Built for Agents.",
+  title: "UniSkill — One Identity. Infinite Skills. Built for Agents.",
   description:
-    "The managed API gateway for AI agents. Stop managing API keys, start building intelligence. Access Search, Scrape, Social and more with a single unified key.",
+    "The managed skill layer for AI agents. Connect your wallet, access Search, Scrape, Social and more — no credential management, just infinite skills.",
   keywords: ["AI gateway", "AI agents", "API gateway", "LLM tools", "agent skills"],
   openGraph: {
     title: "UniSkill — Managed API Gateway for AI Agents",
-    description: "One Key. Infinite Skills. Built for Agents.",
+    description: "One Identity. Infinite Skills. Built for Agents.",
     type: "website",
   },
 };

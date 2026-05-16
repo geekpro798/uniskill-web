@@ -85,7 +85,7 @@ export default function HeroSection() {
                             className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.05] mb-6"
                             style={{ color: "var(--color-text-primary)" }}
                         >
-                            <span className="block">One Key.</span>
+                            <span className="block">One Identity.</span>
                             <span className="gradient-text block">Infinite Skills.</span>
                             <span className="block">Built for Agents.</span>
                         </motion.h1>
@@ -100,7 +100,7 @@ export default function HeroSection() {
                         >
                             The unified skill layer for autonomous agents.{" "}
                             <span style={{ opacity: 0.8 }}>
-                                Stop managing API keys, start building intelligence.
+                                No credentials to manage. Just connect your wallet and every skill is ready.
                             </span>
                         </motion.p>
 
