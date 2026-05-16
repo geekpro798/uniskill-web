@@ -732,21 +732,35 @@ function SecurityTab({ user }: any) {
 const SESSION_STORAGE_KEY = "uniskill_session_meta";
 
 function LocalAgentSection({ walletAddress }: { walletAddress: string | null }) {
-  const [sessionMeta, setSessionMeta] = React.useState<{
+  type SessionMetaType = {
     sessionPubKey: string;
     expiresAt: number;
     label: string;
-  } | null>(null);
+  };
+
+  const [sessionMetaList, setSessionMetaList] = React.useState<SessionMetaType[]>([]);
   const [pendingKey, setPendingKey] = React.useState<any>(null);
   const [label, setLabel]     = React.useState("");
   const [duration, setDuration] = React.useState("30d");
   const [status, setStatus]   = React.useState<"idle" | "generating" | "success" | "revoking" | "error">("idle");
   const [errMsg, setErrMsg]   = React.useState("");
+  const [revokingKey, setRevokingKey] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     const raw = localStorage.getItem(SESSION_STORAGE_KEY);
     if (raw) {
-      try { setSessionMeta(JSON.parse(raw)); } catch { localStorage.removeItem(SESSION_STORAGE_KEY); }
+      try { 
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setSessionMetaList(parsed);
+        } else if (parsed && parsed.sessionPubKey) {
+          // 兼容老数据结构
+          setSessionMetaList([parsed]);
+          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify([parsed]));
+        }
+      } catch { 
+        localStorage.removeItem(SESSION_STORAGE_KEY); 
+      }
     }
   }, []);
 
@@ -771,9 +785,10 @@ function LocalAgentSection({ walletAddress }: { walletAddress: string | null }) 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Registration failed");
 
-      const meta = { sessionPubKey, expiresAt: data.expiresAt, label };
-      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(meta));
-      setSessionMeta(meta);
+      const meta: SessionMetaType = { sessionPubKey, expiresAt: data.expiresAt, label };
+      const newList = [meta, ...sessionMetaList];
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(newList));
+      setSessionMetaList(newList);
 
       setPendingKey({
         privateKey:    sessionPrivKey,
@@ -789,6 +804,28 @@ function LocalAgentSection({ walletAddress }: { walletAddress: string | null }) 
     } catch (err: any) {
       setErrMsg(err.message || "Unknown error");
       setStatus("error");
+    }
+  };
+
+  const handleRevoke = async (pubKeyToRevoke: string) => {
+    setRevokingKey(pubKeyToRevoke);
+    try {
+      const res = await fetch("/api/session/issue", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionPubKey: pubKeyToRevoke }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Revocation failed");
+
+      // Update local state and storage
+      const newList = sessionMetaList.filter(s => s.sessionPubKey !== pubKeyToRevoke);
+      setSessionMetaList(newList);
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(newList));
+    } catch (err: any) {
+      alert("Failed to revoke session: " + err.message);
+    } finally {
+      setRevokingKey(null);
     }
   };
 
@@ -827,48 +864,59 @@ function LocalAgentSection({ walletAddress }: { walletAddress: string | null }) 
         Generate a session key below, then run the connector to link your local environment to UniSkill.
       </p>
 
-      {sessionMeta && (
-        <div className={`p-3 rounded-lg border ${
-          sessionMeta.expiresAt < Date.now()
-            ? 'bg-red-50/50 dark:bg-red-900/10 border-red-200 dark:border-red-800/40'
-            : 'bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800/40'
-        }`}>
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                {sessionMeta.expiresAt < Date.now()
-                  ? <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
-                  : <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                }
-                <span className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                  {sessionMeta.label}
-                </span>
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${
-                  sessionMeta.expiresAt < Date.now()
-                    ? 'bg-red-100 text-red-600'
-                    : 'bg-emerald-100 text-emerald-700'
-                }`}>
-                  {sessionMeta.expiresAt < Date.now() ? 'Expired' : 'Active'}
-                </span>
+      {sessionMetaList.length > 0 && (
+        <div className="space-y-3">
+          {sessionMetaList.map((session, idx) => {
+            const isExpired = session.expiresAt < Date.now();
+            const isRevokingThis = revokingKey === session.sessionPubKey;
+            return (
+              <div key={session.sessionPubKey} className={`p-3 rounded-lg border ${
+                isExpired
+                  ? 'bg-red-50/50 dark:bg-red-900/10 border-red-200 dark:border-red-800/40'
+                  : 'bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800/40'
+              }`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      {isExpired
+                        ? <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
+                        : <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                      }
+                      <span className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                        {session.label}
+                      </span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${
+                        isExpired
+                          ? 'bg-red-100 text-red-600'
+                          : 'bg-emerald-100 text-emerald-700'
+                      }`}>
+                        {isExpired ? 'Expired' : 'Active'}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-gray-400 dark:text-slate-600 mt-1 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      Expires: {new Date(session.expiresAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleRevoke(session.sessionPubKey)}
+                    disabled={isRevokingThis}
+                    className="text-[10px] font-bold text-red-500 hover:underline disabled:opacity-50 disabled:no-underline"
+                  >
+                    {isRevokingThis ? "Revoking..." : "Revoke"}
+                  </button>
+                </div>
+                {/* Only show the security hint for the very first generated session to avoid clutter */}
+                {idx === 0 && sessionMetaList.length > 0 && (
+                  <div className={`mt-3 pt-2 border-t text-[10px] text-gray-500 dark:text-slate-400 ${
+                    isExpired ? 'border-red-200/50 dark:border-red-800/30' : 'border-emerald-200/50 dark:border-emerald-800/30'
+                  }`}>
+                    * For security, the setup command is <strong>only shown once</strong> upon generation. If you lost it, please <strong>Revoke</strong> this session and generate a new one.
+                  </div>
+                )}
               </div>
-              <p className="text-[10px] text-gray-400 dark:text-slate-600 mt-1 flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                Expires: {new Date(sessionMeta.expiresAt).toLocaleDateString()}
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                localStorage.removeItem(SESSION_STORAGE_KEY);
-                setSessionMeta(null);
-              }}
-              className="text-[10px] font-bold text-red-500 hover:underline"
-            >
-              Clear
-            </button>
-          </div>
-          <div className="mt-3 pt-2 border-t border-emerald-200/50 dark:border-emerald-800/30 text-[10px] text-gray-500 dark:text-slate-400">
-            * For security, the setup command is <strong>only shown once</strong> upon generation. If you lost it, please <strong>Clear</strong> this session and generate a new one.
-          </div>
+            );
+          })}
         </div>
       )}
 
@@ -908,13 +956,25 @@ function LocalAgentSection({ walletAddress }: { walletAddress: string | null }) 
             </div>
           </div>
 
-          <button 
-            onClick={handleGenerate}
-            disabled={status === "generating" || !label.trim()}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition-colors shadow-sm disabled:opacity-50"
-          >
-            {status === "generating" ? "Generating..." : <><Plus className="w-4 h-4" /> Generate Key</>}
-          </button>
+          <div className="space-y-2">
+            <button 
+              onClick={handleGenerate}
+              disabled={status === "generating" || !label.trim() || sessionMetaList.length >= 10}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {status === "generating" ? "Generating..." : <><Plus className="w-4 h-4" /> Generate Key</>}
+            </button>
+            {sessionMetaList.length >= 10 && (
+              <p className="text-[10px] text-red-500 text-center font-medium">
+                You have reached the maximum of 10 active sessions. Please Revoke an old session to generate a new one.
+              </p>
+            )}
+            {status === "error" && errMsg && (
+              <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-200 dark:border-red-800/50">
+                {errMsg}
+              </p>
+            )}
+          </div>
         </div>
       )}
     </div>
