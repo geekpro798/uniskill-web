@@ -906,6 +906,13 @@ function LocalAgentSection({ walletAddress }: { walletAddress: string | null }) 
                     {isRevokingThis ? "Revoking..." : "Revoke"}
                   </button>
                 </div>
+                {/* Inline Quick Connect Command UI */}
+                {pendingKey && pendingKey.sessionPubKey === session.sessionPubKey && (
+                  <div className="mt-4 mb-2">
+                    <QuickConnectCard keyData={pendingKey} onDownload={handleDownload} />
+                  </div>
+                )}
+
                 {/* Only show the security hint for the very first generated session to avoid clutter */}
                 {idx === 0 && sessionMetaList.length > 0 && (
                   <div className={`mt-3 pt-2 border-t text-[10px] text-gray-500 dark:text-slate-400 ${
@@ -920,10 +927,6 @@ function LocalAgentSection({ walletAddress }: { walletAddress: string | null }) 
         </div>
       )}
 
-      {/* Plan A: Quick Connect Command UI */}
-      {pendingKey && (
-        <QuickConnectCard keyData={pendingKey} onDownload={handleDownload} />
-      )}
 
       {!walletAddress ? (
         <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 text-xs text-gray-500 dark:text-slate-500 flex items-center gap-2">
