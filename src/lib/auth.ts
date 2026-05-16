@@ -84,8 +84,8 @@ export async function handleUserRegistration(
         process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // 1. 对于新的钱包架构，不再在此生成 API Key
-    // authorized_wallet 字段将在稍后的 WalletSetup 组件中由前端 POST /api/user/wallet
+    // 1. 对于新的“主权身份”架构，注册流程仅初始化基础 Profile
+    // 信用点数、等级等信息在此设定，而钱包绑定（authorized_wallet）将由用户在 Dashboard 中完成
     
     // 2. Insert into Supabase (using Admin client)
     const { data: newProfile, error: dbError } = await supabaseAdmin
@@ -96,7 +96,7 @@ export async function handleUserRegistration(
             username: githubProfile.username ?? null,
             avatar_url: githubProfile.image ?? null,
             github_url: githubProfile.github_url ?? null,
-            // authorized_wallet defaults to null automatically by Postgres schema
+            // authorized_wallet 默认为 null，由数据库 Schema 处理
             credits: 500,
         })
         .select()
