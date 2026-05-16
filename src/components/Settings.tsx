@@ -602,7 +602,7 @@ function SecurityTab({ user }: any) {
 
   const handleRelinkWallet = () => {
     // 重定向到 Dashboard，携带 relink=true 参数触发 WalletSetup 恢复流程
-    router.push('/dashboard?relink=true');
+    window.location.href = '/dashboard?relink=true';
   };
 
   return (
