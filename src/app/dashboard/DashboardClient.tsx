@@ -74,6 +74,7 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
   const [skillToDelete, setSkillToDelete] = useState<{uid: string, name: string} | null>(null);
   const [showWalletSetup, setShowWalletSetup] = useState(false);
+  const [walletSetupCompletedLocal, setWalletSetupCompletedLocal] = useState(false);
   
   // 🌟 使用初始值来避免“闪烁” (Initialize with server-side props to avoid flicker)
   const [liveCredits, setLiveCredits] = useState<number | undefined>(initialCredits);
@@ -196,7 +197,7 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
     // Check if we need to show wallet setup
     const params = new URLSearchParams(window.location.search);
     const needRelink = params.get('relink') === 'true';
-    const noWallet = (session?.user as any)?.authorizedWallet === null;
+    const noWallet = (session?.user as any)?.authorizedWallet === null && !walletSetupCompletedLocal;
     
     if (needRelink || noWallet) {
         setShowWalletSetup(true);
@@ -252,6 +253,7 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
   ];
 
   const handleWalletSetupComplete = async (address?: string) => {
+    setWalletSetupCompletedLocal(true); // 🌟 瞬间上锁，免疫后续 NextAuth 异步 Session 更新导致的 useEffect 误触
     setShowWalletSetup(false);
     // 🌟 Immediatly update the session with the new wallet address to prevent the popup from reappearing
     await updateSession({ 
