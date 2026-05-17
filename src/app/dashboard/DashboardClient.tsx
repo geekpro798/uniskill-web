@@ -75,6 +75,16 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
   const [skillToDelete, setSkillToDelete] = useState<{uid: string, name: string} | null>(null);
   const [showWalletSetup, setShowWalletSetup] = useState(false);
   const [walletSetupCompletedLocal, setWalletSetupCompletedLocal] = useState(false);
+  const [hideWallet, setHideWallet] = useState(true);
+  const [copiedWallet, setCopiedWallet] = useState(false);
+  
+  const handleCopyWallet = () => {
+    const addr = (session?.user as any)?.authorizedWallet;
+    if (!addr) return;
+    navigator.clipboard.writeText(addr);
+    setCopiedWallet(true);
+    setTimeout(() => setCopiedWallet(false), 2000);
+  };
   
   // 🌟 使用初始值来避免“闪烁” (Initialize with server-side props to avoid flicker)
   const [liveCredits, setLiveCredits] = useState<number | undefined>(initialCredits);
@@ -494,26 +504,50 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
 
           <div className="space-y-6">
             <div className="p-5 bg-white dark:bg-[#0f1117] border border-slate-200 dark:border-slate-800 rounded-[24px] shadow-sm text-left">
-               <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1 rounded-md bg-blue-500/10 text-blue-500">
-                      <Wallet size={12} />
-                    </div>
-                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sovereign Wallet</span>
-                  </div>
-               </div>
-
-               <div className="bg-slate-50 dark:bg-[#161b22] border border-slate-100 dark:border-slate-800 rounded-lg p-3 mb-2 flex items-center justify-between">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">MPC-TSS Address</span>
-                    <span className="text-xs font-mono text-slate-900 dark:text-slate-300">
-                      {(session?.user as any)?.authorizedWallet 
-                         ? `${(session?.user as any).authorizedWallet.substring(0,6)}...${(session?.user as any).authorizedWallet.substring(38)}` 
-                         : 'Not Activated'}
-                    </span>
-                  </div>
-                  <ShieldCheck size={20} className={(session?.user as any)?.authorizedWallet ? "text-emerald-500" : "text-slate-400"} />
-               </div>
+                <div className="flex items-center justify-between mb-3">
+                   <div className="flex items-center gap-2">
+                     <div className="p-1 rounded-md bg-blue-500/10 text-blue-500">
+                       <Wallet size={12} />
+                     </div>
+                     <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sovereign Wallet</span>
+                     <ShieldCheck size={13} className={(session?.user as any)?.authorizedWallet ? "text-emerald-500" : "text-slate-400"} />
+                   </div>
+                </div>
+ 
+                <div className="bg-slate-50 dark:bg-[#161b22] border border-slate-100 dark:border-slate-800 rounded-lg p-3 mb-2 flex items-center justify-between">
+                   <div className="flex flex-col gap-0.5 flex-grow">
+                     <span className="text-[10px] text-slate-400 font-bold uppercase">MPC-TSS Address</span>
+                     <div className="flex items-center gap-2 mt-0.5">
+                       <span className="text-xs font-mono text-slate-900 dark:text-slate-300 break-all pr-2">
+                         {(session?.user as any)?.authorizedWallet 
+                            ? (hideWallet 
+                                ? `${(session?.user as any).authorizedWallet.substring(0,6)}...${(session?.user as any).authorizedWallet.substring(38)}`
+                                : (session?.user as any).authorizedWallet)
+                            : 'Not Activated'}
+                       </span>
+                       
+                       {(session?.user as any)?.authorizedWallet && (
+                         <div className="flex items-center gap-1">
+                           <button 
+                             onClick={() => setHideWallet(!hideWallet)}
+                             className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                             title={hideWallet ? "Show Wallet" : "Mask Wallet"}
+                           >
+                             {hideWallet ? <EyeOff size={12} /> : <Eye size={12} />}
+                           </button>
+                           
+                           <button 
+                             onClick={handleCopyWallet}
+                             className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                             title="Copy Wallet Address"
+                           >
+                             {copiedWallet ? <CheckCircle2 size={12} className="text-emerald-500 animate-pulse" /> : <Copy size={12} />}
+                           </button>
+                         </div>
+                       )}
+                     </div>
+                   </div>
+                </div>
                
                <p className="text-[9px] text-slate-400 italic font-sans leading-relaxed">
                  Your identity is secured by Particle Network MPC. Requests to the gateway must be signed via EIP-191.

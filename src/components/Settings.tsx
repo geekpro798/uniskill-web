@@ -583,6 +583,7 @@ function SecurityTab({ user }: any) {
   const [showDeleteInfo, setShowDeleteInfo] = useState(false);
   const [walletAddress, setWalletAddress]   = useState<string | null>(null);
   const [copied, setCopied]                 = useState(false);
+  const [hideWallet, setHideWallet]         = useState(true);
   const displayName = user.name || user.email?.split('@')[0];
 
   // 组件挂载时查询当前钱包绑定状态
@@ -652,9 +653,20 @@ function SecurityTab({ user }: any) {
             <div className="flex-1 min-w-0">
               <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Your Wallet Address</p>
               {walletAddress ? (
-                <p className="text-sm font-mono text-gray-900 dark:text-white break-all pr-2">
-                  {walletAddress}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-mono text-gray-900 dark:text-white break-all pr-2">
+                    {hideWallet 
+                      ? `${walletAddress.substring(0,6)}...${walletAddress.substring(38)}` 
+                      : walletAddress}
+                  </p>
+                  <button 
+                    onClick={() => setHideWallet(!hideWallet)}
+                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800/50 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                    title={hideWallet ? "Show Wallet Address" : "Mask Wallet Address"}
+                  >
+                    {hideWallet ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
               ) : (
                 <p className="text-sm text-gray-400 italic">Not yet activated</p>
               )}
