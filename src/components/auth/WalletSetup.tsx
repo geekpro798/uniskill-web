@@ -22,9 +22,10 @@ export default function WalletSetup({ onComplete }: WalletSetupProps) {
     const [errorMsg,   setErrorMsg]   = useState<string>('');
     const [walletAddr, setWalletAddr] = useState<string>('');
 
-    // ✅ 通过 Effect 监听 address 的可用状态，一旦可用立刻执行签售绑定
+    // ✅ 通过 Effect 监听 address 的可用状态
+    // 如果处于 connecting 状态，或者 SDK 自动从 OAuth 重定向恢复了连接状态（step 为 idle），立刻自动执行绑定，免去用户二次点击！
     useEffect(() => {
-        if (step === 'connecting' && isConnected && address) {
+        if (isConnected && address && (step === 'connecting' || step === 'idle')) {
             handleBinding(address);
         }
     }, [isConnected, address, step]);
