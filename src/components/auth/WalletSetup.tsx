@@ -4,7 +4,7 @@
 // Sovereign identity onboarding: Particle Network MPC wallet activation
 
 import React, { useState, useEffect } from 'react';
-import { useConnect, useConnectors, useAccount, useDisconnect } from '@particle-network/connectkit';
+import { useAccount, useDisconnect, useModal } from '@particle-network/connectkit';
 import { motion } from 'framer-motion';
 import { Shield, Zap, CheckCircle2, AlertTriangle, Wallet, Github } from 'lucide-react';
 
@@ -13,10 +13,9 @@ interface WalletSetupProps {
 }
 
 export default function WalletSetup({ onComplete }: WalletSetupProps) {
-    const { connect }              = useConnect();
-    const connectors               = useConnectors();
     const { address, isConnected } = useAccount();
     const { disconnect }           = useDisconnect();
+    const { setOpen }              = useModal();
 
     const [step,       setStep]       = useState<'idle' | 'connecting' | 'binding' | 'done' | 'error'>('idle');
     const [errorMsg,   setErrorMsg]   = useState<string>('');
@@ -34,24 +33,16 @@ export default function WalletSetup({ onComplete }: WalletSetupProps) {
         setErrorMsg('');
 
         try {
-            // Find the Particle Auth connector
-            const authConnector = connectors.find((c: any) => c.id === 'particleAuth' || c.walletConnectorType === 'particleAuth');
-            
-            if (!authConnector) {
-                throw new Error('Particle Auth connector explicitly missing. Please check your configuration.');
-            }
-
-            // 如果此前存在不干净的授权状态，先断开避免缓存冲突
+            // In case of any dirty state, disconnect first.
+            // With useModal(), we don't have to worry about browser popup blockers
+            // intercepting the click because the modal is a React component, not a window.open().
             if (isConnected) {
-                await disconnect();
+                disconnect(); 
             }
 
-            // 调用 ConnectKit 集成的连接能力
-            await connect({ 
-                connector: authConnector, 
-                // @ts-ignore: Some versions of connect omit precise socialType hints in TS, but it's valid at runtime
-                authParams: { socialType: 'github' } 
-            });
+            // 打开官方弹窗。这样如果 Particle 服务器拒绝了请求（比如 quota 超限、域名白名单等），
+            // 弹窗里会直接显示明确的报错，而不是在后台死循环转圈圈。
+            setOpen(true);
 
             // Note: The rest of the flow is passed cleanly to the useEffect!
         } catch (err: any) {
