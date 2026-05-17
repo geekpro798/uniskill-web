@@ -215,7 +215,7 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
     fetchRecentActivity();
     window.addEventListener("focus", fetchLiveCredits);
     return () => window.removeEventListener("focus", fetchLiveCredits);
-  }, [status, session?.user, initialSkills]);
+  }, [status, session?.user, initialSkills, walletSetupCompletedLocal]);
 
   // Removed legacy handleConfirmReset
 
