@@ -82,7 +82,8 @@ const LegacySkillDetailContent: React.FC<SkillDetailProps> = ({ skill_name, skil
         <div className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--color-bg-primary)", color: "var(--color-text-secondary)" }}>
             <UnifiedNavbar />
             <main className="max-w-6xl mx-auto px-6 pt-32 pb-20 w-full flex-grow">
-                <div className="grid grid-cols-1 lg:grid-cols-10 gap-10">
+                <div className="grid grid-cols-1 lg:grid-cols-10 gap-10 items-start">
+                    {/* ── Top Left: Breadcrumbs & Header Details ── */}
                     <div className="lg:col-span-7 space-y-12">
                         <Breadcrumbs items={skill.customBreadcrumbs || [{ label: "Store", href: "/skills" }, { label: skill.display_name || skill_name }]} />
                         <div className="flex flex-col">
@@ -104,6 +105,13 @@ const LegacySkillDetailContent: React.FC<SkillDetailProps> = ({ skill_name, skil
                             </div>
                             <p className="text-lg leading-relaxed mt-6" style={{ color: "var(--color-text-secondary)" }}>{skill.description}</p>
                         </div>
+                    </div>
+                    
+                    {/* ── Top Right: Spacer to keep layout correct on desktop ── */}
+                    <div className="hidden lg:block lg:col-span-3 h-0" />
+
+                    {/* ── Bottom Left: Parameters Specification ── */}
+                    <div className="lg:col-span-7">
                         <div className="border rounded-xl p-6" style={{ backgroundColor: "var(--color-bg-primary)", borderColor: "var(--color-border)" }}>
                             <h3 className="text-[11px] font-bold uppercase tracking-widest mb-6 opacity-60">Parameters Specification</h3>
                             <table className="w-full text-left">
@@ -118,7 +126,9 @@ const LegacySkillDetailContent: React.FC<SkillDetailProps> = ({ skill_name, skil
                             </table>
                         </div>
                     </div>
-                    <div className="lg:col-span-3 space-y-5">
+
+                    {/* ── Bottom Right: Pricing (Aligned with Parameters Specification) ── */}
+                    <div className="lg:col-span-3">
                        <div className="p-5 border rounded-xl" style={{ backgroundColor: "var(--color-bg-primary)", borderColor: "var(--color-border)" }}>
                             <p className="text-[10px] font-bold uppercase tracking-widest mb-4 opacity-60">Pricing</p>
                             <div className="flex items-center justify-between mb-2">
@@ -127,13 +137,6 @@ const LegacySkillDetailContent: React.FC<SkillDetailProps> = ({ skill_name, skil
                                     <span className="text-xl font-black">{skill.credits_per_call ?? 1}</span>
                                     <span className="text-[10px] font-bold uppercase opacity-50">CR</span>
                                 </div>
-                            </div>
-                        </div>
-                        <div className="p-5 border rounded-xl" style={{ backgroundColor: "var(--color-bg-primary)", borderColor: "var(--color-border)" }}>
-                             <p className="text-[10px] font-bold uppercase tracking-widest mb-4 opacity-60">Integration</p>
-                             <div className="code-block text-[11px] font-mono p-4 rounded-lg leading-relaxed bg-[#0f172a] text-slate-400">
-                                <span className="text-blue-500">curl</span> -X POST ... \
-                                <br /> -H "Authorization: Bearer <span className="text-cyan-400">KEY</span>"
                             </div>
                         </div>
                     </div>
