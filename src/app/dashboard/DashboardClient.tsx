@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import UnifiedNavbar from "@/components/UnifiedNavbar";
 import TopUpModal from "@/components/Dashboard/TopUpModal";
 import DeleteSkillModal from "@/components/Dashboard/DeleteSkillModal";
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 import { resolveSkillVisuals } from "@/lib/skill-visual-identity";
 import WalletSetup from "@/components/auth/WalletSetup";
+import OnboardingBanner from "@/components/Dashboard/OnboardingBanner";
 
 // ==========================================
 // Component: Recent Activity
@@ -95,6 +97,34 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
   const [invocationStats, setInvocationStats] = useState({ daily: 0, lifetime: 0 });
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
+
+  // 🌟 Onboarding modal: show for new users with wallet but no session key
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const SESSION_STORAGE_KEY = "uniskill_session_meta";
+  const ONBOARDING_DISMISSED_KEY = "uniskill_onboarding_dismissed";
+
+  const hasActiveSessionKey = (): boolean => {
+    try {
+      const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.some((s: any) => s.expiresAt > Date.now());
+      }
+      return parsed.expiresAt > Date.now();
+    } catch {
+      return false;
+    }
+  };
+
+  const shouldShowOnboarding = (): boolean => {
+    if (typeof window === "undefined") return false;
+    const dismissed = localStorage.getItem(ONBOARDING_DISMISSED_KEY);
+    if (dismissed === "true") return false;
+    const hasWallet = !!(session?.user as any)?.authorizedWallet;
+    if (!hasWallet) return false;
+    return !hasActiveSessionKey();
+  };
 
   // 🌟 将技能数据实时包装上视觉属性 (Decorate skills with visual visuals)
   const richSkills = React.useMemo(() => {
@@ -224,8 +254,32 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
     fetchInvocations();
     fetchRecentActivity();
     window.addEventListener("focus", fetchLiveCredits);
-    return () => window.removeEventListener("focus", fetchLiveCredits);
+    window.addEventListener("focus", checkOnboarding);
+    return () => {
+      window.removeEventListener("focus", fetchLiveCredits);
+      window.removeEventListener("focus", checkOnboarding);
+    };
   }, [status, session?.user, initialSkills, walletSetupCompletedLocal]);
+
+  // 🌟 Check onboarding status on focus (user returns from Settings page)
+  const checkOnboarding = () => {
+    if (status !== "authenticated") return;
+    if (shouldShowOnboarding()) {
+      setShowOnboarding(true);
+    }
+  };
+
+  // 🌟 Initial onboarding check
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    // Small delay to let localStorage be available
+    const timer = setTimeout(() => {
+      if (shouldShowOnboarding()) {
+        setShowOnboarding(true);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [status, session?.user]);
 
   // Removed legacy handleConfirmReset
 
@@ -290,7 +344,18 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
           </div>
           <div className="flex items-center gap-2">
 
-             <button 
+             {!showOnboarding && (
+               <motion.button
+                 layoutId="onboarding-guide"
+                 onClick={() => setShowOnboarding(true)}
+                 className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl active:scale-95 text-[11px]"
+                 title="Setup Guide"
+               >
+                  <Zap size={14} className="text-amber-500" /> Setup Guide
+               </motion.button>
+             )}
+
+             <button
                onClick={() => window.location.href = '/dashboard/myskills/new'}
                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-md active:scale-95 text-xs"
              >
@@ -298,6 +363,17 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
              </button>
           </div>
         </header>
+
+        <AnimatePresence>
+          {showOnboarding && (
+            <motion.div layoutId="onboarding-guide">
+              <OnboardingBanner
+                visible={showOnboarding}
+                onDismiss={() => setShowOnboarding(false)}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {stats.map((stat, idx) => (
