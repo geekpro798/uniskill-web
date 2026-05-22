@@ -28,13 +28,13 @@ export default async function SettingsPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg-main)" }}>
-      <UnifiedNavbar 
-        initialCredits={profile?.credits ?? (session.user as any).credits} 
+      <UnifiedNavbar
+        initialCredits={profile?.credits ?? (session.user as any).credits}
         initialDisplayName={profile?.display_name || session.user.name || null}
         initialAvatarUrl={session.user.image || null}
       />
       <main className="max-w-5xl mx-auto pt-[88px] md:pt-[100px] pb-12 px-6">
-        <SettingsDashboard 
+        <SettingsDashboard
           initialUser={{
             name: profile?.display_name || session.user.name || "User",
             email: session.user.email || "",
@@ -45,7 +45,7 @@ export default async function SettingsPage() {
             tier: profile?.tier || "Free",
             provider: (session.user as any).provider || "github",
             secrets: profile?.secrets || {}
-          }} 
+          }}
         />
       </main>
     </div>

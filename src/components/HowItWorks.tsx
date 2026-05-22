@@ -9,10 +9,11 @@ import { useRef } from "react";
 const steps = [
     {
         number: "01",
-        title: "Provision",
-        subtitle: "Get your unified key",
+        title: "Activate",
+        subtitle: "Your wallet is your identity",
         description:
-            "Register once on UniSkill and receive a single gateway key. No provider accounts, no individual API key management.",
+            "Sign in with GitHub, and an MPC wallet is automatically provisioned by Particle Network. This wallet is your persistent identity on UniSkill — it authenticates you across all skills, both official and community-built.",
+        hint: "Fully non-custodial via MPC-TSS. No passwords, no seed phrases.",
         icon: (
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -22,17 +23,18 @@ const steps = [
         color: "from-blue-500 to-blue-600",
         glowColor: "rgba(59, 130, 246, 0.2)",
         borderColor: "border-blue-500/20",
-        snippet: 'key = "us-xxxx-xxxx"',
+        snippet: 'wallet = "0x..."',
         snippetColor: "var(--color-code-keyword)",
-        badge: "1 Key",
+        badge: "1 Wallet",
         badgeColor: "bg-blue-500/10 text-blue-400 border-blue-500/20",
     },
     {
         number: "02",
         title: "Connect",
-        subtitle: "Route through UniSkill Gateway",
+        subtitle: "One command, zero config",
         description:
-            "Point your AI agent to the UniSkill endpoint. Works with any framework — LangChain, AutoGen, CrewAI, or custom agents.",
+            "Create a session key in your dashboard, then run one command. The proxy auto-detects your AI client (Claude Desktop, Cursor, Windsurf) and injects MCP config — credentials never leave your machine.",
+        hint: "Supports macOS, Windows, and Linux. One-time setup, works across all your AI tools.",
         icon: (
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path d="M18 10h4l-8-8-8 8h4v7a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-7z" />
@@ -42,7 +44,7 @@ const steps = [
         color: "from-purple-500 to-purple-600",
         glowColor: "rgba(139, 92, 246, 0.2)",
         borderColor: "border-purple-500/20",
-        snippet: 'base_url = "api.uniskill.ai"',
+        snippet: "curl -fsSL https://uniskill.ai/connect.sh | bash",
         snippetColor: "var(--color-code-string)",
         badge: "Zero Config",
         badgeColor: "bg-purple-500/10 text-purple-400 border-purple-500/20",
@@ -52,7 +54,8 @@ const steps = [
         title: "Execute",
         subtitle: "Access every skill instantly",
         description:
-            "Your agent can now call Search, Scrape, Social, and more — all through one unified interface. UniSkill handles routing, auth, and billing.",
+            "Your agent can now call Search, Scrape, News, Weather, and community skills — all through one unified MCP interface. UniSkill handles auth, routing, and automatic billing.",
+        hint: "Official skills are ready to use. Community skills expand daily — or build your own in minutes.",
         icon: (
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2" />
@@ -61,7 +64,7 @@ const steps = [
         color: "from-cyan-500 to-cyan-600",
         glowColor: "rgba(6, 182, 212, 0.2)",
         borderColor: "border-cyan-500/20",
-        snippet: "skills: [Search, Scrape, Social]",
+        snippet: "skills: [Search, Scrape, News, Weather]",
         snippetColor: "var(--color-code-keyword)",
         badge: "All Skills",
         badgeColor: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
@@ -109,12 +112,12 @@ export default function HowItWorks() {
                     </h2>
                     {/* 副标题 */}
                     <p className="text-lg max-w-xl mx-auto" style={{ color: "var(--color-text-secondary)" }}>
-                        No provider accounts. No credential rotation. No rate limit headaches.
+                        One wallet. One interface. Automatic billing.
                     </p>
                 </motion.div>
 
                 {/* ─── 三步卡片网格 ─── */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative items-stretch">
 
                     {/* 步骤卡片之间的连接线（仅桌面端显示） */}
                     <div className="hidden md:block absolute top-[72px] left-[33%] right-[33%] h-px bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-cyan-500/20" />
@@ -125,11 +128,11 @@ export default function HowItWorks() {
                             initial={{ opacity: 0, y: 40 }}
                             animate={isInView ? { opacity: 1, y: 0 } : {}}
                             transition={{ duration: 0.6, delay: 0.1 + index * 0.15, ease: [0.25, 0.46, 0.45, 0.94] as const }}
-                            className="group relative"
+                            className="group relative h-full"
                         >
                             {/* 卡片主体 */}
                             <div
-                                className={`glass-card h-full p-8 border-slate-200 dark:${step.borderColor} relative overflow-hidden transition-all duration-300 hover:-translate-y-1`}
+                                className={`glass-card h-full p-8 border-slate-200 dark:${step.borderColor} relative overflow-hidden transition-all duration-300 hover:-translate-y-1 flex flex-col`}
                                 style={{
                                     boxShadow: `0 0 0 0 ${step.glowColor}`,
                                 }}
@@ -161,19 +164,24 @@ export default function HowItWorks() {
                                 <p className="text-sm font-medium text-slate-500 mb-3">{step.subtitle}</p>
 
                                 {/* 步骤描述 */}
-                                <p className="text-sm leading-relaxed mb-5" style={{ color: "var(--color-text-secondary)" }}>
+                                <p className="text-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>
                                     {step.description}
                                 </p>
+                                <p className="text-[11px] leading-relaxed mt-3 mb-5 text-slate-400 dark:text-slate-500 italic">
+                                    {step.hint}
+                                </p>
 
-                                <div className="code-block mb-4 font-bold text-[13px]">
-                                    <span style={{ color: "var(--color-code-flag)" }}>$ </span>
-                                    <span style={{ color: step.snippetColor }}>{step.snippet}</span>
+                                {/* 代码块 + 徽章 — 推到底部对齐 */}
+                                <div className="mt-auto">
+                                    <div className="code-block mb-4 font-bold text-[13px]">
+                                        <span style={{ color: "var(--color-code-flag)" }}>$ </span>
+                                        <span style={{ color: step.snippetColor }}>{step.snippet}</span>
+                                    </div>
+
+                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${step.badgeColor}`}>
+                                        ✦ {step.badge}
+                                    </span>
                                 </div>
-
-                                {/* 功能徽章 */}
-                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${step.badgeColor}`}>
-                                    ✦ {step.badge}
-                                </span>
                             </div>
                         </motion.div>
                     ))}
