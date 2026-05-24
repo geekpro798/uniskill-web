@@ -76,12 +76,14 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
 
     // 自动判定模式
     const isDashboard = pathname.startsWith("/dashboard") || pathname === "/settings";
+    const isTeamPage = pathname.startsWith("/t/");
+    const isTeamDashboard = isTeamPage && (pathname.includes("/dashboard") || pathname.includes("/myskills") || pathname.includes("/settings"));
     
     // 滚动动效 (仅在非 Dashboard 模式下更明显，但结构保持一致)
     const navBg = useTransform(
         scrollY,
         [0, 80],
-        [isDashboard ? "var(--color-nav-bg)" : "transparent", "var(--color-nav-bg)"]
+        [isDashboard || isTeamDashboard ? "var(--color-nav-bg)" : "transparent", "var(--color-nav-bg)"]
     );
     const navBorder = useTransform(
         scrollY,
@@ -108,7 +110,9 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
 
                 {/* ─── 中间：模式切换导航 (桌面端) ─── */}
                 <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-1">
-                    {isDashboard ? (
+                    {isTeamPage ? (
+                        isTeamDashboard ? <TeamDashboardLinks pathname={pathname} /> : <TeamLinks />
+                    ) : isDashboard ? (
                         <DashboardLinks pathname={pathname} />
                     ) : (
                         <MarketingLinks pathname={pathname} />
@@ -117,7 +121,7 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
 
                 {/* ─── 右侧：资产 + 主题 + 用户菜单 ─── */}
                 <div className="flex items-center gap-3">
-                    {(status === "authenticated" || initialCredits !== undefined) && (
+                    {!isTeamPage && (status === "authenticated" || initialCredits !== undefined) && (
                         <CreditsBadge credits={activeCredits} />
                     )}
                     
@@ -125,10 +129,11 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
                         <ThemeToggle />
                     </div>
                     
-                    <AuthSection 
-                        status={initialCredits !== undefined ? "authenticated" : status} 
-                        displayName={activeDisplayName} 
+                    <AuthSection
+                        status={initialCredits !== undefined ? "authenticated" : status}
+                        displayName={activeDisplayName}
                         initialAvatarUrl={initialAvatarUrl}
+                        isTeamPage={isTeamPage}
                     />
 
                     {/* 移动端菜单触发器 */}
@@ -155,7 +160,9 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
                         style={{ backgroundColor: "var(--color-bg-card)", borderColor: "var(--color-border)" }}
                     >
                         <div className="p-6 space-y-3">
-                            {isDashboard ? (
+                            {isTeamPage ? (
+                                isTeamDashboard ? <MobileDashboardLinks pathname={pathname} onClose={() => setIsMobileMenuOpen(false)} /> : null
+                            ) : isDashboard ? (
                                 <MobileDashboardLinks pathname={pathname} onClose={() => setIsMobileMenuOpen(false)} />
                             ) : (
                                 <MobileMarketingLinks pathname={pathname} onClose={() => setIsMobileMenuOpen(false)} />
@@ -166,7 +173,7 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
                                     <span className="text-xs font-bold uppercase tracking-widest opacity-50">Theme</span>
                                     <ThemeToggle />
                                 </div>
-                                {status === "authenticated" && activeCredits !== undefined && (
+                                {!isTeamPage && status === "authenticated" && activeCredits !== undefined && (
                                     <div className="flex justify-between items-center bg-blue-500/5 p-4 rounded-xl border border-blue-500/10">
                                         <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Available Credits</span>
                                         <span className="font-mono font-bold text-blue-500">{activeCredits.toLocaleString()}</span>
@@ -223,7 +230,54 @@ function CreditsBadge({ credits }: { credits: number | undefined }) {
     );
 }
 
-// 3. 营销模式链接
+// 3. 团队页面链接
+function TeamLinks() {
+    return (
+        <Link
+            href="/skills"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-transparent hover:text-blue-400 transition-colors"
+            style={{ color: "var(--color-text-secondary)" }}
+        >
+            <LayoutGrid size={13} />
+            Skills
+        </Link>
+    );
+}
+
+// 3.5 团队控制台链接 (镜像 DashboardLinks)
+function TeamDashboardLinks({ pathname }: { pathname: string }) {
+    const slug = pathname.split("/")[2];
+    const links = [
+        { href: `/t/${slug}/dashboard`, label: "Stats", icon: Monitor },
+        { href: `/t/${slug}/dashboard`, label: "My Skills", icon: LayoutGrid },
+        { href: `/t/${slug}/settings`, label: "Billing", icon: Zap },
+    ];
+
+    return (
+        <>
+            {links.map(({ href, label, icon: Icon }) => {
+                const active = pathname === href || pathname.startsWith(href + "/") || (label === "My Skills" && pathname.includes("/myskills"));
+                return (
+                    <Link
+                        key={href}
+                        href={href}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${
+                            active
+                            ? "text-blue-400 bg-blue-500/10 border-blue-500/20"
+                            : "border-transparent hover:bg-white/5"
+                        }`}
+                        style={{ color: active ? "var(--color-blue)" : "var(--color-text-secondary)" }}
+                    >
+                        <Icon size={13} />
+                        {label}
+                    </Link>
+                );
+            })}
+        </>
+    );
+}
+
+// 4. 营销模式链接
 function MarketingLinks({ pathname }: { pathname: string }) {
     const isSkillsActive = pathname === "/skills";
     return (
@@ -292,13 +346,19 @@ function DashboardLinks({ pathname }: { pathname: string }) {
 }
 
 // 5. 身份校验与下拉菜单
-function AuthSection({ status, displayName, initialAvatarUrl }: { status: string, displayName: string | null, initialAvatarUrl?: string | null }) {
+function AuthSection({ status, displayName, initialAvatarUrl, isTeamPage }: { status: string, displayName: string | null, initialAvatarUrl?: string | null, isTeamPage?: boolean }) {
     const { data: session } = useSession();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
 
     const isActive = (path: string) => pathname === path;
+
+    // 团队页面下提取 slug，构造团队专属路由
+    const teamSlug = isTeamPage ? pathname.split("/")[2] : null;
+    const dashboardHref = teamSlug ? `/t/${teamSlug}/dashboard` : "/dashboard";
+    const deployHref = teamSlug ? `/t/${teamSlug}/myskills/new` : "/dashboard/myskills/new";
+    const settingsHref = teamSlug ? `/t/${teamSlug}/settings` : "/settings";
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -354,9 +414,9 @@ function AuthSection({ status, displayName, initialAvatarUrl }: { status: string
                             style={{ backgroundColor: "var(--color-bg-card)", borderColor: "var(--color-border)" }}
                             onMouseLeave={() => setIsMenuOpen(false)}
                         >
-                            <MenuLink href="/dashboard" icon={Monitor} label="Dashboard" active={isActive("/dashboard")} />
-                            <MenuLink href="/dashboard/myskills/new" icon={Plus} label="Deploy Skill" active={isActive("/dashboard/myskills/new")} />
-                            <MenuLink href="/settings" icon={Settings} label="Settings" active={isActive("/settings")} />
+                            <MenuLink href={dashboardHref} icon={Monitor} label="Dashboard" active={isActive(dashboardHref)} />
+                            <MenuLink href={deployHref} icon={Plus} label="Deploy Skill" active={isActive(deployHref)} />
+                            <MenuLink href={settingsHref} icon={Settings} label="Settings" active={isActive(settingsHref)} />
                             <div className="my-1 h-[px] bg-white/5" style={{ backgroundColor: "var(--color-border)" }} />
                             <button
                                 onClick={() => signOut({ callbackUrl: "/" })}
@@ -371,6 +431,9 @@ function AuthSection({ status, displayName, initialAvatarUrl }: { status: string
             </div>
         );
     }
+
+    // 团队页面不显示 GitHub 登录入口（页面内有邮箱/密码登录表单）
+    if (isTeamPage) return null;
 
     return (
         <button

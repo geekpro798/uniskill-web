@@ -12,6 +12,7 @@ declare module "next-auth" {
             authorizedWallet?: string | null;
             credits?: number;
             tier?: string;
+            teamIds?: string[];
         } & DefaultSession["user"]
     }
 
@@ -32,5 +33,9 @@ declare module "next-auth/jwt" {
         authorizedWallet?: string | null;
         credits?: number;
         tier?: string;
+        teamIds?: string[];
+        teamUid?: string;
+        teamRole?: string;
+        adminRole?: string;
     }
 }

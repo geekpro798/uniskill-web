@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     // 2. 获取数据库最新记录 (Fetch the latest raw data)
     const { data: skill, error: fetchError } = await supabaseAdmin
       .from('skills')
-      .select('skill_name, display_name, description, markdown_manifest, status, emoji, secrets')
+      .select('skill_name, display_name, description, markdown_manifest, status, emoji, secrets, team_uid, visibility')
       .eq('skill_uid', skillUid)
       .eq('owner_uid', userUid)
       .single();
@@ -176,9 +176,10 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           user_uid: userUid,
           skill_name: skill.skill_name,
-          status: skill.status, 
+          status: (skill as any).visibility || skill.status,
           manifest: skillManifest,
-          secrets: skill.secrets, 
+          secrets: (skill as any).secrets,
+          team_uid: (skill as any).team_uid || undefined,
           type: 'skill_activation'
         })
       });

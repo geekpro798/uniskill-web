@@ -174,19 +174,20 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
   };
 
   const fetchInvocations = async () => {
+    if (!(session?.user as any)?.userUid) return;
     try {
       const response = await fetch('/api/user/credit-events?stats=true', {
         headers: { 'Cache-Control': 'no-cache' }
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      
+
       const { count } = await response.json();
-      setInvocationStats({ 
-        daily: count?.daily || 0, 
-        lifetime: count?.lifetime || 0 
+      setInvocationStats({
+        daily: count?.daily || 0,
+        lifetime: count?.lifetime || 0
       });
     } catch (e) {
-      console.error("Failed to fetch invocations", e);
+      console.warn("Failed to fetch invocations", e);
     }
   };
 
@@ -214,17 +215,18 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
   };
 
   const fetchRecentActivity = async () => {
+    if (!(session?.user as any)?.userUid) return;
     try {
       setLoadingLogs(true);
       const response = await fetch('/api/user/credit-events?limit=3', {
         headers: { 'Cache-Control': 'no-cache' }
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      
+
       const { events } = await response.json();
       setRecentLogs(events || []);
     } catch (e) {
-      console.error("Failed to fetch recent activity", e);
+      console.warn("Failed to fetch recent activity", e);
     } finally {
       setLoadingLogs(false);
     }
