@@ -233,7 +233,7 @@ export function TeamDashboardClient({
               {ROLE_CONFIG[membership.role]?.label || membership.role}
             </span>
             <button
-              onClick={() => window.location.href = `/t/${slug}/myskills/new`}
+              onClick={() => window.location.href = `/t/${slug}/dashboard/myskills/new`}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-md active:scale-95 text-xs"
             >
               <Plus size={16} /> 部署技能
@@ -277,8 +277,14 @@ export function TeamDashboardClient({
                   团队技能
                 </h2>
                 <div className="flex items-center gap-3">
+                  <Link
+                    href={`/t/${slug}/dashboard/myskills`}
+                    className="text-[11px] font-bold text-blue-500 hover:text-blue-400 transition-colors"
+                  >
+                    全部技能
+                  </Link>
                   <button
-                    onClick={() => window.location.href = `/t/${slug}/myskills/new`}
+                    onClick={() => window.location.href = `/t/${slug}/dashboard/myskills/new`}
                     className="text-[11px] font-bold text-slate-400 hover:text-blue-500"
                   >
                     + 新建
@@ -309,7 +315,7 @@ export function TeamDashboardClient({
                           }`}
                           onClick={() => {
                             if (isTesting) {
-                              window.location.href = `/t/${slug}/myskills/new?resume=${skill.skill_uid}`;
+                              window.location.href = `/t/${slug}/dashboard/myskills/new?resume=${skill.skill_uid}`;
                             } else {
                               window.location.href = `/t/${slug}/dashboard`;
                             }
@@ -395,7 +401,7 @@ export function TeamDashboardClient({
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    window.location.href = `/t/${slug}/myskills/new?resume=${skill.skill_uid}`;
+                                    window.location.href = `/t/${slug}/dashboard/myskills/new?resume=${skill.skill_uid}`;
                                   }}
                                   className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black rounded-lg transition-all flex items-center gap-1.5 shadow-lg shadow-amber-500/20 active:scale-95"
                                 >
@@ -408,7 +414,7 @@ export function TeamDashboardClient({
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      window.location.href = `/t/${slug}/myskills/new?resume=${skill.skill_uid}`;
+                                      window.location.href = `/t/${slug}/dashboard/myskills/new?resume=${skill.skill_uid}`;
                                     }}
                                     className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-all"
                                     title="Edit Skill"
@@ -438,7 +444,7 @@ export function TeamDashboardClient({
                       为该团队部署第一个 AI 技能，所有团队成员均可使用。
                     </p>
                     <button
-                      onClick={() => window.location.href = `/t/${slug}/myskills/new`}
+                      onClick={() => window.location.href = `/t/${slug}/dashboard/myskills/new`}
                       className="px-5 py-2.5 bg-blue-600 text-white text-[11px] font-black rounded-xl shadow-md active:scale-95 transition-all"
                     >
                       + 部署团队技能

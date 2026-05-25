@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import { useSession, signIn, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Settings, Zap, Monitor, LayoutGrid, Plus, LogOut, ChevronDown, Menu, X, DollarSign, BookOpen, ExternalLink } from "lucide-react";
+import { Settings, Zap, Monitor, LayoutGrid, Plus, LogOut, ChevronDown, Menu, X, DollarSign, BookOpen, ExternalLink, Users } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { useUser } from "@/context/UserContext";
 
@@ -37,6 +37,14 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const mobileMenuRef = useRef<HTMLDivElement>(null);
     const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+    // 自动判定模式
+    const isDashboard = pathname.startsWith("/dashboard") || pathname === "/settings";
+    const isTeamPage = pathname.startsWith("/t/");
+    const isTeamDashboard = isTeamPage;
+
+    // 团队 slug：从 URL 提取（下拉菜单中的路由由 AuthSection 内部根据 session 补充）
+    const pathSlug = isTeamPage ? pathname.split("/")[2] : null;
 
     // 🌟 移动端交互逻辑优化 (Mobile UX Logic)
     useEffect(() => {
@@ -74,11 +82,6 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
         };
     }, [isMobileMenuOpen]);
 
-    // 自动判定模式
-    const isDashboard = pathname.startsWith("/dashboard") || pathname === "/settings";
-    const isTeamPage = pathname.startsWith("/t/");
-    const isTeamDashboard = isTeamPage && (pathname.includes("/dashboard") || pathname.includes("/myskills") || pathname.includes("/settings"));
-    
     // 滚动动效 (仅在非 Dashboard 模式下更明显，但结构保持一致)
     const navBg = useTransform(
         scrollY,
@@ -111,7 +114,7 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
                 {/* ─── 中间：模式切换导航 (桌面端) ─── */}
                 <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-1">
                     {isTeamPage ? (
-                        isTeamDashboard ? <TeamDashboardLinks pathname={pathname} /> : <TeamLinks />
+                        <TeamDashboardLinks pathname={pathname} />
                     ) : isDashboard ? (
                         <DashboardLinks pathname={pathname} />
                     ) : (
@@ -161,7 +164,7 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
                     >
                         <div className="p-6 space-y-3">
                             {isTeamPage ? (
-                                isTeamDashboard ? <MobileDashboardLinks pathname={pathname} onClose={() => setIsMobileMenuOpen(false)} /> : null
+                                <MobileDashboardLinks pathname={pathname} onClose={() => setIsMobileMenuOpen(false)} teamSlug={pathSlug} />
                             ) : isDashboard ? (
                                 <MobileDashboardLinks pathname={pathname} onClose={() => setIsMobileMenuOpen(false)} />
                             ) : (
@@ -231,35 +234,29 @@ function CreditsBadge({ credits }: { credits: number | undefined }) {
 }
 
 // 3. 团队页面链接
-function TeamLinks() {
-    return (
-        <Link
-            href="/skills"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-transparent hover:text-blue-400 transition-colors"
-            style={{ color: "var(--color-text-secondary)" }}
-        >
-            <LayoutGrid size={13} />
-            Skills
-        </Link>
-    );
-}
-
 // 3.5 团队控制台链接 (镜像 DashboardLinks)
 function TeamDashboardLinks({ pathname }: { pathname: string }) {
     const slug = pathname.split("/")[2];
     const links = [
         { href: `/t/${slug}/dashboard`, label: "Stats", icon: Monitor },
-        { href: `/t/${slug}/dashboard`, label: "My Skills", icon: LayoutGrid },
-        { href: `/t/${slug}/settings`, label: "Billing", icon: Zap },
+        { href: `/t/${slug}/dashboard/myskills`, label: "My Skills", icon: LayoutGrid },
+        { href: `/t/${slug}/dashboard/members`, label: "Members", icon: Users },
+        { href: `/t/${slug}/dashboard/billing`, label: "Billing", icon: Zap },
     ];
 
     return (
         <>
             {links.map(({ href, label, icon: Icon }) => {
-                const active = pathname === href || pathname.startsWith(href + "/") || (label === "My Skills" && pathname.includes("/myskills"));
+                const active = label === "My Skills"
+                    ? pathname.includes("/myskills") && !pathname.includes("/myskills/new")
+                    : label === "Billing"
+                    ? pathname.includes("/billing")
+                    : label === "Members"
+                    ? pathname.includes("/members")
+                    : pathname === href;
                 return (
                     <Link
-                        key={href}
+                        key={href + label}
                         href={href}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${
                             active
@@ -355,9 +352,12 @@ function AuthSection({ status, displayName, initialAvatarUrl, isTeamPage }: { st
     const isActive = (path: string) => pathname === path;
 
     // 团队页面下提取 slug，构造团队专属路由
-    const teamSlug = isTeamPage ? pathname.split("/")[2] : null;
+    // 优先用 URL 中的 slug，其次用 session 中的 teamSlugs（团队凭证登录时）
+    const pathSlug = isTeamPage ? pathname.split("/")[2] : null;
+    const sessionTeamSlug = (session?.user as any)?.teamUid && session?.user?.teamSlugs?.[0] ? session.user.teamSlugs[0] : null;
+    const teamSlug = pathSlug || sessionTeamSlug || null;
     const dashboardHref = teamSlug ? `/t/${teamSlug}/dashboard` : "/dashboard";
-    const deployHref = teamSlug ? `/t/${teamSlug}/myskills/new` : "/dashboard/myskills/new";
+    const deployHref = teamSlug ? `/t/${teamSlug}/dashboard/myskills/new` : "/dashboard/myskills/new";
     const settingsHref = teamSlug ? `/t/${teamSlug}/settings` : "/settings";
 
     useEffect(() => {
@@ -419,7 +419,7 @@ function AuthSection({ status, displayName, initialAvatarUrl, isTeamPage }: { st
                             <MenuLink href={settingsHref} icon={Settings} label="Settings" active={isActive(settingsHref)} />
                             <div className="my-1 h-[px] bg-white/5" style={{ backgroundColor: "var(--color-border)" }} />
                             <button
-                                onClick={() => signOut({ callbackUrl: "/" })}
+                                onClick={() => signOut({ callbackUrl: teamSlug ? `/t/${teamSlug}` : "/" })}
                                 className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-red-500/80 hover:text-red-500 hover:bg-red-500/5 transition-colors"
                             >
                                 <LogOut size={14} />
@@ -499,8 +499,13 @@ function MobileMarketingLinks({ pathname, onClose }: { pathname: string, onClose
     );
 }
 
-function MobileDashboardLinks({ pathname, onClose }: { pathname: string, onClose: () => void }) {
-    const links = [
+function MobileDashboardLinks({ pathname, onClose, teamSlug }: { pathname: string, onClose: () => void, teamSlug?: string | null }) {
+    const links = teamSlug ? [
+        { href: `/t/${teamSlug}/dashboard`, label: 'Stats', icon: Monitor },
+        { href: `/t/${teamSlug}/dashboard/myskills`, label: 'My Skills', icon: LayoutGrid },
+        { href: `/t/${teamSlug}/dashboard/members`, label: 'Members', icon: Users },
+        { href: `/t/${teamSlug}/dashboard/billing`, label: 'Billing', icon: Zap },
+    ] : [
         { href: '/dashboard', label: 'Stats', icon: Monitor },
         { href: '/dashboard/myskills', label: 'My Skills', icon: LayoutGrid },
         { href: '/dashboard/billing', label: 'Billing', icon: Zap },
@@ -509,10 +514,16 @@ function MobileDashboardLinks({ pathname, onClose }: { pathname: string, onClose
     return (
         <div className="space-y-1">
             {links.map(({ href, label, icon: Icon }) => {
-                const active = pathname === href;
+                const active = label === "My Skills"
+                    ? pathname.includes("/myskills") && !pathname.includes("/myskills/new")
+                    : label === "Billing"
+                    ? pathname.includes("/billing")
+                    : label === "Members"
+                    ? pathname.includes("/members")
+                    : pathname === href;
                 return (
                     <Link
-                        key={href}
+                        key={href + label}
                         href={href}
                         onClick={onClose}
                         className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-all text-sm font-bold"

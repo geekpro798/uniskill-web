@@ -163,11 +163,35 @@ export const authOptions: NextAuthOptions = {
                     try {
                         const teams = await getUserTeams(token.userUid);
                         token.teamIds = teams.map((t) => t.team_uid);
+                        token.teamSlugs = teams.map((t) => t.slug);
                         // 同步团队列表到 Gateway KV（user:profile.teams）
                         const { syncUserTeamsToGateway } = await import('@/lib/teams');
                         syncUserTeamsToGateway(token.userUid).catch(() => {});
                     } catch {
                         token.teamIds = [];
+                        token.teamSlugs = [];
+                    }
+                }
+
+                // 团队凭证登录时 admin_uid 可能为 null，但 teamUid 已设置
+                // 此时直接查 teams 表获取 slug，确保 teamSlugs 不为空
+                if (token.teamUid && (!token.teamSlugs || token.teamSlugs.length === 0)) {
+                    try {
+                        const supabase = createClient(
+                            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                            process.env.SUPABASE_SERVICE_ROLE_KEY!
+                        );
+                        const { data: teamData } = await supabase
+                            .from('teams')
+                            .select('team_uid, slug')
+                            .eq('team_uid', token.teamUid)
+                            .maybeSingle();
+                        if (teamData?.slug) {
+                            token.teamIds = [teamData.team_uid];
+                            token.teamSlugs = [teamData.slug];
+                        }
+                    } catch {
+                        // silently ignore
                     }
                 }
             }
@@ -192,6 +216,7 @@ export const authOptions: NextAuthOptions = {
                 session.user.credits         = token.credits as number | undefined;
                 session.user.tier            = token.tier as string | undefined;
                 session.user.teamIds         = token.teamIds as string[] | undefined;
+                session.user.teamSlugs       = token.teamSlugs as string[] | undefined;
                 (session.user as any).teamUid   = token.teamUid as string | undefined;
                 (session.user as any).teamRole  = token.teamRole as string | undefined;
                 // Admin fields

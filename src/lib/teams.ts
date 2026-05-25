@@ -199,3 +199,75 @@ export async function syncUserTeamsToGateway(userUid: string): Promise<void> {
     console.warn('[teams] Failed to sync teams to gateway:', e);
   }
 }
+
+/** 处理用户注册后的团队邀请自动加入 */
+export async function processPendingInvitations(
+  userUid: string,
+  email: string | null | undefined
+): Promise<string[]> {
+  if (!email) return [];
+
+  const supabase = getSupabaseAdmin();
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // 查找该邮箱的所有待处理邀请
+  const { data: invitations } = await supabase
+    .from('team_invitations')
+    .select('*')
+    .eq('email', normalizedEmail)
+    .eq('status', 'pending');
+
+  if (!invitations || invitations.length === 0) return [];
+
+  const joinedTeamUids: string[] = [];
+
+  for (const inv of invitations) {
+    // 检查是否已是成员（防止重复）
+    const { data: existing } = await supabase
+      .from('team_members')
+      .select('role')
+      .eq('team_uid', inv.team_uid)
+      .eq('user_uid', userUid)
+      .maybeSingle();
+
+    if (existing) {
+      // 已是成员，标记邀请为 accepted
+      await supabase
+        .from('team_invitations')
+        .update({ status: 'accepted', accepted_at: new Date().toISOString() })
+        .eq('id', inv.id);
+      continue;
+    }
+
+    // 不能添加 owner 为成员
+    const { data: team } = await supabase
+      .from('teams')
+      .select('admin_uid')
+      .eq('team_uid', inv.team_uid)
+      .maybeSingle();
+
+    if (team?.admin_uid === userUid) continue;
+
+    // 加入团队
+    const { error: insertError } = await supabase
+      .from('team_members')
+      .insert({
+        team_uid: inv.team_uid,
+        user_uid: userUid,
+        role: inv.role || 'member',
+      });
+
+    if (!insertError) {
+      // 更新邀请状态
+      await supabase
+        .from('team_invitations')
+        .update({ status: 'accepted', accepted_at: new Date().toISOString() })
+        .eq('id', inv.id);
+
+      joinedTeamUids.push(inv.team_uid);
+      console.log(`[teams] Auto-joined user ${userUid} to team ${inv.team_uid} as ${inv.role}`);
+    }
+  }
+
+  return joinedTeamUids;
+}

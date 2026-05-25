@@ -1,9 +1,7 @@
-// src/app/t/[slug]/page.tsx
-// 团队落地页 — 服务器组件：数据获取
-
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { getTeamBySlug, getTeamMembers, getUserTeamMembership } from "@/lib/teams";
+import { createClient } from "@supabase/supabase-js";
 import { TeamLandingClient } from "./TeamLandingClient";
 
 export const dynamic = "force-dynamic";
@@ -29,18 +27,55 @@ export default async function TeamLandingPage({
 
   let membership: { role: string } | null = null;
   let members: Awaited<ReturnType<typeof getTeamMembers>> = [];
+  let skillCount = 0;
+  let monthlyUsage = 0;
+  let recentEvents: any[] = [];
 
   if (userUid) {
     membership = await getUserTeamMembership(userUid, team.team_uid);
   }
 
-  // 兜底：用邮箱匹配 admin_email（管理员可能还没加入 team_members）
   if (!membership && userEmail && team.admin_email === userEmail) {
     membership = { role: 'owner' };
   }
 
   if (membership) {
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     members = await getTeamMembers(team.team_uid);
+    const memberUids = members.map((m) => m.user_uid).filter(Boolean);
+    if (team.admin_uid && !memberUids.includes(team.admin_uid)) {
+      memberUids.push(team.admin_uid);
+    }
+
+    const [skillsRes, eventsRes] = await Promise.all([
+      supabaseAdmin
+        .from('skills')
+        .select('skill_uid', { count: 'exact', head: true })
+        .eq('team_uid', team.team_uid),
+      memberUids.length > 0
+        ? supabaseAdmin
+            .from('credit_events')
+            .select('id, request_id, skill_name, amount, created_at, user_uid')
+            .in('user_uid', memberUids)
+            .order('created_at', { ascending: false })
+            .limit(5)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    skillCount = skillsRes.count || 0;
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    if (eventsRes.data) {
+      monthlyUsage = eventsRes.data
+        .filter((e: any) => e.amount < 0 && e.created_at >= monthStart)
+        .reduce((sum: number, e: any) => sum + Math.abs(e.amount), 0);
+      recentEvents = eventsRes.data.slice(0, 5);
+    }
   }
 
   return (
@@ -50,6 +85,9 @@ export default async function TeamLandingPage({
       membership={membership}
       members={members}
       isSuspended={team.status === "suspended"}
+      skillCount={skillCount}
+      monthlyUsage={monthlyUsage}
+      recentEvents={recentEvents}
       initialCredits={session?.user?.credits}
       initialDisplayName={(session?.user as any)?.displayName || null}
     />

@@ -6,12 +6,17 @@
 import React, { useState } from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { AlertTriangle, LogIn, ShieldAlert, Mail, Lock, Loader2, Eye, EyeOff, LayoutDashboard } from "lucide-react";
+import { AlertTriangle, LogIn, ShieldAlert, Mail, Lock, Loader2, Eye, EyeOff, Crown, UserCog, BarChart3, Zap, Layers, Users, CreditCard, Activity, ArrowRight, Clock } from "lucide-react";
 import UnifiedNavbar from "@/components/UnifiedNavbar";
 import { TeamHeroBanner } from "@/components/teams/TeamHeroBanner";
-import { TeamMemberList } from "@/components/teams/TeamMemberList";
 import type { TeamInfo, TeamMember } from "@/types/teams";
+
+const ROLE_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
+  owner: { label: "Owner", icon: Crown, color: "text-purple-500" },
+  admin: { label: "Admin", icon: UserCog, color: "text-blue-500" },
+  member: { label: "Member", icon: Users, color: "text-slate-400" },
+  viewer: { label: "Viewer", icon: Eye, color: "text-slate-400" },
+};
 
 interface Props {
   team: TeamInfo;
@@ -19,6 +24,9 @@ interface Props {
   membership: { role: string } | null;
   members: TeamMember[];
   isSuspended: boolean;
+  skillCount: number;
+  monthlyUsage: number;
+  recentEvents: any[];
   initialCredits?: number;
   initialDisplayName?: string | null;
 }
@@ -29,6 +37,9 @@ export function TeamLandingClient({
   membership,
   members,
   isSuspended,
+  skillCount,
+  monthlyUsage,
+  recentEvents,
   initialCredits,
   initialDisplayName,
 }: Props) {
@@ -51,7 +62,7 @@ export function TeamLandingClient({
       ) : isAuthenticated && membership ? (
         <div className="max-w-4xl mx-auto pt-[88px] pb-6 md:pt-[100px] md:pb-8 px-6 md:px-8 space-y-6 relative z-10">
           <TeamHeroBanner team={team} />
-          <MemberState members={members} />
+          <MemberState members={members} team={team} skillCount={skillCount} monthlyUsage={monthlyUsage} recentEvents={recentEvents} />
         </div>
       ) : isAuthenticated && !membership ? (
         <div className="max-w-4xl mx-auto pt-[88px] pb-6 md:pt-[100px] md:pb-8 px-6 md:px-8 space-y-6 relative z-10">
@@ -267,20 +278,173 @@ function NonMemberState() {
 
 /* ─── State C: 成员已认证 ─── */
 
-function MemberState({ members }: { members: TeamMember[] }) {
-  const params = useParams();
-  const slug = params?.slug as string;
+function MemberState({
+  members,
+  team,
+  skillCount,
+  monthlyUsage,
+  recentEvents,
+}: {
+  members: TeamMember[];
+  team: TeamInfo;
+  skillCount: number;
+  monthlyUsage: number;
+  recentEvents: any[];
+}) {
+  const slug = team.slug;
+
+  const quickLinks = [
+    { href: `/t/${slug}/dashboard`, label: "Stats", icon: BarChart3, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { href: `/t/${slug}/dashboard/myskills`, label: "My Skills", icon: Layers, color: "text-purple-500", bg: "bg-purple-500/10" },
+    { href: `/t/${slug}/dashboard/members`, label: "Members", icon: Users, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { href: `/t/${slug}/dashboard/billing`, label: "Billing", icon: CreditCard, color: "text-amber-500", bg: "bg-amber-500/10" },
+  ];
 
   return (
     <div className="space-y-6">
-      <Link
-        href={`/t/${slug}/dashboard`}
-        className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-colors"
-      >
-        <LayoutDashboard size={16} />
-        进入团队控制台
-      </Link>
-      <TeamMemberList members={members} />
+      {/* Stats cards */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: "Skills", value: skillCount, icon: Zap, color: "text-blue-500", bg: "bg-blue-500/10" },
+          { label: "Members", value: members.length, icon: Users, color: "text-purple-500", bg: "bg-purple-500/10" },
+          { label: "Monthly Usage", value: monthlyUsage.toLocaleString(), icon: Activity, color: "text-emerald-500", bg: "bg-emerald-500/10", suffix: " credits" },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="p-4 rounded-xl border text-center"
+            style={{ backgroundColor: "var(--color-bg-card)", borderColor: "var(--color-border)" }}
+          >
+            <div className={`inline-flex p-2 rounded-lg ${stat.bg} ${stat.color} mb-2`}>
+              <stat.icon size={18} />
+            </div>
+            <p className="text-2xl font-black" style={{ color: "var(--color-text-primary)" }}>
+              {stat.value}{stat.suffix || ""}
+            </p>
+            <p className="text-[10px] uppercase font-bold tracking-widest mt-0.5" style={{ color: "var(--color-text-secondary)" }}>
+              {stat.label}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Quick links */}
+      <div className="grid grid-cols-4 gap-3">
+        {quickLinks.map((link) => (
+          <Link
+            key={link.label}
+            href={link.href}
+            className="p-4 rounded-xl border hover:border-blue-500/30 transition-all group"
+            style={{ backgroundColor: "var(--color-bg-card)", borderColor: "var(--color-border)" }}
+          >
+            <div className={`inline-flex p-2 rounded-lg ${link.bg} ${link.color} mb-2`}>
+              <link.icon size={16} />
+            </div>
+            <p className="text-sm font-bold" style={{ color: "var(--color-text-primary)" }}>
+              {link.label}
+            </p>
+            <div className="flex items-center gap-1 mt-1 text-[10px] font-bold text-slate-400 group-hover:text-blue-500 transition-colors">
+              Open <ArrowRight size={10} />
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* Recent activity + Members */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent activity */}
+        <div
+          className="rounded-xl border overflow-hidden"
+          style={{ backgroundColor: "var(--color-bg-card)", borderColor: "var(--color-border)" }}
+        >
+          <div
+            className="px-5 py-3 border-b flex items-center justify-between"
+            style={{ borderColor: "var(--color-border)" }}
+          >
+            <h3 className="text-sm font-black uppercase tracking-wider flex items-center gap-2" style={{ color: "var(--color-text-primary)" }}>
+              <Clock size={14} className="text-slate-400" />
+              Recent Activity
+            </h3>
+            <Link href={`/t/${slug}/dashboard/billing`} className="text-[10px] font-bold text-blue-500 hover:underline">
+              View All
+            </Link>
+          </div>
+          <div className="divide-y" style={{ borderColor: "var(--color-border)" }}>
+            {recentEvents.length > 0 ? (
+              recentEvents.map((evt: any) => (
+                <div key={evt.id} className="px-5 py-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold truncate max-w-[140px]" style={{ color: "var(--color-text-primary)" }}>
+                      {evt.skill_name}
+                    </p>
+                    <p className="text-[10px] font-mono" style={{ color: "var(--color-text-secondary)" }}>
+                      {evt.request_id?.slice(0, 12) || evt.id}
+                    </p>
+                  </div>
+                  <span className={`text-sm font-bold tabular-nums ${evt.amount < 0 ? "text-rose-400" : "text-emerald-500"}`}>
+                    {evt.amount < 0 ? evt.amount : `+${evt.amount}`}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="px-5 py-8 text-center text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                No activity yet
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Members overview */}
+        <div
+          className="rounded-xl border overflow-hidden"
+          style={{ backgroundColor: "var(--color-bg-card)", borderColor: "var(--color-border)" }}
+        >
+          <div
+            className="px-5 py-3 border-b flex items-center justify-between"
+            style={{ borderColor: "var(--color-border)" }}
+          >
+            <h3 className="text-sm font-black uppercase tracking-wider flex items-center gap-2" style={{ color: "var(--color-text-primary)" }}>
+              <Users size={14} className="text-slate-400" />
+              Members ({members.length})
+            </h3>
+            <Link href={`/t/${slug}/dashboard/members`} className="text-[10px] font-bold text-blue-500 hover:underline">
+              Manage
+            </Link>
+          </div>
+          <div className="divide-y" style={{ borderColor: "var(--color-border)" }}>
+            {members.slice(0, 5).map((m) => {
+              const config = ROLE_CONFIG[m.role] || ROLE_CONFIG.member;
+              const Icon = config.icon;
+              return (
+                <div key={m.user_uid} className="px-5 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {m.avatar_url ? (
+                      <img src={m.avatar_url} alt="" className="w-8 h-8 rounded-full border border-slate-200 shrink-0" />
+                    ) : (
+                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0">
+                        {(m.username || m.email || "?").charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <span className="text-sm font-bold truncate" style={{ color: "var(--color-text-primary)" }}>
+                      {m.username || m.email || m.user_uid?.slice(0, 8)}
+                    </span>
+                  </div>
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider ${config.color}`}>
+                    <Icon size={10} />
+                    {config.label}
+                  </span>
+                </div>
+              );
+            })}
+            {members.length > 5 && (
+              <div className="px-5 py-3 text-center">
+                <Link href={`/t/${slug}/dashboard/members`} className="text-xs font-bold text-blue-500 hover:underline">
+                  View all {members.length} members
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

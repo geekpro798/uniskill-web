@@ -13,6 +13,7 @@ declare module "next-auth" {
             credits?: number;
             tier?: string;
             teamIds?: string[];
+            teamSlugs?: string[];
         } & DefaultSession["user"]
     }
 
@@ -34,6 +35,7 @@ declare module "next-auth/jwt" {
         credits?: number;
         tier?: string;
         teamIds?: string[];
+        teamSlugs?: string[];
         teamUid?: string;
         teamRole?: string;
         adminRole?: string;
