@@ -18,7 +18,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   suspended: { label: '已暂停', color: 'text-red-600 bg-red-500/10' },
 };
 
-export function TeamHeroBanner({ team }: { team: TeamInfo }) {
+export function TeamHeroBanner({ team, showDashboard = false }: { team: TeamInfo; showDashboard?: boolean }) {
   const statusConfig = STATUS_LABELS[team.status] || {
     label: team.status,
     color: 'text-slate-500 bg-slate-500/10',
@@ -53,13 +53,15 @@ export function TeamHeroBanner({ team }: { team: TeamInfo }) {
             uniskill.ai/t/{team.slug}
           </div>
         </div>
-        <Link
-          href={`/t/${team.slug}/dashboard`}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-colors shrink-0"
-        >
-          进入控制台
-          <ArrowRight size={16} />
-        </Link>
+        {showDashboard && (
+          <Link
+            href={`/t/${team.slug}/dashboard`}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-colors shrink-0"
+          >
+            进入控制台
+            <ArrowRight size={16} />
+          </Link>
+        )}
       </div>
     </div>
   );

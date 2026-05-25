@@ -56,17 +56,17 @@ export function TeamLandingClient({
 
       {isSuspended ? (
         <div className="max-w-4xl mx-auto pt-[88px] pb-6 md:pt-[100px] md:pb-8 px-6 md:px-8 space-y-6 relative z-10">
-          <TeamHeroBanner team={team} />
+          <TeamHeroBanner team={team} showDashboard={isAuthenticated} />
           <SuspendedState />
         </div>
       ) : isAuthenticated && membership ? (
         <div className="max-w-4xl mx-auto pt-[88px] pb-6 md:pt-[100px] md:pb-8 px-6 md:px-8 space-y-6 relative z-10">
-          <TeamHeroBanner team={team} />
+          <TeamHeroBanner team={team} showDashboard={isAuthenticated} />
           <MemberState members={members} team={team} skillCount={skillCount} monthlyUsage={monthlyUsage} recentEvents={recentEvents} />
         </div>
       ) : isAuthenticated && !membership ? (
         <div className="max-w-4xl mx-auto pt-[88px] pb-6 md:pt-[100px] md:pb-8 px-6 md:px-8 space-y-6 relative z-10">
-          <TeamHeroBanner team={team} />
+          <TeamHeroBanner team={team} showDashboard={isAuthenticated} />
           <NonMemberState />
         </div>
       ) : (
@@ -74,7 +74,7 @@ export function TeamLandingClient({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
             {/* 左侧：团队信息 */}
             <div className="space-y-6">
-              <TeamHeroBanner team={team} />
+              <TeamHeroBanner team={team} showDashboard={isAuthenticated} />
               <div
                 className="rounded-2xl border p-6 hidden lg:block"
                 style={{
