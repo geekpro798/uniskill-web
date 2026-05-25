@@ -36,7 +36,7 @@ async function checkMembership(userUid: string, userEmail: string | null | undef
 
 // GET — 列出成员 + 待处理邀请
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions as any);
+  const session = await getServerSession(authOptions as any) as any;
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -86,7 +86,7 @@ export async function GET(req: Request) {
 
 // POST — 添加成员到白名单（创建邀请）
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions as any);
+  const session = await getServerSession(authOptions as any) as any;
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -185,7 +185,7 @@ export async function POST(req: Request) {
 
 // DELETE — 移除成员 或 取消邀请
 export async function DELETE(req: Request) {
-  const session = await getServerSession(authOptions as any);
+  const session = await getServerSession(authOptions as any) as any;
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -264,7 +264,7 @@ export async function DELETE(req: Request) {
 
 // PATCH — 变更成员角色
 export async function PATCH(req: Request) {
-  const session = await getServerSession(authOptions as any);
+  const session = await getServerSession(authOptions as any) as any;
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
