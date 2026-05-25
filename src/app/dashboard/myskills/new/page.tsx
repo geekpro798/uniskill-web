@@ -7,7 +7,7 @@ import CreateSkillClient from "./CreateSkillClient";
 export const dynamic = "force-dynamic";
 
 export default async function CreateSkillPage() {
-  const session = await getServerSession(authOptions as any);
+  const session = await getServerSession(authOptions as any) as any;
 
   if (!(session as any)?.user) {
     redirect("/");

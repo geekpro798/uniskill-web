@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function TeamSettingsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const session = await getServerSession(authOptions as any);
+  const session = await getServerSession(authOptions as any) as any;
 
   if (!(session as any)?.user) {
     redirect(`/t/${slug}`);
