@@ -11,7 +11,9 @@ import {
   PauseCircle, PlayCircle, Settings, Loader2,
   Globe, Wifi, WifiOff, Clock, AlertCircle,
   CheckCircle2, Shield, ExternalLink, Copy,
-} from 'lucide-react';
+  Plus, Trash2, Terminal, X,
+} from "lucide-react";
+import { Modal } from "@/components/Modal";
 
 export default function EnterpriseDetailPage() {
   const params = useParams();
@@ -22,6 +24,15 @@ export default function EnterpriseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Tunnel management state
+  const [tunnelModal, setTunnelModal] = useState(false);
+  const [tunnelName, setTunnelName] = useState("");
+  const [tunnelCreating, setTunnelCreating] = useState(false);
+  const [tunnelError, setTunnelError] = useState("");
+  const [installScript, setInstallScript] = useState("");
+  const [tunnelDeleting, setTunnelDeleting] = useState<number | null>(null);
+  const [deleteModal, setDeleteModal] = useState<{ show: boolean; id: number | null; name: string }>({ show: false, id: null, name: "" });
 
   useEffect(() => {
     if (uid) fetchData();
@@ -57,12 +68,52 @@ export default function EnterpriseDetailPage() {
   async function handleReactivate() {
     setActionLoading(true);
     try {
-      const res = await fetch(`/api/admin/teams/${uid}/reactivate`, { method: 'POST' });
+      const res = await fetch(`/api/admin/teams/${uid}/reactivate`, { method: "POST" });
       if (res.ok) fetchData();
     } catch (e) {
       console.error(e);
     } finally {
       setActionLoading(false);
+    }
+  }
+
+  async function handleCreateTunnel() {
+    if (!tunnelName.trim()) return;
+    setTunnelCreating(true);
+    setTunnelError("");
+    setInstallScript("");
+    try {
+      const res = await fetch(`/api/admin/teams/${uid}/tunnels`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tunnel_name: tunnelName.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed");
+      setInstallScript(json.install_script);
+      setTunnelName("");
+      fetchData();
+    } catch (e: any) {
+      setTunnelError(e.message);
+    } finally {
+      setTunnelCreating(false);
+    }
+  }
+
+  async function handleDeleteTunnel(id: number) {
+    setTunnelDeleting(id);
+    try {
+      const res = await fetch(`/api/admin/teams/${uid}/tunnels?id=${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error || "Failed");
+      }
+      fetchData();
+    } catch (e: any) {
+      console.error(e);
+    } finally {
+      setTunnelDeleting(null);
+      setDeleteModal({ show: false, id: null, name: "" });
     }
   }
 
@@ -299,38 +350,56 @@ export default function EnterpriseDetailPage() {
           {/* Tunnel Status */}
           <div
             className="rounded-2xl border overflow-hidden"
-            style={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-border)' }}
+            style={{ backgroundColor: "var(--color-bg-card)", borderColor: "var(--color-border)" }}
           >
-            <div className="px-5 py-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
-              <h3 className="text-sm font-black uppercase tracking-wider flex items-center gap-2" style={{ color: 'var(--color-text-primary)' }}>
-                <Globe className="w-4 h-4" /> Tunnel 状态
+            <div className="px-5 py-3 border-b flex items-center justify-between" style={{ borderColor: "var(--color-border)" }}>
+              <h3 className="text-sm font-black uppercase tracking-wider flex items-center gap-2" style={{ color: "var(--color-text-primary)" }}>
+                <Globe className="w-4 h-4" /> Tunnel
               </h3>
+              <button
+                onClick={() => { setTunnelModal(true); setTunnelError(""); setInstallScript(""); }}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
+              >
+                <Plus className="w-3 h-3" /> 新建
+              </button>
             </div>
-            <div className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
+            <div className="divide-y" style={{ borderColor: "var(--color-border)" }}>
               {tunnels?.length > 0 ? tunnels.map((t: any) => (
-                <div key={t.id} className="px-5 py-3 space-y-1">
+                <div key={t.id} className="px-5 py-3 space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold" style={{ color: 'var(--color-text-primary)' }}>
-                      {t.tunnel_name}
-                    </span>
-                    <span className={`flex items-center gap-1 text-xs font-bold ${
-                      t.status === 'active' ? 'text-emerald-500' : 'text-red-500'
-                    }`}>
-                      {t.status === 'active' ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-                      {t.status}
-                    </span>
-                  </div>
-                  <div className="text-xs font-mono" style={{ color: 'var(--color-text-secondary)' }}>
-                    {t.internal_domain}
-                  </div>
-                  {t.last_heartbeat && (
-                    <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-                      最后心跳: {new Date(t.last_heartbeat).toLocaleString('zh-CN')}
+                    <div>
+                      <span className="text-sm font-bold" style={{ color: "var(--color-text-primary)" }}>
+                        {t.tunnel_name}
+                      </span>
+                      <span className="ml-2 text-[10px] font-mono opacity-50" style={{ color: "var(--color-text-secondary)" }}>
+                        {t.cf_tunnel_id?.slice(0, 12)}...
+                      </span>
                     </div>
-                  )}
+                    <div className="flex items-center gap-2">
+                      <span className={`flex items-center gap-1 text-xs font-bold ${
+                        t.status === "healthy" ? "text-emerald-500" : t.status === "degraded" ? "text-amber-500" : "text-red-500"
+                      }`}>
+                        {t.status === "healthy" ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+                        {t.status}
+                      </span>
+                      <button
+                        onClick={() => setDeleteModal({ show: true, id: t.id, name: t.tunnel_name })}
+                        disabled={tunnelDeleting === t.id}
+                        className="p-1 rounded-md text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                      >
+                        {tunnelDeleting === t.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>
+                    {t.cname}
+                  </div>
+                  <div className="text-xs" style={{ color: "var(--color-text-secondary)" }}>
+                    安装: <code className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[11px] font-mono">cloudflared tunnel run --token {t.cf_token?.slice(0, 16)}...</code>
+                  </div>
                 </div>
               )) : (
-                <div className="px-5 py-8 text-center text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                <div className="px-5 py-8 text-center text-sm" style={{ color: "var(--color-text-secondary)" }}>
                   暂无 Tunnel 配置
                 </div>
               )}
@@ -380,6 +449,101 @@ export default function EnterpriseDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Tunnel Create Modal */}
+      {tunnelModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            onClick={() => { setTunnelModal(false); setInstallScript(""); }}
+          />
+          <div className="relative w-full max-w-md bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-base font-bold" style={{ color: "var(--color-text-primary)" }}>
+                新建 Tunnel
+              </h4>
+              <button
+                onClick={() => { setTunnelModal(false); setInstallScript(""); }}
+                className="p-1 rounded-md text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {installScript ? (
+              <div className="space-y-4">
+                <div
+                  className="p-4 rounded-xl border border-emerald-500/20"
+                  style={{ backgroundColor: "var(--color-toggle-bg)" }}
+                >
+                  <p className="text-xs font-bold mb-2" style={{ color: "var(--color-text-secondary)" }}>
+                    在目标机器上执行以下命令启动 Tunnel:
+                  </p>
+                  <pre className="p-3 rounded-lg bg-slate-900 text-emerald-400 text-xs font-mono overflow-x-auto whitespace-pre-wrap">
+                    {installScript}
+                  </pre>
+                </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(installScript);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-colors"
+                >
+                  <Copy className="w-4 h-4" /> 复制脚本
+                </button>
+                <button
+                  onClick={() => { setTunnelModal(false); setInstallScript(""); }}
+                  className="w-full py-2 text-sm text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  关闭
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold mb-1.5" style={{ color: "var(--color-text-secondary)" }}>
+                    Tunnel 名称
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 shrink-0">{team?.slug}-</span>
+                    <input
+                      type="text"
+                      value={tunnelName}
+                      onChange={(e) => setTunnelName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleCreateTunnel()}
+                      placeholder="production-api"
+                      className="flex-1 px-3 py-2 rounded-xl border text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                      style={{ borderColor: "var(--color-border)", color: "var(--color-text-primary)" }}
+                    />
+                  </div>
+                </div>
+                {tunnelError && (
+                  <p className="text-xs font-bold text-red-500">{tunnelError}</p>
+                )}
+                <button
+                  onClick={handleCreateTunnel}
+                  disabled={tunnelCreating || !tunnelName.trim()}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-sm font-bold rounded-xl transition-colors"
+                >
+                  {tunnelCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Terminal className="w-4 h-4" />}
+                  创建 Tunnel
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation */}
+      <Modal
+        show={deleteModal.show}
+        type="confirm"
+        title="删除 Tunnel?"
+        message={`确定删除 <b>${deleteModal.name}</b>？CF 侧 Tunnel 将被永久移除。`}
+        onClose={() => setDeleteModal({ show: false, id: null, name: "" })}
+        onConfirm={() => deleteModal.id && handleDeleteTunnel(deleteModal.id)}
+        confirmText="删除"
+      />
     </div>
   );
 }
