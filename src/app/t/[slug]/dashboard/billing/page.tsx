@@ -37,10 +37,10 @@ export default async function TeamBillingPage({ params }: { params: Promise<{ sl
       <main className="max-w-3xl mx-auto pt-[88px] md:pt-[100px] pb-10 px-6">
         <TeamBillingClient
           teamUid={team.team_uid}
-          teamName={team.name}
+          teamName={team.team_name}
           teamSlug={team.slug}
           plan={team.plan}
-          maxCreditsMonth={team.max_credits_month}
+          maxCreditsMonth={team.max_credits_month ?? null}
         />
       </main>
     </div>
