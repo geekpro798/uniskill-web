@@ -256,7 +256,7 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
     // Check if we need to show wallet setup
     const params = new URLSearchParams(window.location.search);
     const needRelink = params.get('relink') === 'true';
-    const noWallet = (session?.user as any)?.authorizedWallet === null && !walletSetupCompletedLocal;
+    const noWallet = !(session?.user as any)?.authorizedWallet && !walletSetupCompletedLocal;
     
     if (needRelink || noWallet) {
         setShowWalletSetup(true);

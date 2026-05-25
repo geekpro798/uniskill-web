@@ -144,7 +144,7 @@ export function TeamDashboardClient({
 
     const params = new URLSearchParams(window.location.search);
     const needRelink = params.get("relink") === "true";
-    const noWallet = (session?.user as any)?.authorizedWallet === null && !walletSetupCompletedLocal;
+    const noWallet = !(session?.user as any)?.authorizedWallet && !walletSetupCompletedLocal;
 
     if (needRelink || noWallet) {
       setShowWalletSetup(true);
