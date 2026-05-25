@@ -153,6 +153,7 @@ export async function POST(req: Request) {
       max_skills: max_skills ?? 100,
       max_credits_month: max_credits_month ?? 100000,
       monthly_fee_usd: monthly_fee_usd ?? 99,
+      credits: 500,
       notes: notes || null,
     })
     .select()

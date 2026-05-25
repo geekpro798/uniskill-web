@@ -100,7 +100,7 @@ export async function PATCH(
     'name', 'contact_name', 'contact_email', 'contact_phone',
     'max_members', 'max_skills', 'max_credits_month',
     'monthly_fee_usd', 'plan', 'notes',
-    'contract_start', 'contract_end',
+    'contract_start', 'contract_end', 'credits',
   ];
 
   const updates: Record<string, any> = {};
