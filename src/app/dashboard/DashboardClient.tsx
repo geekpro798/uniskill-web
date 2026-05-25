@@ -256,13 +256,10 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
     // Check if we need to show wallet setup
     const params = new URLSearchParams(window.location.search);
     const needRelink = params.get('relink') === 'true';
-    const noWallet = !(session?.user as any)?.authorizedWallet && !walletSetupCompletedLocal;
-    
-    if (needRelink || noWallet) {
+
+    if (needRelink) {
         setShowWalletSetup(true);
-        if (needRelink) {
-            window.history.replaceState({}, '', '/dashboard');
-        }
+        window.history.replaceState({}, '', '/dashboard');
     }
 
     // 🌟 如果已经有服务端下发的数据，则跳过初次加载请求 (Skip initial fetch if SSR data exists)
@@ -662,11 +659,11 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
                      <span className="text-[10px] text-slate-400 font-bold uppercase">MPC-TSS Address</span>
                      <div className="flex items-center gap-2 mt-0.5">
                        <span className="text-xs font-mono text-slate-900 dark:text-slate-300 break-all pr-2">
-                         {(session?.user as any)?.authorizedWallet 
-                            ? (hideWallet 
+                         {(session?.user as any)?.authorizedWallet
+                            ? (hideWallet
                                 ? `${(session?.user as any).authorizedWallet.substring(0,6)}...${(session?.user as any).authorizedWallet.substring(38)}`
                                 : (session?.user as any).authorizedWallet)
-                            : 'Not Activated'}
+                            : '—'}
                        </span>
                        
                        {(session?.user as any)?.authorizedWallet && (
@@ -692,9 +689,23 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
                    </div>
                 </div>
                
-               <p className="text-[9px] text-slate-400 italic font-sans leading-relaxed">
-                 Your identity is secured by Particle Network MPC. Requests to the gateway must be signed via EIP-191.
-               </p>
+               {(session?.user as any)?.authorizedWallet ? (
+                 <p className="text-[9px] text-slate-400 italic font-sans leading-relaxed">
+                   Your identity is secured by Particle Network MPC. Requests to the gateway must be signed via EIP-191.
+                 </p>
+               ) : (
+                 <div className="space-y-3">
+                   <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                     调用技能 / 设置 Session Key 前，请先激活您的 MPC 主权钱包。
+                   </p>
+                   <button
+                     onClick={() => setShowWalletSetup(true)}
+                     className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-colors"
+                   >
+                     激活钱包
+                   </button>
+                 </div>
+               )}
             </div>
 
             <RecentActivity logs={recentLogs} loading={loadingLogs} />
