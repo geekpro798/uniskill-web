@@ -174,9 +174,10 @@ export async function POST(req: Request) {
     user_uid: adminUid,
     github_id: `email:${adminEmail}`, // 非 GitHub 用户的唯一标识
     email: adminEmail,
-    username: company_name.trim(),
-    credits: max_credits_month ?? 100000,
-    tier: plan === 'mode3' ? 'ENTERPRISE' : 'PRO',
+    username: adminEmail,
+    credits: 0,
+    tier: 'FREE',
+  });
   });
 
   if (profileError) {

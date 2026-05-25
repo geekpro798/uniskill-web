@@ -89,9 +89,9 @@ export const authOptions: NextAuthOptions = {
                         user_uid: adminUid,
                         github_id: `email:${normalizedEmail}`,
                         email: normalizedEmail,
-                        username: teamRaw.name,
-                        credits: teamRaw.max_credits_month ?? 100000,
-                        tier: teamRaw.plan === 'mode3' ? 'ENTERPRISE' : 'PRO',
+                        username: normalizedEmail,
+                        credits: 0,
+                        tier: 'FREE',
                     });
                     console.log('[Team Login] Self-healed: created profile for owner', adminUid);
 
