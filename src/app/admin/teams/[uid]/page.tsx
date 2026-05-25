@@ -423,9 +423,12 @@ export default function EnterpriseDetailPage() {
                   <div className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>
                     {t.hostname || t.cname}
                   </div>
-                  <div className="text-xs" style={{ color: "var(--color-text-secondary)" }}>
-                    安装: <code className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[11px] font-mono">cloudflared tunnel run --token {t.cf_token?.slice(0, 16)}...</code>
-                  </div>
+                  <button
+                    onClick={() => copyScript(`cloudflared tunnel run --token ${t.cf_token}`)}
+                    className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-400 transition-colors font-medium"
+                  >
+                    <Copy className="w-3 h-3" /> 复制安装命令
+                  </button>
                 </div>
               )) : (
                 <div className="px-5 py-8 text-center text-sm" style={{ color: "var(--color-text-secondary)" }}>
