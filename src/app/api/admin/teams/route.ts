@@ -179,7 +179,6 @@ export async function POST(req: Request) {
     credits: 0,
     tier: 'FREE',
   });
-  });
 
   if (profileError) {
     console.warn('[Enterprise Create] Profile creation warning:', profileError.message);
