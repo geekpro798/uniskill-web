@@ -8,6 +8,8 @@ import {
   createCFTunnel,
   configureCFTunnelIngress,
   deleteCFTunnel,
+  createTunnelDNSRecord,
+  deleteDNSRecord,
   getCFTunnel as getCFTunnelStatus,
 } from "@/lib/cloudflare";
 
@@ -93,19 +95,26 @@ export async function POST(
     return NextResponse.json({ error: "tunnel_name required" }, { status: 400 });
   }
 
+  const hostname = `${team.slug}-tunnel.uniskill.ai`;
   const cfName = `${team.slug}-${tunnelName}`;
 
   try {
     const cf = await createCFTunnel(cfName);
 
-    // 尝试配置 ingress（非致命失败）
+    // 配置 ingress hostname（非致命失败）
     try {
-      await configureCFTunnelIngress(
-        cf.id,
-        `${team.slug}.tunnel.uniskill.ai`,
-      );
+      await configureCFTunnelIngress(cf.id, hostname);
     } catch (e: any) {
       console.warn("[tunnels] Ingress config warning:", e.message);
+    }
+
+    // 自动创建 DNS CNAME 记录
+    let dnsRecordId: string | null = null;
+    try {
+      const dns = await createTunnelDNSRecord(hostname, cf.cname);
+      dnsRecordId = dns.id;
+    } catch (e: any) {
+      console.warn("[tunnels] DNS record creation warning:", e.message);
     }
 
     const { data: tunnel, error } = await supabase
@@ -116,6 +125,8 @@ export async function POST(
         cf_tunnel_id: cf.id,
         cf_token: cf.token,
         cname: cf.cname,
+        dns_record_id: dnsRecordId,
+        hostname,
         status: "inactive",
       })
       .select()
@@ -154,7 +165,7 @@ export async function DELETE(
 
   const { data: tunnel } = await supabase
     .from("team_tunnels")
-    .select("id, cf_tunnel_id")
+    .select("id, cf_tunnel_id, dns_record_id")
     .eq("id", id)
     .eq("team_uid", uid)
     .maybeSingle();
@@ -163,7 +174,15 @@ export async function DELETE(
     return NextResponse.json({ error: "Tunnel not found" }, { status: 404 });
   }
 
-  // 先删 CF，再删 DB（强一致）
+  // GC 顺序：DNS → CF Tunnel → DB
+  if (tunnel.dns_record_id) {
+    try {
+      await deleteDNSRecord(tunnel.dns_record_id);
+    } catch (e: any) {
+      console.warn("[tunnels] DNS delete warning:", e.message);
+    }
+  }
+
   try {
     await deleteCFTunnel(tunnel.cf_tunnel_id);
   } catch (e: any) {

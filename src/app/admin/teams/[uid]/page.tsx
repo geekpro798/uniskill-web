@@ -31,6 +31,7 @@ export default function EnterpriseDetailPage() {
   const [tunnelCreating, setTunnelCreating] = useState(false);
   const [tunnelError, setTunnelError] = useState("");
   const [installScript, setInstallScript] = useState("");
+  const [scriptCopied, setScriptCopied] = useState(false);
   const [tunnelDeleting, setTunnelDeleting] = useState<number | null>(null);
   const [deleteModal, setDeleteModal] = useState<{ show: boolean; id: number | null; name: string }>({ show: false, id: null, name: "" });
 
@@ -40,13 +41,23 @@ export default function EnterpriseDetailPage() {
 
   async function fetchData() {
     try {
-      const res = await fetch(`/api/admin/teams/${uid}`);
-      const json = await res.json();
-      if (res.ok) {
+      const [teamRes, tunnelsRes] = await Promise.all([
+        fetch(`/api/admin/teams/${uid}`),
+        fetch(`/api/admin/teams/${uid}/tunnels`).catch(() => null),
+      ]);
+      const json = await teamRes.json();
+      if (teamRes.ok) {
+        // 用 tunnels API 的刷新后数据替换 DB 直读数据
+        if (tunnelsRes && tunnelsRes.ok) {
+          const tunnelsJson = await tunnelsRes.json();
+          json.tunnels = tunnelsJson.tunnels;
+          json.stats.activeTunnels = tunnelsJson.tunnels.filter((t: any) => t.status === "healthy").length;
+          json.stats.tunnelCount = tunnelsJson.tunnels.length;
+        }
         setData(json);
       }
     } catch (e) {
-      console.error('Failed to fetch enterprise:', e);
+      console.error("Failed to fetch enterprise:", e);
     } finally {
       setLoading(false);
     }
@@ -115,6 +126,24 @@ export default function EnterpriseDetailPage() {
       setTunnelDeleting(null);
       setDeleteModal({ show: false, id: null, name: "" });
     }
+  }
+
+  async function copyScript(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // fallback for non-HTTPS / restricted contexts
+      const el = document.createElement("textarea");
+      el.value = text;
+      el.style.position = "fixed";
+      el.style.opacity = "0";
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    }
+    setScriptCopied(true);
+    setTimeout(() => setScriptCopied(false), 2000);
   }
 
   if (loading) {
@@ -392,7 +421,7 @@ export default function EnterpriseDetailPage() {
                     </div>
                   </div>
                   <div className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>
-                    {t.cname}
+                    {t.hostname || t.cname}
                   </div>
                   <div className="text-xs" style={{ color: "var(--color-text-secondary)" }}>
                     安装: <code className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[11px] font-mono">cloudflared tunnel run --token {t.cf_token?.slice(0, 16)}...</code>
@@ -484,12 +513,11 @@ export default function EnterpriseDetailPage() {
                   </pre>
                 </div>
                 <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(installScript);
-                  }}
+                  onClick={() => copyScript(installScript)}
                   className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-colors"
                 >
-                  <Copy className="w-4 h-4" /> 复制脚本
+                  {scriptCopied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {scriptCopied ? "已复制" : "复制脚本"}
                 </button>
                 <button
                   onClick={() => { setTunnelModal(false); setInstallScript(""); }}

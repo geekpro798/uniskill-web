@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS team_tunnels (
   cf_tunnel_id TEXT NOT NULL,
   cf_token TEXT NOT NULL,
   cname TEXT NOT NULL,
+  hostname TEXT,
+  dns_record_id TEXT,
   status TEXT DEFAULT 'inactive',
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()

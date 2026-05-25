@@ -49,11 +49,15 @@ export async function createCFTunnel(name: string): Promise<{
     body: JSON.stringify({ name, config_src: "cloudflare" }),
   });
 
-  const json: CFResponse<{ id: string; token: string; cname: string }> = await res.json();
+  const json: CFResponse<{ id: string; token: string }> = await res.json();
   if (!json.success) {
     throw new Error(`CF create tunnel failed: ${json.errors[0]?.message || "unknown"}`);
   }
-  return json.result;
+  return {
+    id: json.result.id,
+    token: json.result.token,
+    cname: `${json.result.id}.cfargotunnel.com`,
+  };
 }
 
 /** 配置 Tunnel ingress（hostname → origin service） */
@@ -125,4 +129,52 @@ export async function listCFTunnels(): Promise<{ id: string; name: string }[]> {
     throw new Error(`CF list tunnels failed: ${json.errors[0]?.message || "unknown"}`);
   }
   return json.result;
+}
+
+function getZoneId(): string {
+  const id = process.env.CF_ZONE_ID;
+  if (!id) throw new Error("CF_ZONE_ID not configured");
+  return id;
+}
+
+/** 为 Tunnel 创建 DNS CNAME 记录 */
+export async function createTunnelDNSRecord(
+  name: string,
+  cnameTarget: string,
+): Promise<{ id: string }> {
+  const zoneId = getZoneId();
+  const res = await fetch(
+    `${CF_API}/zones/${zoneId}/dns_records`,
+    {
+      method: "POST",
+      headers: cfHeaders(),
+      body: JSON.stringify({
+        type: "CNAME",
+        name,
+        content: cnameTarget,
+        proxied: true,
+        comment: `Tunnel for ${name}`,
+      }),
+    },
+  );
+
+  const json: CFResponse<{ id: string }> = await res.json();
+  if (!json.success) {
+    throw new Error(`CF DNS record create failed: ${json.errors[0]?.message || "unknown"}`);
+  }
+  return json.result;
+}
+
+/** 删除 Tunnel 对应的 DNS 记录 */
+export async function deleteDNSRecord(recordId: string): Promise<void> {
+  const zoneId = getZoneId();
+  const res = await fetch(
+    `${CF_API}/zones/${zoneId}/dns_records/${recordId}`,
+    { method: "DELETE", headers: cfHeaders() },
+  );
+
+  const json: CFResponse<{ id: string }> = await res.json();
+  if (!json.success) {
+    throw new Error(`CF DNS record delete failed: ${json.errors[0]?.message || "unknown"}`);
+  }
 }
