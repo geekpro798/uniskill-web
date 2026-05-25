@@ -4,19 +4,26 @@
 // Sovereign identity onboarding: Particle Network MPC wallet activation
 
 import React, { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { useConnect, useConnectors, useAccount, useDisconnect } from '@particle-network/connectkit';
 import { motion } from 'framer-motion';
-import { Shield, Zap, CheckCircle2, AlertTriangle, Wallet, Github } from 'lucide-react';
+import { Shield, Zap, CheckCircle2, AlertTriangle, Wallet, Github, Mail } from 'lucide-react';
 
 interface WalletSetupProps {
     onComplete: (walletAddress?: string) => void;
 }
 
 export default function WalletSetup({ onComplete }: WalletSetupProps) {
+    const { data: session }        = useSession();
     const { connect }              = useConnect();
     const connectors               = useConnectors();
     const { address, isConnected } = useAccount();
     const { disconnect }           = useDisconnect();
+
+    const isGithubUser = !!(session?.user as any)?.githubId;
+    const authMethod = isGithubUser ? 'github' : 'email';
+    const AuthIcon = isGithubUser ? Github : Mail;
+    const authLabel = isGithubUser ? 'GitHub' : 'Email';
 
     const [step,       setStep]       = useState<'idle' | 'connecting' | 'binding' | 'done' | 'error'>('idle');
     const [errorMsg,   setErrorMsg]   = useState<string>('');
@@ -49,11 +56,11 @@ export default function WalletSetup({ onComplete }: WalletSetupProps) {
                 disconnect(); 
             }
 
-            // 直接唤起 GitHub 授权窗口（无头模式，丝滑无缝）
-            await connect({ 
-                connector: authConnector, 
+            // 唤起授权窗口（GitHub 或 Email OTP，根据用户类型自动选择）
+            await connect({
+                connector: authConnector,
                 // @ts-ignore
-                authParams: { socialType: 'github' } 
+                authParams: { socialType: authMethod }
             });
 
             // Note: The rest of the flow is passed cleanly to the useEffect!
@@ -132,7 +139,9 @@ export default function WalletSetup({ onComplete }: WalletSetupProps) {
                             Activate Sovereign Identity
                         </h1>
                         <p className="text-sm text-slate-400">
-                            Link your GitHub account to a non-custodial wallet via Particle MPC
+                            {isGithubUser
+                                ? 'Link your GitHub account to a non-custodial wallet via Particle MPC'
+                                : 'Verify your email to generate a non-custodial wallet via Particle MPC'}
                         </p>
                     </div>
                 </div>
@@ -140,9 +149,9 @@ export default function WalletSetup({ onComplete }: WalletSetupProps) {
                 {/* ── Feature List ── */}
                 <div className="px-8 py-6 space-y-3">
                     {[
-                        { icon: Wallet,  text: 'Your wallet is generated from your GitHub identity — no seed phrases needed' },
+                        { icon: Wallet,  text: isGithubUser ? 'Your wallet is generated from your GitHub identity — no seed phrases needed' : 'Your wallet is generated from your email identity — no seed phrases needed' },
                         { icon: Shield,  text: 'Particle MPC ensures no single party holds the full private key' },
-                        { icon: Zap,     text: 'Restore access anytime by re-authenticating with GitHub' },
+                        { icon: Zap,     text: isGithubUser ? 'Restore access anytime by re-authenticating with GitHub' : 'Restore access anytime by re-authenticating with your email' },
                     ].map(({ icon: Icon, text }, i) => (
                         <div key={i} className="flex items-start gap-3">
                             <div className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -196,7 +205,7 @@ export default function WalletSetup({ onComplete }: WalletSetupProps) {
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                                     </svg>
-                                    Connecting via GitHub...
+                                    Connecting via {authLabel}...
                                 </span>
                             ) : step === 'binding' ? (
                                 <span className="flex items-center justify-center gap-2">
@@ -208,8 +217,8 @@ export default function WalletSetup({ onComplete }: WalletSetupProps) {
                                 </span>
                             ) : (
                                 <span className="flex items-center justify-center gap-2">
-                                    <Github className="w-5 h-5" />
-                                    Activate Wallet via GitHub
+                                    <AuthIcon className="w-5 h-5" />
+                                    Activate Wallet via {authLabel}
                                 </span>
                             )}
                         </button>

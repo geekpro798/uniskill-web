@@ -7,7 +7,7 @@ import BillingClient from "./BillingClient";
 export const dynamic = "force-dynamic";
 
 export default async function BillingPage() {
-  const session = await getServerSession(authOptions as any);
+  const session = await getServerSession(authOptions as any) as any;
 
   if (!(session as any)?.user) {
     redirect("/");

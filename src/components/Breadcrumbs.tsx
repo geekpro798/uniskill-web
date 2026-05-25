@@ -13,19 +13,21 @@ export interface BreadcrumbItem {
 interface BreadcrumbsProps {
     items: BreadcrumbItem[];
     className?: string;
+    homeHref?: string;
+    homeLabel?: string;
 }
 
 /**
  * Breadcrumbs Component
  * 职责：提供统一的页面路径导航。
  * 特色：
- * 1. 响应式：移动端自动显示为单向“返回”链接，桌面端显示完整层级。
+ * 1. 响应式：移动端自动显示为单向"返回"链接，桌面端显示完整层级。
  * 2. 动效：悬停时文字平移与色彩变化。
  * 3. 语义化：遵循 WAI-ARIA 标准。
  */
-export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, className = "" }) => {
+export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, className = "", homeHref = "/", homeLabel = "Home" }) => {
     // 基础首页项 (Base Home Item)
-    const allItems = [{ label: "Home", href: "/" }, ...items];
+    const allItems = [{ label: homeLabel, href: homeHref }, ...items];
 
     return (
         <nav 

@@ -59,7 +59,7 @@ export async function handleUserRegistration(
     // 用户已存在，直接返回（不重新生成 Key）
     if (existingUser) {
         console.log("[auth] User already exists in DB:", existingUser.github_id);
-        
+
         // 🌟 Sync GitHub URL if missing for existing users
         if (!existingUser.github_url && githubProfile.github_url) {
             const supabaseAdmin = createClient(
@@ -70,6 +70,17 @@ export async function handleUserRegistration(
                 .from("profiles")
                 .update({ github_url: githubProfile.github_url })
                 .eq("github_id", githubId);
+        }
+
+        // 处理待处理的团队邀请（白名单自动加入）
+        if (existingUser.email) {
+            const { processPendingInvitations } = await import('@/lib/teams');
+            const joinedTeams = await processPendingInvitations(existingUser.user_uid, existingUser.email);
+            if (joinedTeams.length > 0) {
+                console.log(`[auth] Existing user auto-joined ${joinedTeams.length} team(s): ${existingUser.user_uid}`);
+                const { syncUserTeamsToGateway } = await import('@/lib/teams');
+                syncUserTeamsToGateway(existingUser.user_uid).catch(() => {});
+            }
         }
 
         return { profile: existingUser as UserProfile };
@@ -183,6 +194,19 @@ export async function handleUserRegistration(
             email: newProfile.email,
             initialCredits: 500
         });
+    }
+
+    // 5. 处理待处理的团队邀请（白名单自动加入）
+    const finalProfile = newProfile || (existingUser as UserProfile);
+    if (finalProfile?.email) {
+        const { processPendingInvitations } = await import('@/lib/teams');
+        const joinedTeams = await processPendingInvitations(finalProfile.user_uid, finalProfile.email);
+        if (joinedTeams.length > 0) {
+            console.log(`[auth] Auto-joined ${joinedTeams.length} team(s) for ${finalProfile.user_uid}`);
+            // 同步团队列表到 Gateway KV
+            const { syncUserTeamsToGateway } = await import('@/lib/teams');
+            syncUserTeamsToGateway(finalProfile.user_uid).catch(() => {});
+        }
     }
 
     // ─── Step 6: 返回结果 ───────────

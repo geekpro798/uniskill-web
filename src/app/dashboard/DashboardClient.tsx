@@ -13,7 +13,7 @@ import {
   Plus, Layers, ExternalLink, Activity, ShieldCheck, 
   Copy, CheckCircle2, ChevronRight, Eye, EyeOff,
   History, Monitor, Code2, Globe, Lock, MoreVertical,
-  Trash2, PlayCircle, Edit3, Save, Wallet, Shield
+  Trash2, PlayCircle, Edit3, Save, Wallet, Shield, Building2
 } from 'lucide-react';
 import { resolveSkillVisuals } from "@/lib/skill-visual-identity";
 import WalletSetup from "@/components/auth/WalletSetup";
@@ -97,6 +97,8 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
   const [invocationStats, setInvocationStats] = useState({ daily: 0, lifetime: 0 });
   const [recentLogs, setRecentLogs] = useState<any[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
+  const [teams, setTeams] = useState<any[]>([]);
+  const [loadingTeams, setLoadingTeams] = useState(true);
 
   // 🌟 Onboarding modal: show for new users with wallet but no session key
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -174,19 +176,20 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
   };
 
   const fetchInvocations = async () => {
+    if (!(session?.user as any)?.userUid) return;
     try {
       const response = await fetch('/api/user/credit-events?stats=true', {
         headers: { 'Cache-Control': 'no-cache' }
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      
+
       const { count } = await response.json();
-      setInvocationStats({ 
-        daily: count?.daily || 0, 
-        lifetime: count?.lifetime || 0 
+      setInvocationStats({
+        daily: count?.daily || 0,
+        lifetime: count?.lifetime || 0
       });
     } catch (e) {
-      console.error("Failed to fetch invocations", e);
+      console.warn("Failed to fetch invocations", e);
     }
   };
 
@@ -214,19 +217,35 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
   };
 
   const fetchRecentActivity = async () => {
+    if (!(session?.user as any)?.userUid) return;
     try {
       setLoadingLogs(true);
       const response = await fetch('/api/user/credit-events?limit=3', {
         headers: { 'Cache-Control': 'no-cache' }
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      
+
       const { events } = await response.json();
       setRecentLogs(events || []);
     } catch (e) {
-      console.error("Failed to fetch recent activity", e);
+      console.warn("Failed to fetch recent activity", e);
     } finally {
       setLoadingLogs(false);
+    }
+  };
+
+  const fetchTeams = async () => {
+    try {
+      const res = await fetch("/api/user/teams", {
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setTeams(data.teams || []);
+    } catch (e) {
+      console.warn("Failed to fetch teams", e);
+    } finally {
+      setLoadingTeams(false);
     }
   };
 
@@ -237,13 +256,10 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
     // Check if we need to show wallet setup
     const params = new URLSearchParams(window.location.search);
     const needRelink = params.get('relink') === 'true';
-    const noWallet = (session?.user as any)?.authorizedWallet === null && !walletSetupCompletedLocal;
-    
-    if (needRelink || noWallet) {
+
+    if (needRelink) {
         setShowWalletSetup(true);
-        if (needRelink) {
-            window.history.replaceState({}, '', '/dashboard');
-        }
+        window.history.replaceState({}, '', '/dashboard');
     }
 
     // 🌟 如果已经有服务端下发的数据，则跳过初次加载请求 (Skip initial fetch if SSR data exists)
@@ -253,6 +269,7 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
     
     fetchInvocations();
     fetchRecentActivity();
+    fetchTeams();
     window.addEventListener("focus", fetchLiveCredits);
     window.addEventListener("focus", checkOnboarding);
     return () => {
@@ -420,6 +437,53 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
             </div>
           ))}
         </div>
+
+        {/* My Teams */}
+        {!loadingTeams && teams.length > 0 && (
+          <section>
+            <div className="flex items-center gap-3 mb-4">
+              <h2 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <Building2 size={18} className="text-purple-500" />
+                My Teams
+              </h2>
+              <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                {teams.length}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {teams.map((team) => (
+                <Link
+                  key={team.team_uid}
+                  href={`/t/${team.slug}/dashboard`}
+                  className="p-5 bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-[24px] hover:border-purple-500/30 transition-all shadow-sm group"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center text-white font-black text-sm shrink-0">
+                      {team.name?.charAt(0) || "?"}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                        {team.name}
+                      </h3>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        uniskill.ai/t/{team.slug}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded text-[10px] font-bold uppercase">
+                      {team.plan === "mode1" ? "共享网关" : team.plan === "mode2" ? "专属网关" : team.plan}
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      {team.member_count ?? 0} members
+                    </span>
+                    <ChevronRight size={14} className="ml-auto text-slate-300 group-hover:text-purple-400 transition-colors" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           <div className="lg:col-span-2 space-y-6">
@@ -595,11 +659,11 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
                      <span className="text-[10px] text-slate-400 font-bold uppercase">MPC-TSS Address</span>
                      <div className="flex items-center gap-2 mt-0.5">
                        <span className="text-xs font-mono text-slate-900 dark:text-slate-300 break-all pr-2">
-                         {(session?.user as any)?.authorizedWallet 
-                            ? (hideWallet 
+                         {(session?.user as any)?.authorizedWallet
+                            ? (hideWallet
                                 ? `${(session?.user as any).authorizedWallet.substring(0,6)}...${(session?.user as any).authorizedWallet.substring(38)}`
                                 : (session?.user as any).authorizedWallet)
-                            : 'Not Activated'}
+                            : '—'}
                        </span>
                        
                        {(session?.user as any)?.authorizedWallet && (
@@ -625,9 +689,23 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
                    </div>
                 </div>
                
-               <p className="text-[9px] text-slate-400 italic font-sans leading-relaxed">
-                 Your identity is secured by Particle Network MPC. Requests to the gateway must be signed via EIP-191.
-               </p>
+               {(session?.user as any)?.authorizedWallet ? (
+                 <p className="text-[9px] text-slate-400 italic font-sans leading-relaxed">
+                   Your identity is secured by Particle Network MPC. Requests to the gateway must be signed via EIP-191.
+                 </p>
+               ) : (
+                 <div className="space-y-3">
+                   <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                     调用技能 / 设置 Session Key 前，请先激活您的 MPC 主权钱包。
+                   </p>
+                   <button
+                     onClick={() => setShowWalletSetup(true)}
+                     className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-colors"
+                   >
+                     激活钱包
+                   </button>
+                 </div>
+               )}
             </div>
 
             <RecentActivity logs={recentLogs} loading={loadingLogs} />

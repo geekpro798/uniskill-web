@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import { useSession, signIn, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Settings, Zap, Monitor, LayoutGrid, Plus, LogOut, ChevronDown, Menu, X, DollarSign, BookOpen, ExternalLink } from "lucide-react";
+import { Settings, Zap, Monitor, LayoutGrid, Plus, LogOut, ChevronDown, Menu, X, DollarSign, BookOpen, ExternalLink, Users } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { useUser } from "@/context/UserContext";
 
@@ -37,6 +37,14 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const mobileMenuRef = useRef<HTMLDivElement>(null);
     const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+    // 自动判定模式
+    const isDashboard = pathname.startsWith("/dashboard") || pathname === "/settings";
+    const isTeamPage = pathname.startsWith("/t/");
+    const isTeamDashboard = isTeamPage;
+
+    // 团队 slug：从 URL 提取（下拉菜单中的路由由 AuthSection 内部根据 session 补充）
+    const pathSlug = isTeamPage ? pathname.split("/")[2] : null;
 
     // 🌟 移动端交互逻辑优化 (Mobile UX Logic)
     useEffect(() => {
@@ -74,14 +82,11 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
         };
     }, [isMobileMenuOpen]);
 
-    // 自动判定模式
-    const isDashboard = pathname.startsWith("/dashboard") || pathname === "/settings";
-    
     // 滚动动效 (仅在非 Dashboard 模式下更明显，但结构保持一致)
     const navBg = useTransform(
         scrollY,
         [0, 80],
-        [isDashboard ? "var(--color-nav-bg)" : "transparent", "var(--color-nav-bg)"]
+        [isDashboard || isTeamDashboard ? "var(--color-nav-bg)" : "transparent", "var(--color-nav-bg)"]
     );
     const navBorder = useTransform(
         scrollY,
@@ -108,7 +113,9 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
 
                 {/* ─── 中间：模式切换导航 (桌面端) ─── */}
                 <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-1">
-                    {isDashboard ? (
+                    {isTeamPage ? (
+                        <TeamDashboardLinks pathname={pathname} />
+                    ) : isDashboard ? (
                         <DashboardLinks pathname={pathname} />
                     ) : (
                         <MarketingLinks pathname={pathname} />
@@ -117,7 +124,7 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
 
                 {/* ─── 右侧：资产 + 主题 + 用户菜单 ─── */}
                 <div className="flex items-center gap-3">
-                    {(status === "authenticated" || initialCredits !== undefined) && (
+                    {!isTeamPage && (status === "authenticated" || initialCredits !== undefined) && (
                         <CreditsBadge credits={activeCredits} />
                     )}
                     
@@ -125,10 +132,11 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
                         <ThemeToggle />
                     </div>
                     
-                    <AuthSection 
-                        status={initialCredits !== undefined ? "authenticated" : status} 
-                        displayName={activeDisplayName} 
+                    <AuthSection
+                        status={initialCredits !== undefined ? "authenticated" : status}
+                        displayName={activeDisplayName}
                         initialAvatarUrl={initialAvatarUrl}
+                        isTeamPage={isTeamPage}
                     />
 
                     {/* 移动端菜单触发器 */}
@@ -155,7 +163,9 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
                         style={{ backgroundColor: "var(--color-bg-card)", borderColor: "var(--color-border)" }}
                     >
                         <div className="p-6 space-y-3">
-                            {isDashboard ? (
+                            {isTeamPage ? (
+                                <MobileDashboardLinks pathname={pathname} onClose={() => setIsMobileMenuOpen(false)} teamSlug={pathSlug} />
+                            ) : isDashboard ? (
                                 <MobileDashboardLinks pathname={pathname} onClose={() => setIsMobileMenuOpen(false)} />
                             ) : (
                                 <MobileMarketingLinks pathname={pathname} onClose={() => setIsMobileMenuOpen(false)} />
@@ -166,7 +176,7 @@ export default function UnifiedNavbar({ initialCredits, initialDisplayName, init
                                     <span className="text-xs font-bold uppercase tracking-widest opacity-50">Theme</span>
                                     <ThemeToggle />
                                 </div>
-                                {status === "authenticated" && activeCredits !== undefined && (
+                                {!isTeamPage && status === "authenticated" && activeCredits !== undefined && (
                                     <div className="flex justify-between items-center bg-blue-500/5 p-4 rounded-xl border border-blue-500/10">
                                         <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Available Credits</span>
                                         <span className="font-mono font-bold text-blue-500">{activeCredits.toLocaleString()}</span>
@@ -223,7 +233,48 @@ function CreditsBadge({ credits }: { credits: number | undefined }) {
     );
 }
 
-// 3. 营销模式链接
+// 3. 团队页面链接
+// 3.5 团队控制台链接 (镜像 DashboardLinks)
+function TeamDashboardLinks({ pathname }: { pathname: string }) {
+    const slug = pathname.split("/")[2];
+    const links = [
+        { href: `/t/${slug}/dashboard`, label: "Stats", icon: Monitor },
+        { href: `/t/${slug}/dashboard/myskills`, label: "My Skills", icon: LayoutGrid },
+        { href: `/t/${slug}/dashboard/members`, label: "Members", icon: Users },
+        { href: `/t/${slug}/dashboard/billing`, label: "Billing", icon: Zap },
+    ];
+
+    return (
+        <>
+            {links.map(({ href, label, icon: Icon }) => {
+                const active = label === "My Skills"
+                    ? pathname.includes("/myskills") && !pathname.includes("/myskills/new")
+                    : label === "Billing"
+                    ? pathname.includes("/billing")
+                    : label === "Members"
+                    ? pathname.includes("/members")
+                    : pathname === href;
+                return (
+                    <Link
+                        key={href + label}
+                        href={href}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${
+                            active
+                            ? "text-blue-400 bg-blue-500/10 border-blue-500/20"
+                            : "border-transparent hover:bg-white/5"
+                        }`}
+                        style={{ color: active ? "var(--color-blue)" : "var(--color-text-secondary)" }}
+                    >
+                        <Icon size={13} />
+                        {label}
+                    </Link>
+                );
+            })}
+        </>
+    );
+}
+
+// 4. 营销模式链接
 function MarketingLinks({ pathname }: { pathname: string }) {
     const isSkillsActive = pathname === "/skills";
     return (
@@ -292,13 +343,22 @@ function DashboardLinks({ pathname }: { pathname: string }) {
 }
 
 // 5. 身份校验与下拉菜单
-function AuthSection({ status, displayName, initialAvatarUrl }: { status: string, displayName: string | null, initialAvatarUrl?: string | null }) {
+function AuthSection({ status, displayName, initialAvatarUrl, isTeamPage }: { status: string, displayName: string | null, initialAvatarUrl?: string | null, isTeamPage?: boolean }) {
     const { data: session } = useSession();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
 
     const isActive = (path: string) => pathname === path;
+
+    // 团队页面下提取 slug，构造团队专属路由
+    // 优先用 URL 中的 slug，其次用 session 中的 teamSlugs（团队凭证登录时）
+    const pathSlug = isTeamPage ? pathname.split("/")[2] : null;
+    const sessionTeamSlug = (session?.user as any)?.teamUid && session?.user?.teamSlugs?.[0] ? session.user.teamSlugs[0] : null;
+    const teamSlug = pathSlug || sessionTeamSlug || null;
+    const dashboardHref = teamSlug ? `/t/${teamSlug}/dashboard` : "/dashboard";
+    const deployHref = teamSlug ? `/t/${teamSlug}/dashboard/myskills/new` : "/dashboard/myskills/new";
+    const settingsHref = teamSlug ? `/t/${teamSlug}/settings` : "/settings";
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -354,12 +414,12 @@ function AuthSection({ status, displayName, initialAvatarUrl }: { status: string
                             style={{ backgroundColor: "var(--color-bg-card)", borderColor: "var(--color-border)" }}
                             onMouseLeave={() => setIsMenuOpen(false)}
                         >
-                            <MenuLink href="/dashboard" icon={Monitor} label="Dashboard" active={isActive("/dashboard")} />
-                            <MenuLink href="/dashboard/myskills/new" icon={Plus} label="Deploy Skill" active={isActive("/dashboard/myskills/new")} />
-                            <MenuLink href="/settings" icon={Settings} label="Settings" active={isActive("/settings")} />
+                            <MenuLink href={dashboardHref} icon={Monitor} label="Dashboard" active={isActive(dashboardHref)} />
+                            <MenuLink href={deployHref} icon={Plus} label="Deploy Skill" active={isActive(deployHref)} />
+                            <MenuLink href={settingsHref} icon={Settings} label="Settings" active={isActive(settingsHref)} />
                             <div className="my-1 h-[px] bg-white/5" style={{ backgroundColor: "var(--color-border)" }} />
                             <button
-                                onClick={() => signOut({ callbackUrl: "/" })}
+                                onClick={() => signOut({ callbackUrl: teamSlug ? `/t/${teamSlug}` : "/" })}
                                 className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-red-500/80 hover:text-red-500 hover:bg-red-500/5 transition-colors"
                             >
                                 <LogOut size={14} />
@@ -371,6 +431,9 @@ function AuthSection({ status, displayName, initialAvatarUrl }: { status: string
             </div>
         );
     }
+
+    // 团队页面不显示 GitHub 登录入口（页面内有邮箱/密码登录表单）
+    if (isTeamPage) return null;
 
     return (
         <button
@@ -436,8 +499,13 @@ function MobileMarketingLinks({ pathname, onClose }: { pathname: string, onClose
     );
 }
 
-function MobileDashboardLinks({ pathname, onClose }: { pathname: string, onClose: () => void }) {
-    const links = [
+function MobileDashboardLinks({ pathname, onClose, teamSlug }: { pathname: string, onClose: () => void, teamSlug?: string | null }) {
+    const links = teamSlug ? [
+        { href: `/t/${teamSlug}/dashboard`, label: 'Stats', icon: Monitor },
+        { href: `/t/${teamSlug}/dashboard/myskills`, label: 'My Skills', icon: LayoutGrid },
+        { href: `/t/${teamSlug}/dashboard/members`, label: 'Members', icon: Users },
+        { href: `/t/${teamSlug}/dashboard/billing`, label: 'Billing', icon: Zap },
+    ] : [
         { href: '/dashboard', label: 'Stats', icon: Monitor },
         { href: '/dashboard/myskills', label: 'My Skills', icon: LayoutGrid },
         { href: '/dashboard/billing', label: 'Billing', icon: Zap },
@@ -446,10 +514,16 @@ function MobileDashboardLinks({ pathname, onClose }: { pathname: string, onClose
     return (
         <div className="space-y-1">
             {links.map(({ href, label, icon: Icon }) => {
-                const active = pathname === href;
+                const active = label === "My Skills"
+                    ? pathname.includes("/myskills") && !pathname.includes("/myskills/new")
+                    : label === "Billing"
+                    ? pathname.includes("/billing")
+                    : label === "Members"
+                    ? pathname.includes("/members")
+                    : pathname === href;
                 return (
                     <Link
-                        key={href}
+                        key={href + label}
                         href={href}
                         onClick={onClose}
                         className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-all text-sm font-bold"

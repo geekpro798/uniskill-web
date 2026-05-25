@@ -23,7 +23,7 @@ const config = createConfig({
     },
     walletConnectors: [
         authWalletConnectors({
-            authTypes: ['github'], // 我们只专门配置 GitHub 登录
+            authTypes: ['github', 'email'], // GitHub + Email OTP 统一入口
             promptSettingConfig: {
                 promptMasterPasswordSettingWhenLogin: 0,
                 promptPaymentPasswordSettingWhenSign: 0,

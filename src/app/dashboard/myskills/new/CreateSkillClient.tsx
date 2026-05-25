@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react';
 import { 
   Save, Terminal, Globe, Lock, AlertCircle, KeyRound, 
   Plus, Trash2, Sparkles, Wand2, Loader2, CheckCircle2,
-  Activity, Edit3, Code2, Link, Link2, Unlink
+  Activity, Edit3, Code2, Link, Link2, Unlink, Users
 } from 'lucide-react';
 import { useSession, signIn } from "next-auth/react";
 import { useEffect } from 'react';
@@ -17,9 +17,11 @@ import { Modal } from "@/components/Modal";
 interface CreateSkillClientProps {
   initialCredits: number | undefined;
   initialDisplayName: string | null;
+  teamUid?: string;
+  teamSlug?: string;
 }
 
-export default function CreateSkillPage({ initialCredits, initialDisplayName }: CreateSkillClientProps) {
+export default function CreateSkillPage({ initialCredits, initialDisplayName, teamUid, teamSlug }: CreateSkillClientProps) {
   const { data: session, status } = useSession();
   const [liveCredits, setLiveCredits] = useState<number | undefined>(initialCredits);
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(initialDisplayName);
@@ -390,11 +392,13 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
         display_name: displayName,
         description,
         markdown_manifest: markdownBody,
-        status: isPublic ? 'Community' : 'Private',
+        status: teamUid ? 'Team' : (isPublic ? 'Community' : 'Private'),
         state: originalState === 'active' ? 'active' : 'testing',
         secrets: validSecrets.map(s => ({ key: s.key, value: s.value })), // 传递原始 Key/Value，后端处理加密
         emoji: markdownBody.match(/emoji:\s*([^\s\n]+)/)?.[1] || '⚙️',
-        owner_uid: (session as any)?.user?.userUid // API 会校验
+        owner_uid: (session as any)?.user?.userUid, // API 会校验
+        team_uid: teamUid || undefined,
+        visibility: teamUid ? 'team' : (isPublic ? 'public' : 'private')
       };
 
       // 🌟 调用安全后端接口 (Use secure backend API)
@@ -533,7 +537,9 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
           description: description,
           markdown_manifest: markdownBody,
           secrets: secrets.filter(s => s.key.trim() !== '' && s.value.trim() !== '').map(s => ({ key: s.key, value: s.value })),
-          owner_uid: (session as any)?.user?.userUid
+          owner_uid: (session as any)?.user?.userUid,
+          team_uid: teamUid || undefined,
+          visibility: teamUid ? 'team' : undefined
         })
       });
 
@@ -554,7 +560,7 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
       
       // 稍微延迟让用户看到成功视图，然后返回面板
       setTimeout(() => {
-         window.location.href = '/dashboard/myskills';
+         window.location.href = teamUid && teamSlug ? `/t/${teamSlug}/dashboard` : '/dashboard/myskills';
       }, 3500);
       
     } catch (err: any) {
@@ -967,12 +973,25 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
                   <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors" style={{ backgroundColor: "var(--color-bg-secondary)", color: "var(--color-text-secondary)" }}>4</span>
                   Publishing Mode
                 </h3>
+                {teamUid ? (
+                  <div className="pl-8">
+                    <div className="flex items-start gap-4 p-6 rounded-2xl border-2 border-emerald-500 shadow-lg transition-all" style={{ backgroundColor: "white" }}>
+                      <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900 border border-emerald-100 dark:border-emerald-800 shrink-0">
+                        <Users className="w-5 h-5 text-emerald-500" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-slate-900 dark:text-white text-sm">Team Deployment</h4>
+                        <p className="text-[11px] mt-1.5 leading-relaxed text-slate-500 dark:text-slate-400 font-medium">Deployed to your team's shared MCP gateway. All team members can use this skill.</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-8">
                   <button
                     type="button"
                     onClick={() => setIsPublic(false)}
                     className={`flex items-start gap-4 p-6 rounded-2xl border-2 transition-all relative overflow-hidden ${!isPublic ? 'border-blue-500 shadow-lg' : 'border-slate-100 dark:border-slate-800 opacity-60 grayscale'}`}
-                    style={{ 
+                    style={{
                       backgroundColor: !isPublic ? "white" : "rgba(0,0,0,0.01)",
                       borderColor: !isPublic ? undefined : "var(--color-border)"
                     }}
@@ -990,7 +1009,7 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
                     type="button"
                     disabled={true}
                     className="flex items-start gap-4 p-6 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 text-left relative overflow-hidden opacity-60 grayscale cursor-not-allowed transition-all shadow-inner"
-                    style={{ 
+                    style={{
                       backgroundColor: "rgba(0,0,0,0.01)",
                     }}
                   >
@@ -1008,6 +1027,7 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName }: 
                     </div>
                   </button>
                 </div>
+                )}
               </div>
             </div>
 

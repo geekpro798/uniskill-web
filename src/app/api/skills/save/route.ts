@@ -15,17 +15,19 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { 
-        skill_uid, 
-        skill_name, 
-        display_name, 
-        description, 
-        markdown_manifest, 
-        status, 
-        owner_uid, 
-        state, 
+    const {
+        skill_uid,
+        skill_name,
+        display_name,
+        description,
+        markdown_manifest,
+        status,
+        owner_uid,
+        state,
         secrets,
-        emoji
+        emoji,
+        team_uid,
+        visibility
     } = body;
 
     if (!skill_name || !owner_uid) {
@@ -61,6 +63,8 @@ export async function POST(req: Request) {
             gradient_from: body.gradient_from || 'from-blue-500',
             gradient_to: body.gradient_to || 'to-indigo-500'
         };
+        if (team_uid) (payload as any).team_uid = team_uid;
+        if (visibility) (payload as any).visibility = visibility;
 
         let result;
         if (skill_uid) {
