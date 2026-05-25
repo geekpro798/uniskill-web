@@ -65,6 +65,42 @@ export const authOptions: NextAuthOptions = {
                     return null;
                 }
 
+                // 自愈：存量团队 owner 可能没有 profiles 记录，自动补建
+                const { data: existingProfile } = await supabase
+                    .from('profiles')
+                    .select('user_uid')
+                    .eq('user_uid', teamRaw.admin_uid)
+                    .maybeSingle();
+
+                if (!existingProfile) {
+                    await supabase.from('profiles').insert({
+                        user_uid: teamRaw.admin_uid,
+                        github_id: `email:${normalizedEmail}`,
+                        email: normalizedEmail,
+                        username: teamRaw.name,
+                        credits: teamRaw.max_credits_month ?? 100000,
+                        tier: teamRaw.plan === 'mode3' ? 'ENTERPRISE' : 'PRO',
+                    });
+                    console.log('[Team Login] Self-healed: created profile for owner', teamRaw.admin_uid);
+
+                    // 同时确保 owner 在 team_members 中
+                    const { data: existingMember } = await supabase
+                        .from('team_members')
+                        .select('role')
+                        .eq('team_uid', teamRaw.team_uid)
+                        .eq('user_uid', teamRaw.admin_uid)
+                        .maybeSingle();
+
+                    if (!existingMember) {
+                        await supabase.from('team_members').insert({
+                            team_uid: teamRaw.team_uid,
+                            user_uid: teamRaw.admin_uid,
+                            role: 'owner',
+                        });
+                        console.log('[Team Login] Self-healed: added owner to team_members', teamRaw.admin_uid);
+                    }
+                }
+
                 return {
                     id: teamRaw.admin_uid,
                     email: teamRaw.admin_email,

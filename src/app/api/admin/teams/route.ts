@@ -169,6 +169,20 @@ export async function POST(req: Request) {
     role: 'owner',
   });
 
+  // 为 owner 创建 profiles 记录（否则无法调技能、绑钱包）
+  const { error: profileError } = await supabase.from('profiles').insert({
+    user_uid: adminUid,
+    github_id: `email:${adminEmail}`, // 非 GitHub 用户的唯一标识
+    email: adminEmail,
+    username: company_name.trim(),
+    credits: max_credits_month ?? 100000,
+    tier: plan === 'mode3' ? 'ENTERPRISE' : 'PRO',
+  });
+
+  if (profileError) {
+    console.warn('[Enterprise Create] Profile creation warning:', profileError.message);
+  }
+
   // 记录审计日志
   await supabase.from('audit_logs').insert({
     team_uid: team.team_uid,
