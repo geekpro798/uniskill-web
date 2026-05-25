@@ -65,47 +65,59 @@ export const authOptions: NextAuthOptions = {
                     return null;
                 }
 
+                // 自愈：存量团队可能没有 admin_uid，先补上
+                let adminUid = teamRaw.admin_uid as string | null;
+                if (!adminUid) {
+                    const { randomUUID } = await import('crypto');
+                    adminUid = randomUUID();
+                    await supabase
+                        .from('teams')
+                        .update({ admin_uid: adminUid })
+                        .eq('team_uid', teamRaw.team_uid);
+                    console.log('[Team Login] Self-healed: generated admin_uid for team', teamRaw.team_uid);
+                }
+
                 // 自愈：存量团队 owner 可能没有 profiles 记录，自动补建
                 const { data: existingProfile } = await supabase
                     .from('profiles')
                     .select('user_uid')
-                    .eq('user_uid', teamRaw.admin_uid)
+                    .eq('user_uid', adminUid)
                     .maybeSingle();
 
                 if (!existingProfile) {
                     await supabase.from('profiles').insert({
-                        user_uid: teamRaw.admin_uid,
+                        user_uid: adminUid,
                         github_id: `email:${normalizedEmail}`,
                         email: normalizedEmail,
                         username: teamRaw.name,
                         credits: teamRaw.max_credits_month ?? 100000,
                         tier: teamRaw.plan === 'mode3' ? 'ENTERPRISE' : 'PRO',
                     });
-                    console.log('[Team Login] Self-healed: created profile for owner', teamRaw.admin_uid);
+                    console.log('[Team Login] Self-healed: created profile for owner', adminUid);
 
                     // 同时确保 owner 在 team_members 中
                     const { data: existingMember } = await supabase
                         .from('team_members')
                         .select('role')
                         .eq('team_uid', teamRaw.team_uid)
-                        .eq('user_uid', teamRaw.admin_uid)
+                        .eq('user_uid', adminUid)
                         .maybeSingle();
 
                     if (!existingMember) {
                         await supabase.from('team_members').insert({
                             team_uid: teamRaw.team_uid,
-                            user_uid: teamRaw.admin_uid,
+                            user_uid: adminUid,
                             role: 'owner',
                         });
-                        console.log('[Team Login] Self-healed: added owner to team_members', teamRaw.admin_uid);
+                        console.log('[Team Login] Self-healed: added owner to team_members', adminUid);
                     }
                 }
 
                 return {
-                    id: teamRaw.admin_uid,
+                    id: adminUid,
                     email: teamRaw.admin_email,
                     name: teamRaw.name,
-                    userUid: teamRaw.admin_uid as string,
+                    userUid: adminUid,
                     teamUid: teamRaw.team_uid as string,
                     teamRole: 'owner',
                 };
