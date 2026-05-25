@@ -204,7 +204,7 @@ export function TeamDashboardClient({
             className="inline-flex items-center gap-1.5 font-medium text-slate-400 hover:text-slate-600 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            {team.name}
+            {team.team_name}
           </Link>
           <span className="text-slate-300">/</span>
           <span className="font-bold" style={{ color: "var(--color-text-primary)" }}>
@@ -216,7 +216,7 @@ export function TeamDashboardClient({
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="text-left">
             <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-              {team.name}
+              {team.team_name}
               <span className={`ml-3 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold align-middle ${
                 team.status === "active" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
               }`}>

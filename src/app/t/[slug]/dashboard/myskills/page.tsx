@@ -68,7 +68,7 @@ export default async function TeamSkillsPage({
   return (
     <TeamSkillsClient
       teamUid={team.team_uid}
-      teamName={team.name}
+      teamName={team.team_name}
       teamSlug={team.slug}
       membership={membership}
       initialCredits={profile?.credits ?? session.user.credits}

@@ -62,7 +62,7 @@ export default async function TeamMembersPage({
   return (
     <MembersClient
       teamUid={team.team_uid}
-      teamName={team.name}
+      teamName={team.team_name}
       teamSlug={team.slug}
       currentUserUid={userUid}
       currentUserRole={membership.role}

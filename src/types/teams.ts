@@ -3,7 +3,7 @@
 
 export interface TeamInfo {
   team_uid: string;
-  name: string;
+  team_name: string;
   slug: string;
   status: string;
   plan: string;
@@ -22,6 +22,7 @@ export interface TeamInfo {
   max_skills?: number;
   max_credits_month?: number;
   monthly_fee_usd?: number;
+  credits?: number;
   notes?: string | null;
 }
 

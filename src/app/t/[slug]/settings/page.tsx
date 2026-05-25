@@ -53,7 +53,7 @@ export default async function TeamSettingsPage({ params }: { params: Promise<{ s
         <TeamSettingsClient
           team={{
             team_uid: team.team_uid,
-            name: team.name,
+            name: team.team_name,
             slug: team.slug,
             status: team.status,
             plan: team.plan,

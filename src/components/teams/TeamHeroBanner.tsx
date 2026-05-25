@@ -34,12 +34,12 @@ export function TeamHeroBanner({ team, showDashboard = false }: { team: TeamInfo
     >
       <div className="flex items-start gap-5">
         <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-white font-black text-xl shrink-0">
-          {team.name?.charAt(0) || '?'}
+          {team.team_name?.charAt(0) || '?'}
         </div>
         <div className="space-y-1.5 flex-1 min-w-0">
           <div className="flex items-center gap-2.5 flex-wrap">
             <h1 className="text-xl md:text-2xl font-black" style={{ color: 'var(--color-text-primary)' }}>
-              {team.name}
+              {team.team_name}
             </h1>
             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-600 rounded text-xs font-bold">
               {PLAN_LABELS[team.plan] || team.plan}

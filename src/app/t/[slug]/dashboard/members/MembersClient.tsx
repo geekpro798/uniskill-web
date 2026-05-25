@@ -378,7 +378,7 @@ export default function MembersClient({
 
                       {/* Owner shield */}
                       {isTargetOwner && (
-                        <Shield size={14} className="text-purple-400/50" title="Team owner" />
+                        <Shield size={14} className="text-purple-400/50" />
                       )}
                     </div>
                   </div>
