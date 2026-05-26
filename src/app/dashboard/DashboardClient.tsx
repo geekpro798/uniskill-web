@@ -79,9 +79,22 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
   const [walletSetupCompletedLocal, setWalletSetupCompletedLocal] = useState(false);
   const [hideWallet, setHideWallet] = useState(true);
   const [copiedWallet, setCopiedWallet] = useState(false);
+  const [apiWalletAddress, setApiWalletAddress] = useState<string | null>(null);
+
+  // Fetch wallet from API as fallback (session may be stale for team-credentials users)
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    fetch('/api/user/wallet')
+      .then(r => r.json())
+      .then(d => {
+        if (d.authorized_wallet) setApiWalletAddress(d.authorized_wallet);
+      })
+      .catch(() => {});
+  }, [status]);
   
   const handleCopyWallet = () => {
-    const addr = (session?.user as any)?.authorizedWallet;
+    const addr = (session?.user as any)?.authorizedWallet || apiWalletAddress;
+    if (!addr) return;
     if (!addr) return;
     navigator.clipboard.writeText(addr);
     setCopiedWallet(true);
@@ -119,11 +132,13 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
     }
   };
 
+  const displayWallet = (session?.user as any)?.authorizedWallet || apiWalletAddress;
+  const hasWallet = !!displayWallet;
+
   const shouldShowOnboarding = (): boolean => {
     if (typeof window === "undefined") return false;
     const dismissed = localStorage.getItem(ONBOARDING_DISMISSED_KEY);
     if (dismissed === "true") return false;
-    const hasWallet = !!(session?.user as any)?.authorizedWallet;
     if (!hasWallet) return false;
     return !hasActiveSessionKey();
   };
@@ -650,33 +665,33 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
                        <Wallet size={12} />
                      </div>
                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sovereign Wallet</span>
-                     <ShieldCheck size={13} className={(session?.user as any)?.authorizedWallet ? "text-emerald-500" : "text-slate-400"} />
+                     <ShieldCheck size={13} className={displayWallet ? "text-emerald-500" : "text-slate-400"} />
                    </div>
                 </div>
- 
+
                 <div className="bg-slate-50 dark:bg-[#161b22] border border-slate-100 dark:border-slate-800 rounded-lg p-3 mb-2 flex items-center justify-between">
                    <div className="flex flex-col gap-0.5 flex-grow">
                      <span className="text-[10px] text-slate-400 font-bold uppercase">MPC-TSS Address</span>
                      <div className="flex items-center gap-2 mt-0.5">
                        <span className="text-xs font-mono text-slate-900 dark:text-slate-300 break-all pr-2">
-                         {(session?.user as any)?.authorizedWallet
+                         {displayWallet
                             ? (hideWallet
-                                ? `${(session?.user as any).authorizedWallet.substring(0,6)}...${(session?.user as any).authorizedWallet.substring(38)}`
-                                : (session?.user as any).authorizedWallet)
+                                ? `${displayWallet.substring(0,6)}...${displayWallet.substring(38)}`
+                                : displayWallet)
                             : '—'}
                        </span>
-                       
-                       {(session?.user as any)?.authorizedWallet && (
+
+                       {displayWallet && (
                          <div className="flex items-center gap-1">
-                           <button 
+                           <button
                              onClick={() => setHideWallet(!hideWallet)}
                              className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                              title={hideWallet ? "Show Wallet" : "Mask Wallet"}
                            >
                              {hideWallet ? <EyeOff size={12} /> : <Eye size={12} />}
                            </button>
-                           
-                           <button 
+
+                           <button
                              onClick={handleCopyWallet}
                              className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                              title="Copy Wallet Address"
@@ -688,8 +703,8 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
                      </div>
                    </div>
                 </div>
-               
-               {(session?.user as any)?.authorizedWallet ? (
+
+               {displayWallet ? (
                  <p className="text-[9px] text-slate-400 italic font-sans leading-relaxed">
                    Your identity is secured by Particle Network MPC. Requests to the gateway must be signed via EIP-191.
                  </p>
