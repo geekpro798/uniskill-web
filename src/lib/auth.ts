@@ -17,6 +17,7 @@ export interface UserProfile {
     avatar_url: string | null;
     github_url: string | null;
     authorized_wallet: string | null; // Secp256k1 EOA 钱包地址（Particle MPC 生成）
+    auth_provider: string;           // 'github' | 'email_otp' | 'unknown'
     credits: number;
     tier: string;
     created_at: string;
@@ -109,6 +110,7 @@ export async function handleUserRegistration(
             github_url: githubProfile.github_url ?? null,
             // authorized_wallet 默认为 null，由数据库 Schema 处理
             credits: 500,
+            auth_provider: 'github',
         })
         .select()
         .single();
