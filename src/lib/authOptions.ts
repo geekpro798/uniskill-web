@@ -92,6 +92,7 @@ export const authOptions: NextAuthOptions = {
                         username: normalizedEmail,
                         credits: 0,
                         tier: 'FREE',
+                        auth_provider: 'email_otp',
                     });
                     console.log('[Team Login] Self-healed: created profile for owner', adminUid);
 
