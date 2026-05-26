@@ -63,13 +63,27 @@ export function TeamDashboardClient({
   const [walletSetupCompletedLocal, setWalletSetupCompletedLocal] = useState(false);
   const [hideWallet, setHideWallet] = useState(true);
   const [copiedWallet, setCopiedWallet] = useState(false);
+  const [apiWalletAddress, setApiWalletAddress] = useState<string | null>(null);
+
+  // Fetch wallet from API as fallback (session may be stale for team-credentials users)
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    fetch('/api/user/wallet')
+      .then(r => r.json())
+      .then(d => {
+        if (d.authorized_wallet) setApiWalletAddress(d.authorized_wallet);
+      })
+      .catch(() => {});
+  }, [status]);
+
+  const displayWallet = (session?.user as any)?.authorizedWallet || apiWalletAddress;
 
   const [liveCredits, setLiveCredits] = useState<number | undefined>(initialCredits);
   const [skills, setSkills] = useState<any[]>(initialSkills || []);
   const [loadingSkills, setLoadingSkills] = useState(!initialSkills);
 
   const handleCopyWallet = () => {
-    const addr = (session?.user as any)?.authorizedWallet;
+    const addr = (session?.user as any)?.authorizedWallet || apiWalletAddress;
     if (!addr) return;
     navigator.clipboard.writeText(addr);
     setCopiedWallet(true);
@@ -469,7 +483,7 @@ export function TeamDashboardClient({
                   <ShieldCheck
                     size={13}
                     className={
-                      (session?.user as any)?.authorizedWallet
+                      displayWallet
                         ? "text-emerald-500"
                         : "text-slate-400"
                     }
@@ -484,13 +498,13 @@ export function TeamDashboardClient({
                   </span>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-xs font-mono text-slate-900 dark:text-slate-300 break-all pr-2">
-                      {(session?.user as any)?.authorizedWallet
+                      {displayWallet
                         ? hideWallet
-                          ? `${(session?.user as any).authorizedWallet.substring(0, 6)}...${(session?.user as any).authorizedWallet.substring(38)}`
-                          : (session?.user as any).authorizedWallet
+                          ? `${displayWallet.substring(0, 6)}...${displayWallet.substring(38)}`
+                          : displayWallet
                         : "—"}
                     </span>
-                    {(session?.user as any)?.authorizedWallet && (
+                    {displayWallet && (
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => setHideWallet(!hideWallet)}
@@ -515,7 +529,7 @@ export function TeamDashboardClient({
                   </div>
                 </div>
               </div>
-              {(session?.user as any)?.authorizedWallet ? (
+              {displayWallet ? (
                 <p className="text-[9px] text-slate-400 italic font-sans leading-relaxed">
                   Your identity is secured by Particle Network MPC. Requests to the gateway must be
                   signed via EIP-191.

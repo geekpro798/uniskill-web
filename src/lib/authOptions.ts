@@ -80,7 +80,7 @@ export const authOptions: NextAuthOptions = {
                 // 自愈：存量团队 owner 可能没有 profiles 记录，自动补建
                 const { data: existingProfile } = await supabase
                     .from('profiles')
-                    .select('user_uid')
+                    .select('user_uid, authorized_wallet')
                     .eq('user_uid', adminUid)
                     .maybeSingle();
 
@@ -120,6 +120,7 @@ export const authOptions: NextAuthOptions = {
                     userUid: adminUid,
                     teamUid: teamRaw.team_uid as string,
                     teamRole: 'owner',
+                    authorizedWallet: (existingProfile?.authorized_wallet ?? null) as string | null,
                 };
             },
         }),

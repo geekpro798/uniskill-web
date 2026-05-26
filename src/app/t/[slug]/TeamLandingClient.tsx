@@ -3,7 +3,7 @@
 // src/app/t/[slug]/TeamLandingClient.tsx
 // 团队落地页客户端组件 — 4 状态 UI
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { AlertTriangle, LogIn, ShieldAlert, Mail, Lock, Loader2, Eye, EyeOff, Crown, UserCog, BarChart3, Zap, Layers, Users, CreditCard, Activity, ArrowRight, Clock } from "lucide-react";
@@ -125,6 +125,16 @@ function UnauthenticatedState() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // 页面加载时从 localStorage 恢复记住的邮箱
+  useEffect(() => {
+    const saved = localStorage.getItem("team_login_email");
+    if (saved) {
+      setEmail(saved);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,6 +152,12 @@ function UnauthenticatedState() {
         setError(result.error === "CredentialsSignin" ? "邮箱或密码错误" : result.error);
         setLoading(false);
       } else {
+        // 记住账号：登录成功后存储邮箱
+        if (rememberMe) {
+          localStorage.setItem("team_login_email", email);
+        } else {
+          localStorage.removeItem("team_login_email");
+        }
         window.location.reload();
       }
     } catch (err: any) {
@@ -170,7 +186,7 @@ function UnauthenticatedState() {
         </p>
       </div>
 
-      <form onSubmit={handleLogin} className="space-y-4">
+      <form onSubmit={handleLogin} className="space-y-4" autoComplete="on">
         <div>
           <label className="block text-xs font-bold mb-1.5" style={{ color: "var(--color-text-secondary)" }}>
             邮箱
@@ -179,6 +195,8 @@ function UnauthenticatedState() {
             <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="email"
+              name="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@company.com"
@@ -200,6 +218,8 @@ function UnauthenticatedState() {
             <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type={showPassword ? "text" : "password"}
+              name="password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="输入密码"
@@ -230,6 +250,19 @@ function UnauthenticatedState() {
         {error && (
           <p className="text-xs font-bold text-red-500 text-center">{error}</p>
         )}
+
+        {/* 记住账号 */}
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+          />
+          <span className="text-xs font-medium" style={{ color: "var(--color-text-secondary)" }}>
+            记住账号
+          </span>
+        </label>
 
         <button
           type="submit"
