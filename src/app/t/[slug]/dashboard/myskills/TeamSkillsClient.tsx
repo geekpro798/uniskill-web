@@ -108,7 +108,45 @@ export default function TeamSkillsClient({
           total_calls: s.total_calls || 0,
         }));
 
-        setSkills(formattedSkills);
+        // 批量获取技能健康度统计 (近30天)
+        const skillNames = formattedSkills.map((s: any) => s.slug).filter(Boolean);
+        let statsMap: Record<string, { success: number; failed: number; totalLatency: number; count: number }> = {};
+
+        if (skillNames.length > 0) {
+          const { data: usageStats } = await supabase
+            .from('skill_usage_logs')
+            .select('skill_name, execution_status, latency_ms')
+            .in('skill_name', skillNames)
+            .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+          (usageStats || []).forEach((row: any) => {
+            if (!statsMap[row.skill_name]) {
+              statsMap[row.skill_name] = { success: 0, failed: 0, totalLatency: 0, count: 0 };
+            }
+            const entry = statsMap[row.skill_name];
+            if (row.execution_status === 'SUCCESS') entry.success++;
+            if (row.execution_status === 'FAILED') entry.failed++;
+            if (row.execution_status !== 'SKIPPED') {
+              entry.totalLatency += (row.latency_ms || 0);
+              entry.count++;
+            }
+          });
+        }
+
+        const enrichedSkills = formattedSkills.map((s: any) => {
+          const stats = statsMap[s.slug];
+          return {
+            ...s,
+            success_rate: stats && (stats.success + stats.failed) > 0
+              ? Math.round((stats.success / (stats.success + stats.failed)) * 1000) / 10
+              : null,
+            avg_latency_ms: stats && stats.count > 0
+              ? Math.round(stats.totalLatency / stats.count)
+              : null,
+          };
+        });
+
+        setSkills(enrichedSkills);
       } catch (e) {
         console.error("Failed to fetch team skills", e);
       } finally {
@@ -369,6 +407,8 @@ export default function TeamSkillsClient({
                       <th className="px-8 py-2.5 tracking-widest text-center">State</th>
                       <th className="px-8 py-2.5 tracking-widest text-right">Cost</th>
                       <th className="px-8 py-2.5 tracking-widest text-right">Total Calls</th>
+                      <th className="px-8 py-2.5 tracking-widest text-right">Success Rate</th>
+                      <th className="px-8 py-2.5 tracking-widest text-right">Latency</th>
                       <th className="px-8 py-2.5 tracking-widest text-right">Actions</th>
                     </tr>
                   </thead>
@@ -414,6 +454,26 @@ export default function TeamSkillsClient({
                         </td>
                         <td className="px-8 py-2.5 text-right font-mono text-sm text-slate-500 dark:text-slate-400 font-bold">
                           {(skill.total_calls ?? 0).toLocaleString()}
+                        </td>
+                        <td className="px-8 py-2.5 text-right font-mono text-sm font-bold"
+                          style={{
+                            color: skill.success_rate == null ? '#94a3b8'
+                              : skill.success_rate >= 95 ? '#10b981'
+                              : skill.success_rate >= 80 ? '#f59e0b'
+                              : '#ef4444'
+                          }}
+                        >
+                          {skill.success_rate != null ? `${skill.success_rate}%` : '—'}
+                        </td>
+                        <td className="px-8 py-2.5 text-right font-mono text-sm font-bold"
+                          style={{
+                            color: skill.avg_latency_ms == null ? '#94a3b8'
+                              : skill.avg_latency_ms < 300 ? '#10b981'
+                              : skill.avg_latency_ms < 800 ? '#f59e0b'
+                              : '#ef4444'
+                          }}
+                        >
+                          {skill.avg_latency_ms != null ? `${skill.avg_latency_ms}ms` : '—'}
                         </td>
                         <td className="px-8 py-2.5 text-right w-32">
                           {skill.state === 'testing' ? (
@@ -464,7 +524,7 @@ export default function TeamSkillsClient({
                     ))}
                     {filteredSkills.length === 0 && !loading && (
                       <tr className="border-none">
-                        <td colSpan={7} className="py-24 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest italic">
+                        <td colSpan={9} className="py-24 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest italic">
                           No team skills found.
                         </td>
                       </tr>

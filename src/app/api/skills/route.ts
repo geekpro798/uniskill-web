@@ -102,7 +102,9 @@ export async function GET(request: Request) {
                 emoji: skill.emoji,
                 deployed_at: skill.deployed_at,
                 implementation: implementation,
-                visuals: visual_metadata 
+                visuals: visual_metadata,
+                success_rate: null,
+                avg_latency_ms: null
             };
         });
 
