@@ -281,7 +281,7 @@ export const CliSkillDetail = ({ skill, skill_name, isOfficial, isOwner }: any) 
                                 <Terminal size={16} className="text-slate-400" />
                                 <code className="text-sm font-mono font-bold" style={{ color: "var(--color-text-primary)" }}>{s.path}</code>
                              </div>
-                             <span className="text-[10px] font-mono opacity-40">{s.size || '—'}</span>
+                             <span className="text-[10px] font-mono opacity-40">—</span>
                           </div>
                        ))}
                     </div>
