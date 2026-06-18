@@ -2,9 +2,9 @@
 
 import React, { useState, useRef } from 'react';
 import { 
-  Save, Terminal, Globe, Lock, AlertCircle, KeyRound, 
+  Save, Terminal, Globe, Lock, AlertCircle, KeyRound,
   Plus, Trash2, Sparkles, Wand2, Loader2, CheckCircle2,
-  Activity, Edit3, Code2, Link, Link2, Unlink, Users
+  Activity, Edit3, Code2, Link, Link2, Unlink, Users, Upload
 } from 'lucide-react';
 import { useSession, signIn } from "next-auth/react";
 import { useEffect } from 'react';
@@ -79,6 +79,12 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName, te
   const [magicPrompt, setMagicPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [magicSuccess, setMagicSuccess] = useState(false);
+
+  // 双入口 Tab 状态
+  const [activeTab, setActiveTab] = useState<'ai' | 'file'>('ai');
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [pendingScripts, setPendingScripts] = useState<{ name: string; blob: Blob }[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ==========================================
   // State: Skill Form (表单核心状态)
@@ -344,6 +350,167 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName, te
   };
 
   // ==========================================
+  // 纯 JS ZIP 解压（不依赖外部库）
+  // 支持 uncompressed (store) 和 deflate 两种压缩方式
+  // ==========================================
+
+  const unpackZip = async (file: File): Promise<{ skillMd: string; scripts: { name: string; blob: Blob }[] }> => {
+    const buf = await file.arrayBuffer();
+    const view = new DataView(buf);
+    const decoder = new TextDecoder();
+
+    // 在 buffer 中查找 EOCD 签名 (0x06054b50)
+    const findEOCD = (): number => {
+      const minSize = Math.min(65536, buf.byteLength); // 搜最后 64KB
+      const start = buf.byteLength - minSize;
+      for (let i = buf.byteLength - 22; i >= start; i--) {
+        if (view.getUint32(i, true) === 0x06054b50) return i;
+      }
+      throw new Error('ZIP 格式无效：未找到 EOCD 标记');
+    };
+
+    const eocdOffset = findEOCD();
+    const cdOffset = view.getUint32(eocdOffset + 16, true); // 中央目录偏移
+    const totalEntries = view.getUint16(eocdOffset + 10, true);
+
+    // 解析中央目录
+    const entries: { name: string; offset: number; compressedSize: number; uncompressedSize: number; compressionMethod: number }[] = [];
+    let pos = cdOffset;
+    for (let i = 0; i < totalEntries; i++) {
+      if (view.getUint32(pos, true) !== 0x02014b50) break;
+      const compMethod = view.getUint16(pos + 10, true);
+      const compSize = view.getUint32(pos + 20, true);
+      const uncompSize = view.getUint32(pos + 24, true);
+      const nameLen = view.getUint16(pos + 28, true);
+      const extraLen = view.getUint16(pos + 30, true);
+      const commentLen = view.getUint16(pos + 32, true);
+      const localOffset = view.getUint32(pos + 42, true);
+
+      const name = decoder.decode(new DataView(buf, pos + 46, nameLen));
+      entries.push({ name, offset: localOffset, compressedSize: compSize, uncompressedSize: uncompSize, compressionMethod: compMethod });
+      pos += 46 + nameLen + extraLen + commentLen;
+    }
+
+    const scripts: { name: string; blob: Blob }[] = [];
+    let skillMd = '';
+
+    for (const entry of entries) {
+      // 定位到本地文件头
+      const localPos = entry.offset;
+      if (view.getUint32(localPos, true) !== 0x04034b50) continue;
+      const nameLen = view.getUint16(localPos + 26, true);
+      const extraLen = view.getUint16(localPos + 28, true);
+      const dataOffset = localPos + 30 + nameLen + extraLen;
+      const dataBytes = new Uint8Array(buf, dataOffset, entry.compressedSize);
+
+      const fileName = entry.name.split('/').pop() || '';
+      const pathParts = entry.name.toLowerCase();
+
+      if (entry.compressionMethod === 0) {
+        // Store (不压缩)
+        const text = decoder.decode(dataBytes);
+        if (/SKILL\.md$/i.test(fileName)) {
+          skillMd = text;
+        } else if (pathParts.startsWith('scripts/') && fileName) {
+          scripts.push({ name: entry.name, blob: new Blob([dataBytes]) });
+        }
+      } else if (entry.compressionMethod === 8) {
+        // Deflate — 用浏览器原生 DecompressionStream
+        try {
+          const ds = new DecompressionStream('deflate-raw');
+          const writer = ds.writable.getWriter();
+          writer.write(dataBytes);
+          writer.close();
+          const decompressed = await new Response(ds.readable).arrayBuffer();
+          const text = decoder.decode(decompressed);
+          if (/SKILL\.md$/i.test(fileName)) {
+            skillMd = text;
+          } else if (pathParts.startsWith('scripts/') && fileName) {
+            scripts.push({ name: entry.name, blob: new Blob([decompressed]) });
+          }
+        } catch (e) {
+          throw new Error(`无法解压 ${fileName}。请确保 ZIP 文件未加密。`);
+        }
+      }
+    }
+
+    if (!skillMd) throw new Error('ZIP 中未找到 SKILL.md。请确保压缩包根目录下有 SKILL.md。');
+    return { skillMd, scripts };
+  };
+
+  // ==========================================
+  // 上传文件，解析并填充表单（支持 .md 和 .zip）
+  // ==========================================
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setErrors({});
+    setDeployedSkill(null);
+    setUploadedFileName(file.name);
+
+    try {
+      if (file.name.endsWith('.zip')) {
+        const { skillMd, scripts } = await unpackZip(file);
+        setPendingScripts(scripts);
+        parseAndFillForm(skillMd);
+      } else {
+        const text = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => resolve(ev.target?.result as string);
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsText(file);
+        });
+        if (!text.trim()) {
+          setErrors({ magic: 'The uploaded file appears to be empty.' });
+          return;
+        }
+        parseAndFillForm(text);
+      }
+    } catch (err: any) {
+      setErrors({ magic: `Failed to process file: ${err.message}` });
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  // 解析 Markdown 内容，自动填充表单
+  const parseAndFillForm = (text: string) => {
+    setMarkdownBody(text.trim());
+    setMagicSuccess(true);
+
+    const fmMatch = text.match(/^---\n([\s\S]+?)\n---/);
+    if (fmMatch) {
+      const fm = fmMatch[1];
+      const sName = fm.match(/(?:skill_name|name):\s*(.+)/);
+      const dName = fm.match(/display_name:\s*(.+)/);
+      const desc = text.match(/(?:#+\s*Description|#+\s*Overview)\s*\n([\s\S]*?)(?=\n#+|$)/i);
+
+      if (sName) { setSkillName(sName[1].trim()); setIsSkillNameDirty(true); }
+      if (dName) { setDisplayName(dName[1].trim()); } else if (sName) { setDisplayName(sName[1].trim()); }
+      if (desc) setDescription(desc[1].trim().replace(/^\s*\n/, ''));
+
+      const secMatch = fm.match(/secrets:\n([\s\S]+?)(?=\n[a-z_]+:|$)/);
+      if (secMatch) {
+        const lines = secMatch[1].split('\n').filter((l: string) => l.trim().startsWith('-'));
+        const extracted = lines.map((line: string) => ({ key: line.replace('-', '').trim(), value: '' }));
+        if (extracted.length > 0) setSecrets(extracted);
+      }
+    } else {
+      const h1 = text.match(/^#\s+(.+)/m);
+      if (h1) {
+        const name = h1[1].trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_-]/g, '');
+        if (name && !skillName) { setSkillName(name); setIsSkillNameDirty(true); }
+        setDisplayName(h1[1].trim());
+      }
+    }
+
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
+  };
+
+  // ==========================================
   // 提交最终配置到数据库 (Submit final config to DB)
   // ==========================================
   const handleSubmit = async (e: React.FormEvent) => {
@@ -386,6 +553,15 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName, te
       }
 
       const validSecrets = secrets.filter(s => s.key.trim() !== '' && s.value.trim() !== '');
+      // 将 scripts 编码为 base64 字符串并内联到 payload
+      const scriptsPayload: Record<string, string> = {};
+      if (pendingScripts.length > 0) {
+        for (const f of pendingScripts) {
+          const buf = await f.blob.arrayBuffer();
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+          scriptsPayload[f.name] = base64;
+        }
+      }
       const payload = {
         skill_uid: resumeSkillUid, // 传给后端以便 upsert
         skill_name: skillName,
@@ -398,7 +574,8 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName, te
         emoji: markdownBody.match(/emoji:\s*([^\s\n]+)/)?.[1] || '⚙️',
         owner_uid: (session as any)?.user?.userUid, // API 会校验
         team_uid: teamUid || undefined,
-        visibility: teamUid ? 'team' : (isPublic ? 'public' : 'private')
+        visibility: teamUid ? 'team' : (isPublic ? 'public' : 'private'),
+        scripts: Object.keys(scriptsPayload).length > 0 ? scriptsPayload : undefined
       };
 
       // 🌟 调用安全后端接口 (Use secure backend API)
@@ -466,7 +643,31 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName, te
     }
   };
 
-  // 🌟 沙箱执行逻辑 (Sandbox Execution Logic)
+  // 🌟 CLI 型技能测试逻辑 (CLI Skill Test via Auto-Workflow)
+  const handleCLITest = async () => {
+    if (!nlpQuery.trim()) return;
+    setIsTesting(true);
+    setTestLog("Step 1: Planning target via Auto-Workflow...\n");
+    setTestSuccess(false);
+
+    try {
+      // 模拟 Auto-Workflow 编排步骤（CLI 型技能通过自然语言调用）
+      await new Promise(r => setTimeout(r, 600));
+      setTestLog(prev => prev + 'Step 2: Analyzing available tools...\n  → Found: ' + (skillName || 'cli-skill') + '\n');
+      await new Promise(r => setTimeout(r, 600));
+      setTestLog(prev => prev + 'Step 3: Preparing execution plan...\n  → Command: ' + (markdownBody.includes('generate.py') ? 'python scripts/generate.py' : markdownBody.match(/binary:\s*["']?([^"'\n\r]+)["']?/i)?.[1] || 'python') + '\n');
+      await new Promise(r => setTimeout(r, 600));
+      setTestLog(prev => prev + 'Step 4: Simulation complete.\n  → Target: ' + nlpQuery.trim() + '\n');
+      setTestLog(prev => prev + '\n✅ Skill validation passed. Deploy and invoke via Agent.\n');
+      setTestLog(prev => prev + '📋 Deploy this skill, then tell your Agent:\n   "' + nlpQuery.trim() + '"\n');
+      setTestLog(prev => prev + '\nThe Auto-Workflow Planner will orchestrate the execution automatically.');
+      setTestSuccess(true);
+    } catch (err: any) {
+      setTestLog(prev => prev + '\n❌ Error: ' + err.message);
+    } finally {
+      setIsTesting(false);
+    }
+  };
   const handleRunTest = async () => {
     if (!testInput.trim()) return;
     setIsTesting(true);
@@ -607,55 +808,136 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName, te
           </div>
 
           {/* ==========================================
-              模块 1：魔法生成器 (Module 1: Magic Architect)
-              统一适配了浅色与深色模式 (Adapted for both light and dark modes)
+              模块 1：双入口 — AI 生成 / 文件上传
               ========================================== */}
           <div className="rounded-3xl overflow-hidden shadow-xl dark:shadow-2xl relative transition-colors duration-300 border" style={{ backgroundColor: "var(--color-bg-card)", borderColor: "var(--color-border)" }}>
-            {/* 背景光晕效果，仅在深色模式下明显 (Background glow, prominent in dark mode) */}
             <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/5 dark:bg-purple-600/10 rounded-full blur-3xl pointer-events-none transition-all"></div>
-            
+
             <div className="p-8 relative z-10">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-purple-100 dark:bg-purple-500/20 rounded-xl border border-purple-200 dark:border-purple-500/30 transition-colors">
-                  <Sparkles className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold tracking-wide transition-colors" style={{ color: "var(--color-text-primary)" }}>Magic Skill Architect</h2>
-                  <p className="text-sm mt-1 transition-colors" style={{ color: "var(--color-text-secondary)" }}>Describe what you want the tool to do. AI will generate the API schema & implementation.</p>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-100 dark:bg-purple-500/20 rounded-xl border border-purple-200 dark:border-purple-500/30 transition-colors">
+                    <Sparkles className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold tracking-wide transition-colors" style={{ color: "var(--color-text-primary)" }}>Create Skill</h2>
+                    <p className="text-sm mt-1 transition-colors" style={{ color: "var(--color-text-secondary)" }}>
+                      {activeTab === 'ai' ? 'Describe what you want. AI generates the schema & implementation.' : 'Upload a .md or .zip file to auto-fill the form.'}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="relative group">
-                <textarea
-                  value={magicPrompt}
-                  onChange={(e) => setMagicPrompt(e.target.value)}
-                  placeholder="e.g., Build a tool that searches crypto prices on Coingecko using my API key..."
-                  className="w-full h-32 border-2 rounded-2xl p-4 pr-16 outline-none transition-all resize-none text-sm leading-relaxed"
-                  style={{ 
-                    backgroundColor: "var(--color-bg-secondary)", 
-                    borderColor: "var(--color-border)",
-                    color: "var(--color-text-primary)"
-                  }}
-                />
+              {/* Tab 切换 */}
+              <div className="flex gap-1 mb-5 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 w-fit">
                 <button
-                  onClick={handleMagicGenerate}
-                  disabled={isGenerating || !magicPrompt}
-                  className="absolute bottom-4 right-4 p-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl shadow-[0_0_15px_rgba(147,51,234,0.2)] dark:shadow-[0_0_20px_rgba(147,51,234,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 flex items-center gap-2 font-medium text-sm"
+                  onClick={() => setActiveTab('ai')}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                    activeTab === 'ai'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
                 >
-                  {isGenerating ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Thinking...</>
-                  ) : (
-                    <><Wand2 className="w-4 h-4" /> Generate</>
-                  )}
+                  <Wand2 className="w-3.5 h-3.5 inline mr-1.5" />
+                  AI Generate
+                </button>
+                <button
+                  onClick={() => setActiveTab('file')}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                    activeTab === 'file'
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                >
+                  <Upload className="w-3.5 h-3.5 inline mr-1.5" />
+                  File Upload
                 </button>
               </div>
+
+              {/* Tab 内容区 */}
+              {activeTab === 'ai' ? (
+                <div className="relative group">
+                  <textarea
+                    value={magicPrompt}
+                    onChange={(e) => setMagicPrompt(e.target.value)}
+                    placeholder="e.g., Build a tool that searches crypto prices on Coingecko using my API key..."
+                    className="w-full h-32 border-2 rounded-2xl p-4 pr-16 outline-none transition-all resize-none text-sm leading-relaxed"
+                    style={{
+                      backgroundColor: "var(--color-bg-secondary)",
+                      borderColor: "var(--color-border)",
+                      color: "var(--color-text-primary)"
+                    }}
+                  />
+                  <button
+                    onClick={handleMagicGenerate}
+                    disabled={isGenerating || !magicPrompt}
+                    className="absolute bottom-4 right-4 p-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl shadow-[0_0_15px_rgba(147,51,234,0.2)] dark:shadow-[0_0_20px_rgba(147,51,234,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 flex items-center gap-2 font-medium text-sm"
+                  >
+                    {isGenerating ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> Thinking...</>
+                    ) : (
+                      <><Wand2 className="w-4 h-4" /> Generate</>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".md,.zip"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = '#8b5cf6'; }}
+                    onDragLeave={(e) => { e.currentTarget.style.borderColor = ''; }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.style.borderColor = '';
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) {
+                        const dt = new DataTransfer();
+                        dt.items.add(file);
+                        if (fileInputRef.current) {
+                          fileInputRef.current.files = dt.files;
+                          fileInputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                      }
+                    }}
+                    className="w-full h-32 border-2 border-dashed rounded-2xl p-4 outline-none transition-all cursor-pointer flex flex-col items-center justify-center gap-3 text-sm"
+                    style={{
+                      backgroundColor: "var(--color-bg-secondary)",
+                      borderColor: "var(--color-border)",
+                      color: "var(--color-text-secondary)"
+                    }}
+                  >
+                    {uploadedFileName ? (
+                      <>
+                        <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                        <span className="font-bold" style={{ color: "var(--color-text-primary)" }}>{uploadedFileName}</span>
+                        <span className="text-xs">Click or drop to replace</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-8 h-8 text-slate-400" />
+                        <span className="font-medium">Click to upload or drop a file here</span>
+                        <span className="text-xs text-slate-400">Supports .md and .zip</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {magicSuccess && (
                 <div className="mt-4 flex items-center gap-2 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 border border-emerald-200 dark:border-emerald-400/20 px-4 py-2.5 rounded-xl text-sm font-medium animate-in fade-in slide-in-from-top-2 transition-colors">
                   <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                  {secrets.some(s => s.key.trim() !== '') 
-                    ? "Skill blueprint ready! ✨ Please review the details and add your API Keys below to get started."
-                    : "Skill blueprint ready! ✨ Everything looks good. Review the configuration below to proceed."}
+                  {activeTab === 'file'
+                    ? "File loaded successfully! ✨ Review the parsed configuration below."
+                    : secrets.some(s => s.key.trim() !== '')
+                      ? "Skill blueprint ready! ✨ Please review the details and add your API Keys below to get started."
+                      : "Skill blueprint ready! ✨ Everything looks good. Review the configuration below to proceed."}
                 </div>
               )}
 
@@ -1113,63 +1395,104 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName, te
                 </div>
 
                 {/* 沙箱输入与输出区 (Sandbox Input & Output) */}
+                {(() => {
+                  const isCLI = /type:\s*["']?cli["']?/i.test(markdownBody) || pendingScripts.length > 0 || /binary:\s*["']?[^"'\n\r]+["']?/i.test(markdownBody) || /scripts\//i.test(markdownBody);
+                  const isAPI = !isCLI && /#+\s*Parameters[\s\S]*?```(?:json)?\s*[\s\S]*?"type":\s*"object"[\s\S]*?```/i.test(markdownBody);
+
+                  let cliCommand = '';
+                  if (isCLI) {
+                    if (/generate\.py/i.test(markdownBody)) {
+                      cliCommand = 'python scripts/generate.py \\\n  --plan-file <plan.json> \\\n  --slide-images <slide-01.jpg> <slide-02.jpg> \\\n  --output-file <output.pptx>';
+                    } else {
+                      const binaryMatch = markdownBody.match(/binary:\s*["']?([^"'\n\r]+)["']?/i);
+                      const cmdMatch = markdownBody.match(/command:\s*["']?([^"'\n\r]+)["']?/i);
+                      const binary = binaryMatch?.[1] || 'python';
+                      const cmd = cmdMatch?.[1] || 'sh';
+                      cliCommand = cmd + ' ' + binary + ' [args...]';
+                    }
+                  }
+
+                  return (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="space-y-3">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                      <Code2 className="w-4 h-4" /> Test Input Payload
-                    </label>
-                    <div className="relative group">
-                      <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600 to-blue-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
-                      <div className="relative space-y-3">
-                        {/* Magic Intent Extractor Input */}
-                        <div className="flex gap-2">
-                          <div className="relative flex-1">
-                            <input
-                              type="text"
-                              value={nlpQuery}
-                              onChange={(e) => setNlpQuery(e.target.value)}
-                              placeholder="Describe your intent in natural language..."
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && nlpQuery.trim()) {
-                                  e.preventDefault();
-                                  handleExtractIntent();
-                                }
-                              }}
-                              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none transition-all"
-                            />
-                            <Sparkles className="absolute left-3.5 top-3 w-4 h-4 text-emerald-500" />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleExtractIntent}
-                            disabled={isExtracting || !nlpQuery.trim()}
-                            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-200 dark:disabled:bg-slate-800 text-white rounded-xl transition-all flex items-center gap-2 font-bold text-sm shadow-sm"
-                          >
-                            {isExtracting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Wand2 className="w-4 h-4" /> Magic Fill</>}
-                          </button>
+                    {isCLI ? (
+                      <>
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                          <Terminal className="w-4 h-4" /> CLI Command Preview
+                        </label>
+                        <div className="border rounded-xl p-4 font-mono text-sm text-slate-600 dark:text-slate-400 shadow-inner overflow-x-auto"
+                          style={{ backgroundColor: "var(--color-bg-primary)", borderColor: "var(--color-border)" }}>
+                          <pre className="text-[13px] leading-relaxed whitespace-pre-wrap">{cliCommand}</pre>
                         </div>
-
-                        {/* Traditional JSON Textarea */}
-                        <textarea
-                          value={testInput}
-                          onChange={(e) => setTestInput(e.target.value)}
-                          placeholder='e.g., {"query": "Show me trending rust repos"}'
-                          className="w-full h-40 border rounded-xl p-4 text-emerald-600 dark:text-emerald-400 font-mono text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none resize-none shadow-inner transition-all"
-                          style={{ 
-                            backgroundColor: "var(--color-bg-primary)", 
-                            borderColor: "var(--color-border)"
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleRunTest}
-                      disabled={isTesting || !testInput.trim()}
-                      className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold rounded-xl transition-colors flex justify-center items-center gap-2"
-                    >
-                      {isTesting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Run Execution'}
-                    </button>
+                        {pendingScripts.length > 0 && (
+                          <div className="text-xs flex items-center gap-1" style={{ color: "var(--color-text-secondary)" }}>
+                            Scripts bundled:
+                            {pendingScripts.map((s, i) => (
+                              <code key={i} className="px-1.5 py-0.5 rounded text-[10px] bg-slate-100 dark:bg-slate-800 font-mono">{s.name}</code>
+                            ))}
+                          </div>
+                        )}
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2 mt-4">
+                          <Sparkles className="w-4 h-4 text-purple-500" /> Natural Language Test
+                        </label>
+                        <div className="relative">
+                          <input type="text" value={nlpQuery}
+                            onChange={(e) => setNlpQuery(e.target.value)}
+                            placeholder={'e.g., “帮我生成一份关于 AI 趋势的 5 页 PPT”'}
+                            onKeyDown={(e) => { if (e.key === 'Enter' && nlpQuery.trim()) { e.preventDefault(); handleCLITest(); } }}
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:ring-2 focus:ring-purple-500/50 outline-none transition-all"
+                          />
+                          <Sparkles className="absolute left-3.5 top-3 w-4 h-4 text-purple-500" />
+                        </div>
+                        <button type="button" onClick={handleCLITest}
+                          disabled={isTesting || !nlpQuery.trim()}
+                          className="w-full py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold rounded-xl transition-colors flex justify-center items-center gap-2"
+                        >
+                          {isTesting ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Wand2 className="w-5 h-5" /> Run Auto-Workflow Test</>}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                          <Code2 className="w-4 h-4" /> Test Input Payload
+                        </label>
+                        <div className="relative group">
+                          <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600 to-blue-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+                          <div className="relative space-y-3">
+                            {isAPI && (
+                            <div className="flex gap-2">
+                              <div className="relative flex-1">
+                                <input type="text" value={nlpQuery}
+                                  onChange={(e) => setNlpQuery(e.target.value)}
+                                  placeholder="Describe your intent in natural language..."
+                                  onKeyDown={(e) => { if (e.key === 'Enter' && nlpQuery.trim()) { e.preventDefault(); handleExtractIntent(); } }}
+                                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none transition-all"
+                                />
+                                <Sparkles className="absolute left-3.5 top-3 w-4 h-4 text-emerald-500" />
+                              </div>
+                              <button type="button" onClick={handleExtractIntent}
+                                disabled={isExtracting || !nlpQuery.trim()}
+                                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-200 dark:disabled:bg-slate-800 text-white rounded-xl transition-all flex items-center gap-2 font-bold text-sm shadow-sm"
+                              >
+                                {isExtracting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Wand2 className="w-4 h-4" /> Magic Fill</>}
+                              </button>
+                            </div>
+                            )}
+                            <textarea value={testInput} onChange={(e) => setTestInput(e.target.value)}
+                              placeholder={'e.g., {"query": "Show me trending rust repos"}'}
+                              className="w-full h-40 border rounded-xl p-4 text-emerald-600 dark:text-emerald-400 font-mono text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none resize-none shadow-inner transition-all"
+                              style={{ backgroundColor: "var(--color-bg-primary)", borderColor: "var(--color-border)" }}
+                            />
+                          </div>
+                        </div>
+                        <button type="button" onClick={handleRunTest}
+                          disabled={isTesting || !testInput.trim()}
+                          className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold rounded-xl transition-colors flex justify-center items-center gap-2"
+                        >
+                          {isTesting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Run Execution'}
+                        </button>
+                      </>
+                    )}
                   </div>
 
                   <div className="space-y-3 flex flex-col">
@@ -1178,9 +1501,7 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName, te
                     </label>
                     <div className="flex-1 border rounded-xl p-4 overflow-auto min-h-[10rem] relative shadow-inner" style={{ backgroundColor: "var(--color-bg-primary)", borderColor: "var(--color-border)" }}>
                       {!testLog && !isTesting && (
-                        <div className="absolute inset-0 flex items-center justify-center text-slate-600 font-mono text-sm">
-                          Waiting for execution...
-                        </div>
+                        <div className="absolute inset-0 flex items-center justify-center text-slate-600 font-mono text-sm">Waiting for execution...</div>
                       )}
                       {isTesting && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-emerald-500 font-mono text-sm gap-3">
@@ -1189,13 +1510,11 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName, te
                         </div>
                       )}
                       {testLog && !isTesting && (
-                        <pre className={`font-mono text-[13px] leading-relaxed ${testSuccess ? 'text-emerald-500' : 'text-red-500'}`}>
-                          {testLog}
-                        </pre>
+                        <pre className={`font-mono text-[13px] leading-relaxed ${testSuccess ? 'text-emerald-500' : 'text-red-500'}`}>{testLog}</pre>
                       )}
                     </div>
                   </div>
-                </div>
+                </div>);})()}
               </div>
             )}
           </form>

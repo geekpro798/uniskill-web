@@ -27,7 +27,8 @@ export async function POST(req: Request) {
         secrets,
         emoji,
         team_uid,
-        visibility
+        visibility,
+        scripts
     } = body;
 
     if (!skill_name || !owner_uid) {
@@ -48,11 +49,23 @@ export async function POST(req: Request) {
             value: isAlreadyEncrypted(s.value) ? s.value : encrypt(s.value, process.env.MASTER_ENCRYPTION_KEY!)
         })) : [];
 
+        // 将 scripts base64 数据注入 markdown_manifest 末尾（不可见区块，finalize 时解析）
+        let enrichedManifest = markdown_manifest;
+        if (scripts && typeof scripts === 'object' && Object.keys(scripts).length > 0) {
+          const scriptBlock = '\n\n<!-- uniskill:scripts\n' + JSON.stringify(scripts) + '\n-->';
+          // 替换旧的 scripts 块（如果存在），否则追加
+          if (enrichedManifest.includes('<!-- uniskill:scripts')) {
+            enrichedManifest = enrichedManifest.replace(/<!-- uniskill:scripts\n[\s\S]*?\n-->/, scriptBlock.trim());
+          } else {
+            enrichedManifest = enrichedManifest.trimEnd() + scriptBlock;
+          }
+        }
+
         const payload = {
             skill_name,
             display_name,
             description,
-            markdown_manifest,
+            markdown_manifest: enrichedManifest,
             status,
             owner_uid,
             state,

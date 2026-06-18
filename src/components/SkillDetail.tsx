@@ -14,12 +14,13 @@ import { CliSkillDetail } from "./skills/CliSkillDetail";
 export interface SkillSpec {
     display_name: string;
     description: string;
-    cost_per_call?: number; 
+    cost_per_call?: number;
     credits_per_call?: number;
     parameters: Record<string, any>;
     returns?: Record<string, any> | null;
     implementation: Record<string, any>;
     visuals?: any;
+    markdown_manifest?: string;
     customBreadcrumbs?: BreadcrumbItem[];
     tags?: string[];
 }
