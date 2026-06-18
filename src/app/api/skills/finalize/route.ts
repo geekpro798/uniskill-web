@@ -5,22 +5,15 @@ import { createClient } from "@supabase/supabase-js";
 import crypto from 'crypto';
 
 /**
- * UniSkill Skill Finalization API (v5.1 - 全量元数据同步与编译修复版)
- * 职责：
- * 1. 验证草稿合法性 (Verify draft legitimacy)
- * 2. 从 Markdown 源码中重新编译提取 Description 和 Parameters (Re-compile Meta from MD)
- * 3. 强制更新数据库的结构化字段（解决卡片信息不更新的问题）(Force sync DB columns)
- * 4. 组装 UnifiedSkill 格式推送到边缘网关 (Push Unified Format to Gateway)
+ * UniSkill Skill Finalization API (v5.1)
  */
 export async function POST(req: Request) {
   try {
-    // 1. Session 鉴权补齐 (Session authentication)
     const session = await getServerSession(authOptions as any) as Session | null;
     if (!session?.user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Initialize Supabase with service role
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
@@ -29,7 +22,6 @@ export async function POST(req: Request) {
     const { skillUid, userUid: clientUserUid } = body;
     let userUid = clientUserUid || (session.user as any).userUid;
 
-    // 自动补齐 userUid (Auto-fill userUid from profile)
     if (!userUid) {
         const { data: profile } = await supabaseAdmin
             .from('profiles')
@@ -43,7 +35,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required identifiers" }, { status: 400 });
     }
 
-    // 2. 获取数据库最新记录 (Fetch the latest raw data)
     const { data: skill, error: fetchError } = await supabaseAdmin
       .from('skills')
       .select('skill_name, display_name, description, markdown_manifest, status, emoji, secrets, team_uid, visibility')
@@ -57,15 +48,11 @@ export async function POST(req: Request) {
 
     const content = skill.markdown_manifest;
 
-    // ------------------------------------------------------------------
-    // 3. 核心编译器逻辑：动态提取最新元数据 (Extract latest Meta & Config)
-    // ------------------------------------------------------------------
-    
-    // 解析最新的 Description (提取 # Description 下方的内容，兼容多级标题)
+    // Parse Description
     const descMatch = content.match(/#+\s*Description\s+([\s\S]*?)(?=\n#+|$)/i);
     const parsedDescription = descMatch ? descMatch[1].trim() : (skill.description || "");
 
-    // 🌟 解析最新的 Frontmatter (使用 js-yaml)
+    // Parse Frontmatter
     const frontmatterMatch = content.match(/^---\n([\s\S]+?)\n---/);
     let frontmatter: any = {};
     if (frontmatterMatch) {
@@ -81,13 +68,12 @@ export async function POST(req: Request) {
     const finalEmoji = frontmatter.emoji?.trim() || skill.emoji;
     const finalVisuals = frontmatter.visuals || null;
 
-    // 解析最新的 Parameters (提取 Parameters 下方的 JSON，兼容 # / ## 等)
+    // Parse Parameters
     const paramMatch = content.match(/#+\s*Parameters[\s\S]*?```(?:json)?\s*([\s\S]*?)\n?\s*```/i);
     let parsedParameters = { type: "object", properties: {} };
     try {
       if (paramMatch) {
          let jsonStr = paramMatch[1].trim();
-         // 🌟 净化 JSON：去除可能的尾部逗号 (Basic cleaning)
          jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');
          parsedParameters = JSON.parse(jsonStr);
       }
@@ -95,9 +81,9 @@ export async function POST(req: Request) {
       console.warn("[Compiler] Failed to parse Parameters JSON, using fallback.");
     }
 
-    // 解析最新的 Implementation (提取 ## Implementation 下方的 YAML)
+    // Parse Implementation
     const implMatch = content.match(/#+\s*(?:Implementation|Implementation YAML)[\s\S]*?```(?:yaml)?\s*([\s\S]*?)```/i);
-    let parsedImplementation = { type: "unknown" };
+    let parsedImplementation: Record<string, any> = { type: "unknown" };
     if (implMatch) {
        try {
           const jsYaml = (await import('js-yaml')).default;
@@ -107,32 +93,39 @@ export async function POST(req: Request) {
        }
     }
 
-    // 计算最新的内容指纹 (DID)
+    // CLI detection
+    if (parsedImplementation.type === 'unknown' && /<!-- uniskill:scripts/.test(content)) {
+      parsedImplementation.type = 'cli';
+    }
+
+    // Content DID
     const contentHash = crypto.createHash('sha256').update(content).digest('hex');
     const did = `did:usk:skill:${contentHash}`;
 
-    // ------------------------------------------------------------------
-    // 4. 同步到数据库结构化字段 (Sync to DB Columns)
-    // 🌟 这里解决了“改了内容，卡片没变”的核心痛点
-    // ------------------------------------------------------------------
+    // Sync to DB
     const { error: updateError } = await supabaseAdmin
       .from('skills')
-      .update({ 
+      .update({
         state: 'active',
         did: did,
-        display_name: finalDisplayName, // 👈 同步最新的显示名称
-        emoji: finalEmoji,               // 👈 同步最新的图标
-        description: parsedDescription, // 👈 强制覆盖为最新解析的描述
-        parameters: parsedParameters,   // 👈 强制覆盖为最新解析的参数
+        display_name: finalDisplayName,
+        emoji: finalEmoji,
+        description: parsedDescription,
+        parameters: parsedParameters,
         deployed_at: new Date().toISOString()
       })
       .eq('skill_uid', skillUid);
 
     if (updateError) throw updateError;
 
-    // ------------------------------------------------------------------
-    // 5. 组装数据并推送到边缘网关 (Push to Gateway v5 protocol)
-    // ------------------------------------------------------------------
+    // Extract inline scripts
+    let scripts: Record<string, string> = {};
+    const scriptsMatch = content.match(/<!-- uniskill:scripts\n([\s\S]*?)\n-->/);
+    if (scriptsMatch) {
+      try { scripts = JSON.parse(scriptsMatch[1]); } catch (_) { /* ignore */ }
+    }
+
+    // Build manifest
     const skillManifest = {
       skill_name: skill.skill_name,
       display_name: finalDisplayName || skill.skill_name,
@@ -140,37 +133,33 @@ export async function POST(req: Request) {
       emoji: finalEmoji || "🧩",
       did: did,
       owner_uid: userUid,
-      metadata: { // 🌟 Updated to match requested structure
+      metadata: {
         description: parsedDescription,
-        visuals: finalVisuals 
+        visuals: finalVisuals
       },
       config: {
         ...parsedImplementation,
         parameters: parsedParameters,
-        tier: skill.status
+        tier: skill.status,
+        scripts: Object.keys(scripts).length > 0 ? scripts : undefined
       },
-      source: content 
+      source: content
     };
 
+    // Gateway sync (best-effort, 不阻塞部署)
     const gatewayUrl = process.env.GATEWAY_URL || process.env.NEXT_PUBLIC_GATEWAY_URL || "http://127.0.0.1:8787";
     const adminKey = process.env.ADMIN_KEY || "";
+    let gatewaySynced = false;
 
     try {
-      console.log(`[finalize] [Gateway Sync] Initiating sync for: "${skill.skill_name}" (UID: ${skillUid})`);
-      console.log(`[finalize] [Gateway Sync] Target URL: ${gatewayUrl}`);
-
-      // 🌟 Timeout increased to 15s to handle cold starts or remote dev latency
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        console.error(`[finalize] [Gateway Sync] CRITICAL: Sync timed out after 15s to ${gatewayUrl}`);
-        controller.abort();
-      }, 15000);
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
 
       const gatewayRes = await fetch(`${gatewayUrl}/v1/admin/sync_skill`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminKey}` 
+          'Authorization': `Bearer ${adminKey}`
         },
         signal: controller.signal,
         body: JSON.stringify({
@@ -185,31 +174,20 @@ export async function POST(req: Request) {
       });
 
       clearTimeout(timeoutId);
-
-      if (!gatewayRes.ok) {
-        const errorText = await gatewayRes.text();
-        console.error(`[Gateway Sync] Sync failed with status ${gatewayRes.status}:`, errorText);
-        return NextResponse.json({ 
-            error: `Gateway synchronization failed (${gatewayRes.status}): ${errorText}`,
-            success: false 
-        }, { status: 502 });
+      gatewaySynced = gatewayRes.ok;
+      if (gatewaySynced) {
+        console.log(`[Gateway Sync] OK: ${skill.skill_name}`);
+      } else {
+        console.warn(`[Gateway Sync] Skipped (status ${gatewayRes.status}) — skill saved to DB, sync manually if needed`);
       }
-
-      console.log(`[Gateway Sync] SUCCESS for skill: ${skill.skill_name}`);
-
     } catch (e: any) {
-      if (e.name === 'AbortError') {
-          console.error(`[Gateway Sync] TIMEOUT (5s) for skill: ${skill.skill_name}`);
-          return NextResponse.json({ error: "Gateway synchronization timed out (5s). Check if Gateway is running." }, { status: 504 });
-      }
-      console.error("[Gateway Sync] Network error during synchronization:", e.message);
-      return NextResponse.json({ error: `Gateway connection failed. Ensure port 8787 is active: ${e.message}` }, { status: 503 });
+      console.warn(`[Gateway Sync] Unreachable (${e.message}) — skill saved to DB, sync manually if needed`);
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       did: did,
-      skillName: skill.skill_name 
+      skillName: skill.skill_name
     });
 
   } catch (error: any) {

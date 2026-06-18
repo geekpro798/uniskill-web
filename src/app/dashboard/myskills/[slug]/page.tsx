@@ -42,6 +42,14 @@ export default function UserSkillDetailPage() {
         // 🌟 Use unified visual mapper
         const visuals = resolveSkillVisuals(data);
 
+        // 检测 CLI 型技能（为分派器提供准确类型）
+        const manifest = data.markdown_manifest || '';
+        const isCLISkill = /type:\s*["']?cli["']?/i.test(manifest) || /binary:\s*["']?[^"'\n\r]+["']?/i.test(manifest) || /scripts\//i.test(manifest);
+        const implementation = data.implementation || {};
+        if (isCLISkill && !implementation.type) {
+          implementation.type = 'cli';
+        }
+
         // Map database record to SkillSpec protocol (Cleaned up for Build)
         const spec: SkillSpec = {
           display_name: data.display_name || data.skill_name || "Untitled",
@@ -49,8 +57,9 @@ export default function UserSkillDetailPage() {
           credits_per_call: data.credits_per_call || 1,
           parameters: data.parameters || { type: "object", properties: {} },
           returns: data.returns || null,
-          implementation: data.implementation || {}, // Keep original implementation data for runtime dispatching
-          visuals: visuals
+          implementation: implementation, // Keep original implementation data for runtime dispatching
+          visuals: visuals,
+          markdown_manifest: manifest
         };
         
         setSkill({
