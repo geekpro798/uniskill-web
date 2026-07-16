@@ -568,13 +568,13 @@ export default function CreateSkillPage({ initialCredits, initialDisplayName, te
         display_name: displayName,
         description,
         markdown_manifest: markdownBody,
-        status: teamUid ? 'Team' : (isPublic ? 'Community' : 'Private'),
+        status: teamUid ? 'Team' : 'Private',      // 发布动作与创建解耦，在 My Skills 页单独立发布
         state: originalState === 'active' ? 'active' : 'testing',
-        secrets: validSecrets.map(s => ({ key: s.key, value: s.value })), // 传递原始 Key/Value，后端处理加密
+        secrets: validSecrets.map(s => ({ key: s.key, value: s.value })),
         emoji: markdownBody.match(/emoji:\s*([^\s\n]+)/)?.[1] || '⚙️',
-        owner_uid: (session as any)?.user?.userUid, // API 会校验
+        owner_uid: (session as any)?.user?.userUid,
         team_uid: teamUid || undefined,
-        visibility: teamUid ? 'team' : (isPublic ? 'public' : 'private'),
+        visibility: teamUid ? 'team' : 'private',   // 创建时始终为 private
         scripts: Object.keys(scriptsPayload).length > 0 ? scriptsPayload : undefined
       };
 

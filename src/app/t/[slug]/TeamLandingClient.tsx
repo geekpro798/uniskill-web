@@ -25,7 +25,6 @@ interface Props {
   members: TeamMember[];
   isSuspended: boolean;
   skillCount: number;
-  monthlyUsage: number;
   recentEvents: any[];
   initialCredits?: number;
   initialDisplayName?: string | null;
@@ -38,7 +37,6 @@ export function TeamLandingClient({
   members,
   isSuspended,
   skillCount,
-  monthlyUsage,
   recentEvents,
   initialCredits,
   initialDisplayName,
@@ -62,7 +60,7 @@ export function TeamLandingClient({
       ) : isAuthenticated && membership ? (
         <div className="max-w-4xl mx-auto pt-[88px] pb-6 md:pt-[100px] md:pb-8 px-6 md:px-8 space-y-6 relative z-10">
           <TeamHeroBanner team={team} showDashboard={isAuthenticated} />
-          <MemberState members={members} team={team} skillCount={skillCount} monthlyUsage={monthlyUsage} recentEvents={recentEvents} />
+          <MemberState members={members} team={team} skillCount={skillCount} recentEvents={recentEvents} />
         </div>
       ) : isAuthenticated && !membership ? (
         <div className="max-w-4xl mx-auto pt-[88px] pb-6 md:pt-[100px] md:pb-8 px-6 md:px-8 space-y-6 relative z-10">
@@ -315,13 +313,11 @@ function MemberState({
   members,
   team,
   skillCount,
-  monthlyUsage,
   recentEvents,
 }: {
   members: TeamMember[];
   team: TeamInfo;
   skillCount: number;
-  monthlyUsage: number;
   recentEvents: any[];
 }) {
   const slug = team.slug;
@@ -340,7 +336,7 @@ function MemberState({
         {[
           { label: "Skills", value: skillCount, icon: Zap, color: "text-blue-500", bg: "bg-blue-500/10" },
           { label: "Members", value: members.length, icon: Users, color: "text-purple-500", bg: "bg-purple-500/10" },
-          { label: "Monthly Usage", value: monthlyUsage.toLocaleString(), icon: Activity, color: "text-emerald-500", bg: "bg-emerald-500/10", suffix: " credits" },
+          { label: "Credits", value: (team.credits ?? 0).toLocaleString(), icon: Activity, color: "text-emerald-500", bg: "bg-emerald-500/10" },
         ].map((stat) => (
           <div
             key={stat.label}

@@ -28,7 +28,6 @@ export default async function TeamLandingPage({
   let membership: { role: string } | null = null;
   let members: Awaited<ReturnType<typeof getTeamMembers>> = [];
   let skillCount = 0;
-  let monthlyUsage = 0;
   let recentEvents: any[] = [];
 
   if (userUid) {
@@ -68,12 +67,7 @@ export default async function TeamLandingPage({
 
     skillCount = skillsRes.count || 0;
 
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     if (eventsRes.data) {
-      monthlyUsage = eventsRes.data
-        .filter((e: any) => e.amount < 0 && e.created_at >= monthStart)
-        .reduce((sum: number, e: any) => sum + Math.abs(e.amount), 0);
       recentEvents = eventsRes.data.slice(0, 5);
     }
   }
@@ -86,7 +80,6 @@ export default async function TeamLandingPage({
       members={members}
       isSuspended={team.status === "suspended"}
       skillCount={skillCount}
-      monthlyUsage={monthlyUsage}
       recentEvents={recentEvents}
       initialCredits={session?.user?.credits}
       initialDisplayName={(session?.user as any)?.displayName || null}

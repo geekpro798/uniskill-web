@@ -53,7 +53,7 @@ export default async function TeamMembersPage({
   const [members, { data: invitations }] = await Promise.all([
     getTeamMembers(team.team_uid),
     getSupabaseAdmin()
-      .from("team_invitations")
+      .from("team_members")
       .select("*")
       .eq("team_uid", team.team_uid)
       .eq("status", "pending"),

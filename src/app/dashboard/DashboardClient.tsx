@@ -474,11 +474,11 @@ export default function DashboardClient({ initialCredits, initialDisplayName, in
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center text-white font-black text-sm shrink-0">
-                      {team.name?.charAt(0) || "?"}
+                      {team.team_name?.charAt(0) || "?"}
                     </div>
                     <div className="min-w-0">
                       <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                        {team.name}
+                        {team.team_name}
                       </h3>
                       <span className="text-[10px] text-slate-400 font-mono">
                         uniskill.ai/t/{team.slug}

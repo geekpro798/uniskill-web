@@ -9,7 +9,7 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import {
   LayoutDashboard, Building2, PlusCircle,
-  ChevronRight, Shield, LogOut, Users
+  ChevronRight, Shield, LogOut, Users, Globe, MessageSquareWarning
 } from 'lucide-react';
 
 const navItems = [
@@ -40,6 +40,20 @@ const navItems = [
     icon: Users,
     exact: true,
     roles: ['super_admin'],
+  },
+  {
+    href: '/admin/skills',
+    label: '社区技能监控',
+    icon: Globe,
+    exact: false,
+    roles: ['super_admin', 'admin'],
+  },
+  {
+    href: '/admin/skills/reports',
+    label: '举报处理',
+    icon: MessageSquareWarning,
+    exact: true,
+    roles: ['super_admin', 'admin'],
   },
 ];
 

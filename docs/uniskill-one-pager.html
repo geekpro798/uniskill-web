@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UniSkill — AI Agent 的技能基础设施</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #080c16;
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh; font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  .poster {
+    width: 1200px; height: 675px;
+    background: linear-gradient(145deg, #080c16 0%, #0f172a 50%, #0c1222 100%);
+    position: relative; overflow: hidden; border-radius: 2px;
+  }
+  /* bg glow */
+  .poster::before {
+    content: ''; position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(96,165,250,.08) 0%, transparent 70%);
+    top: -200px; left: -100px; pointer-events: none;
+  }
+  .poster::after {
+    content: ''; position: absolute;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(139,92,246,.06) 0%, transparent 70%);
+    bottom: -150px; right: -80px; pointer-events: none;
+  }
+
+  /* content */
+  .content { position: relative; z-index: 1; padding: 48px 60px; height: 100%; display: flex; flex-direction: column; }
+
+  /* top label */
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; color: #93c5fd; letter-spacing: .04em;
+    border: 1px solid rgba(96,165,250,.2); border-radius: 20px;
+    padding: 5px 16px; width: fit-content; margin-bottom: 20px;
+    background: rgba(96,165,250,.04);
+  }
+  .badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #60a5fa; box-shadow: 0 0 8px #60a5fa; }
+
+  h1 {
+    font-size: 34px; font-weight: 700; color: #fff; line-height: 1.3;
+    margin-bottom: 4px; letter-spacing: -.02em;
+  }
+  h1 span { background: linear-gradient(135deg, #60a5fa, #8b5cf6, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+  .subtitle {
+    font-size: 15px; color: #64748b; margin-bottom: 28px;
+  }
+
+  /* ── Architecture Diagram ── */
+  .arch {
+    display: flex; flex-direction: column; gap: 0; flex: 1; justify-content: center;
+    margin: 8px 0; max-width: 900px;
+  }
+
+  .layer {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 20px; border-radius: 12px;
+  }
+  .layer-label {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .06em; color: #475569; width: 70px; text-align: right;
+    flex-shrink: 0;
+  }
+  .layer-items { display: flex; gap: 10px; flex-wrap: wrap; flex: 1; }
+
+  /* Agent Layer */
+  .agent-layer { background: rgba(96,165,250,.05); border: 1px solid rgba(96,165,250,.12); }
+  .agent-chip {
+    font-size: 13px; color: #cbd5e1; background: rgba(96,165,250,.1);
+    border: 1px solid rgba(96,165,250,.18); border-radius: 8px;
+    padding: 8px 16px; font-weight: 500;
+  }
+
+  /* Arrow connector */
+  .connector {
+    display: flex; align-items: center; padding: 0 0 0 84px;
+    height: 32px; position: relative;
+  }
+  .connector-line {
+    width: 2px; height: 100%; background: linear-gradient(180deg, #60a5fa, #8b5cf6);
+    margin-left: 55px;
+  }
+  .connector-label {
+    font-size: 10px; color: #475569; margin-left: 10px; letter-spacing: .04em;
+  }
+
+  /* Gateway Layer */
+  .gateway-layer {
+    background: rgba(139,92,246,.08); border: 1.5px solid rgba(139,92,246,.25);
+    padding: 18px 20px; position: relative;
+  }
+  .gateway-layer .layer-label { color: #a78bfa; }
+  .gateway-chip {
+    font-size: 12px; color: #c4b5fd; background: rgba(139,92,246,.12);
+    border: 1px solid rgba(139,92,246,.2); border-radius: 8px;
+    padding: 7px 14px; font-weight: 500; white-space: nowrap;
+  }
+  .gateway-chip.key { background: rgba(16,185,129,.1); border-color: rgba(16,185,129,.2); color: #6ee7b7; }
+  .gateway-chip.fee { background: rgba(245,158,11,.1); border-color: rgba(245,158,11,.2); color: #fbbf24; }
+
+  /* Skill Layer */
+  .skill-layer { background: rgba(6,182,212,.05); border: 1px solid rgba(6,182,212,.12); }
+  .skill-chip {
+    font-size: 13px; color: #cbd5e1; background: rgba(6,182,212,.08);
+    border: 1px solid rgba(6,182,212,.16); border-radius: 8px;
+    padding: 8px 16px; font-weight: 500;
+  }
+  .skill-chip.plus {
+    background: rgba(100,116,139,.08); border: 1px dashed rgba(100,116,139,.25); color: #64748b;
+  }
+
+  /* Internet badge at bottom */
+  .internet-bar {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 4px; padding: 0 0 0 84px;
+  }
+  .internet-tag {
+    font-size: 11px; color: #475569; border: 1px solid rgba(100,116,139,.15);
+    border-radius: 6px; padding: 4px 12px;
+  }
+
+  /* bottom row */
+  .bottom-row {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-top: auto; padding-top: 14px;
+  }
+  .oneliner {
+    font-size: 15px; color: #94a3b8; font-weight: 500;
+  }
+  .oneliner strong { color: #60a5fa; font-weight: 600; }
+  .domain {
+    font-size: 14px; color: #475569;
+    font-weight: 500; letter-spacing: .02em;
+  }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="content">
+
+    <div class="badge">AI Agent 技能基础设施</div>
+    <h1>UniSkill — 让每一个 <span>AI Agent</span><br>都能调用无限技能</h1>
+    <p class="subtitle">一个钱包地址，一条命令，连接 Agent 到万维网</p>
+
+    <!-- Architecture -->
+    <div class="arch">
+
+      <!-- Agent Layer -->
+      <div class="layer agent-layer">
+        <div class="layer-label">Agent</div>
+        <div class="layer-items">
+          <div class="agent-chip">Claude Desktop</div>
+          <div class="agent-chip">Cursor</div>
+          <div class="agent-chip">Windsurf</div>
+          <div class="agent-chip" style="background:rgba(100,116,139,.06);border-color:rgba(100,116,139,.15);color:#64748b">Unity · 更多…</div>
+        </div>
+      </div>
+
+      <!-- Connector -->
+      <div class="connector">
+        <div class="connector-line"></div>
+        <div class="connector-label">MCP 协议 · EIP-191 签名鉴权</div>
+      </div>
+
+      <!-- Gateway -->
+      <div class="layer gateway-layer">
+        <div class="layer-label" style="color:#a78bfa">Gateway</div>
+        <div class="layer-items">
+          <div class="gateway-chip key">🔐 MPC 非托管钱包</div>
+          <div class="gateway-chip">📋 技能注册表</div>
+          <div class="gateway-chip">🧠 Auto-Workflow</div>
+          <div class="gateway-chip fee">💰 计费扣费</div>
+          <div class="gateway-chip">🔒 三层隔离</div>
+        </div>
+      </div>
+
+      <!-- Connector -->
+      <div class="connector">
+        <div class="connector-line"></div>
+        <div class="connector-label">KV Registry · 边缘节点执行 · 亚毫秒延迟</div>
+      </div>
+
+      <!-- Skill Layer -->
+      <div class="layer skill-layer">
+        <div class="layer-label">Skills</div>
+        <div class="layer-items">
+          <div class="skill-chip">🔍 搜索</div>
+          <div class="skill-chip">🕷 爬虫</div>
+          <div class="skill-chip">🌤 天气</div>
+          <div class="skill-chip">📰 新闻</div>
+          <div class="skill-chip">📨 飞书</div>
+          <div class="skill-chip plus">+ 任意社区技能</div>
+        </div>
+      </div>
+
+      <!-- Internet -->
+      <div class="internet-bar">
+        <span class="internet-tag">Google</span>
+        <span class="internet-tag">GitHub</span>
+        <span class="internet-tag">OpenWeather</span>
+        <span class="internet-tag">飞书</span>
+        <span class="internet-tag" style="border-style:dashed">任意 HTTP API</span>
+      </div>
+
+    </div>
+
+    <!-- Bottom -->
+    <div class="bottom-row">
+      <div class="oneliner">
+        Agent 时代的<strong>「技能市场」</strong> · 一次配置，处处可用
+      </div>
+      <div class="domain">uniskill.ai</div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

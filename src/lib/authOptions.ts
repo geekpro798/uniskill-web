@@ -117,7 +117,7 @@ export const authOptions: NextAuthOptions = {
                 return {
                     id: adminUid,
                     email: teamRaw.admin_email,
-                    name: teamRaw.name,
+                    name: teamRaw.team_name,
                     userUid: adminUid,
                     teamUid: teamRaw.team_uid as string,
                     teamRole: 'owner',

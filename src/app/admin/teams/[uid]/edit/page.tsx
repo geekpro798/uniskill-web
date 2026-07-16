@@ -63,7 +63,7 @@ export default function EditEnterprisePage() {
       const adminEmail = t.admin_email || '';
       const bizEmail = t.contact_email || '';
       setForm({
-        company_name: t.name || '',
+        company_name: t.team_name || '',
         contact_name: t.contact_name || '',
         contact_email: adminEmail,
         contact_phone: t.contact_phone || '',

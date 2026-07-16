@@ -1,16 +1,19 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSession } from "next-auth/react";
 import UnifiedNavbar from "@/components/UnifiedNavbar";
 import { supabase } from "@/lib/supabase";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import DeleteSkillModal from "@/components/Dashboard/DeleteSkillModal";
+import PublishToCommunityModal from "@/components/Dashboard/PublishToCommunityModal";
+import WithdrawSkillModal from "@/components/Dashboard/WithdrawSkillModal";
 import { 
   Plus, Lock, Globe, 
   Copy, CheckCircle2, LayoutGrid, List, Search, 
   Zap, ChevronRight, Trash2, Pencil,
-  ShieldCheck, Info, AlertCircle, PlayCircle
+  ShieldCheck, Info, AlertCircle, PlayCircle,
+  Flag, Ban, ArrowUpFromLine, ArrowDownToLine
 } from 'lucide-react';
 import { resolveSkillVisuals } from '@/lib/skill-visual-identity'; // 🌟 Optimized Identity System
 
@@ -51,6 +54,15 @@ export default function SkillsPage({ initialCredits, initialDisplayName, initial
   
   const [loading, setLoading] = useState(!initialSkills);
   const [skillToDelete, setSkillToDelete] = useState<{uid: string, name: string} | null>(null);
+
+  // 发布弹窗状态
+  const [publishTarget, setPublishTarget] = useState<any | null>(null);
+
+  // 撤回弹窗状态
+  const [withdrawTarget, setWithdrawTarget] = useState<{ skill: any; isFlagged: boolean } | null>(null);
+
+  // 发布资格缓存：skillSlug -> eligibility data
+  const [eligibilityMap, setEligibilityMap] = useState<Record<string, any>>({});
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
@@ -125,7 +137,8 @@ export default function SkillsPage({ initialCredits, initialDisplayName, initial
             tags: s.tags || [],
             status: s.status || 'Official',
             state: s.state || 'active',
-            total_calls: s.total_calls || 0
+            total_calls: s.total_calls || 0,
+            suspend_reason: s.suspend_reason || null,
           };
         });
 
@@ -178,6 +191,34 @@ export default function SkillsPage({ initialCredits, initialDisplayName, initial
 
     fetchData();
   }, [session?.user?.id, initialSkills]);
+
+  // 批量拉取 active + private 技能的发布资格
+  const fetchEligibility = useCallback(async (skillList: any[]) => {
+    const targets = skillList.filter(
+      s => s.state === 'active' && ['Private', 'private'].includes(s.status ?? s.visibility)
+    );
+    if (targets.length === 0) return;
+
+    const results = await Promise.allSettled(
+      targets.map(async s => {
+        const res = await fetch(`/api/skills/publish-eligibility/${s.slug}`);
+        if (!res.ok) return null;
+        return { slug: s.slug, ...(await res.json()) };
+      })
+    );
+
+    const map: Record<string, any> = {};
+    results.forEach(r => {
+      if (r.status === 'fulfilled' && r.value) {
+        map[r.value.slug] = r.value;
+      }
+    });
+    setEligibilityMap(map);
+  }, []);
+
+  useEffect(() => {
+    if (skills.length > 0) fetchEligibility(skills);
+  }, [skills, fetchEligibility]);
 
   const confirmDelete = async () => {
     if (!skillToDelete) return;
@@ -342,15 +383,26 @@ export default function SkillsPage({ initialCredits, initialDisplayName, initial
                         {skill.state === 'testing' ? <AlertCircle size={10} /> : <CheckCircle2 size={10} />}
                         {skill.state}
                       </span>
+                      {/* 完整状态机 Badge */}
                       <span className={`flex items-center gap-1.5 px-3 py-0.5 border text-[9px] font-black uppercase tracking-widest rounded-lg ${
                         skill.status === 'Community'
                           ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
                           : skill.status === 'Official'
                             ? 'bg-blue-600/10 text-blue-600 border-blue-600/20'
-                            : 'bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                            : skill.status === 'Flagged'
+                              ? 'bg-orange-500/10 text-orange-500 border-orange-500/20 animate-pulse'
+                              : skill.status === 'Suspended'
+                                ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                                : 'bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
                       }`}>
-                        {skill.status === 'Community' ? <Globe size={10} /> : skill.status === 'Official' ? <ShieldCheck size={10} /> : <Lock size={10} />}
-                        {skill.status}
+                        {skill.status === 'Community' ? <Globe size={10} /> 
+                          : skill.status === 'Official' ? <ShieldCheck size={10} /> 
+                          : skill.status === 'Flagged' ? <Flag size={10} />
+                          : skill.status === 'Suspended' ? <Ban size={10} />
+                          : <Lock size={10} />}
+                        {skill.status === 'Flagged' ? 'Flagged' 
+                          : skill.status === 'Suspended' ? 'Suspended'
+                          : skill.status}
                       </span>
                     </div>
                   </div>
@@ -389,27 +441,121 @@ export default function SkillsPage({ initialCredits, initialDisplayName, initial
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/80">
-                      <div 
-                        onClick={(e) => handleCopyId(skill.slug, e)}
-                        className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-mono font-bold text-slate-400 cursor-pointer hover:border-blue-500/30 transition-all flex items-center gap-2"
-                      >
-                        <span className="uppercase">{skill.slug}</span>
-                        {copiedId === skill.slug ? <CheckCircle2 size={12} className="text-emerald-500" /> : <Copy size={12} />}
-                      </div>
-                      
-                      <div className="flex flex-col items-end">
+                    <div className="flex flex-col gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/80">
+                      {/* Slug + Credits row */}
+                      <div className="flex items-center justify-between">
+                        <div 
+                          onClick={(e) => handleCopyId(skill.slug, e)}
+                          className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-mono font-bold text-slate-400 cursor-pointer hover:border-blue-500/30 transition-all flex items-center gap-2"
+                        >
+                          <span className="uppercase">{skill.slug}</span>
+                          {copiedId === skill.slug ? <CheckCircle2 size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                        </div>
                         <div className="flex items-center gap-1.5">
                           <Zap size={14} className="text-amber-500 fill-amber-500/20" />
                           <span className="text-lg font-black text-slate-900 dark:text-white">{skill.credits_per_call}</span>
                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Credits</span>
                         </div>
-                        {skill.visibility === 'private' && (
-                          <div className="text-[9px] font-bold text-blue-500 uppercase tracking-widest mt-0.5 opacity-80 flex items-center gap-1">
-                            <Info size={10} /> Fixed Infra Fee
-                          </div>
-                        )}
                       </div>
+
+                      {/* ── 发布资格进度条（仅 Private + active 技能显示） ── */}
+                      {(skill.status === 'Private' || skill.visibility === 'private') && (() => {
+                        const eli = eligibilityMap[skill.slug];
+                        if (!eli) return null;
+                        const pct = Math.min(100, Math.round((eli.total_calls / eli.thresholds.min_calls) * 100));
+                        const rateOk = eli.success_rate >= eli.thresholds.min_success_rate;
+                        return (
+                          <div className="space-y-1.5" onClick={e => e.stopPropagation()}>
+                            <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-slate-400">
+                              <span>Publish Eligibility</span>
+                              <span className={eli.eligible ? 'text-emerald-500' : 'text-slate-400'}>
+                                {eli.total_calls} / {eli.thresholds.min_calls} calls
+                              </span>
+                            </div>
+                            {/* 进度条 */}
+                            <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${
+                                  eli.eligible ? 'bg-emerald-500' : 'bg-blue-500'
+                                }`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className={`text-[9px] font-bold ${
+                                rateOk ? 'text-emerald-500' : 'text-orange-400'
+                              }`}>
+                                Success rate: {Math.round(eli.success_rate * 100)}%
+                                {rateOk ? ' ✓' : ' (need ≥80%)'}
+                              </span>
+                              {eli.eligible ? (
+                                <button
+                                  onClick={e => { e.stopPropagation(); setPublishTarget(skill); }}
+                                  className="flex items-center gap-1 px-3 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-[9px] font-black transition-all shadow-md shadow-purple-500/20 active:scale-95"
+                                >
+                                  <ArrowUpFromLine size={10} /> Publish
+                                </button>
+                              ) : (
+                                <span className="text-[9px] text-slate-400 italic">
+                                  {eli.missing_calls} more call{eli.missing_calls > 1 ? 's' : ''} to unlock
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* ── Community 状态：社区链接 + 撤回按钮 ── */}
+                      {skill.status === 'Community' && (
+                        <div className="flex items-center justify-between" onClick={e => e.stopPropagation()}>
+                          <a
+                            href={`/skills/${skill.slug}`}
+                            className="text-[10px] text-purple-500 hover:underline font-bold flex items-center gap-1"
+                          >
+                            <Globe size={10} /> View in Community
+                          </a>
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              setWithdrawTarget({ skill, isFlagged: false });
+                            }}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500 hover:border-red-500/30 text-[9px] font-black transition-all"
+                          >
+                            <ArrowDownToLine size={10} /> Withdraw
+                          </button>
+                        </div>
+                      )}
+
+                      {skill.status === 'Flagged' && (
+                        <div className="flex items-center justify-between" onClick={e => e.stopPropagation()}>
+                          <span className="text-[9px] text-orange-500 font-bold flex items-center gap-1">
+                            <Flag size={10} /> Reported — under review
+                          </span>
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              setWithdrawTarget({ skill, isFlagged: true });
+                            }}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-orange-500/30 text-orange-500 hover:bg-orange-500/10 text-[9px] font-black transition-all"
+                          >
+                            <ArrowDownToLine size={10} /> Withdraw
+                          </button>
+                        </div>
+                      )}
+
+                      {/* ── Suspended：红色警告 + 下架原因（只读） ── */}
+                      {skill.status === 'Suspended' && (
+                        <div className="p-2.5 rounded-xl bg-red-500/5 border border-red-500/15" onClick={e => e.stopPropagation()}>
+                          <p className="text-[9px] font-bold text-red-500 flex items-center gap-1 mb-1">
+                            <Ban size={10} /> Suspended by Admin
+                          </p>
+                          {skill.suspend_reason && (
+                            <p className="text-[9px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                              {skill.suspend_reason}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -589,6 +735,56 @@ export default function SkillsPage({ initialCredits, initialDisplayName, initial
         skillName={skillToDelete?.name || ''}
         onClose={() => setSkillToDelete(null)}
         onConfirm={confirmDelete}
+      />
+
+      {/* 发布到社区弹窗 */}
+      {publishTarget && (
+        <PublishToCommunityModal
+          isOpen={!!publishTarget}
+          skill={{
+            id: publishTarget.id,
+            slug: publishTarget.slug,
+            name: publishTarget.name,
+            description: publishTarget.description,
+            emoji: publishTarget.emoji,
+            category: publishTarget.category,
+            tags: publishTarget.tags,
+          }}
+          onClose={() => setPublishTarget(null)}
+          onSuccess={() => {
+            setSkills(prev =>
+              prev.map(s =>
+                s.id === publishTarget.id
+                  ? { ...s, status: 'Community', visibility: 'public' }
+                  : s
+              )
+            );
+            setPublishTarget(null);
+          }}
+        />
+      )}
+
+      {/* 撤回社区弹窗 */}
+      <WithdrawSkillModal
+        isOpen={!!withdrawTarget}
+        skillName={withdrawTarget?.skill?.name ?? ''}
+        isFlagged={withdrawTarget?.isFlagged ?? false}
+        onClose={() => setWithdrawTarget(null)}
+        onConfirm={async () => {
+          if (!withdrawTarget) return;
+          await fetch('/api/skills/unpublish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ skill_uid: withdrawTarget.skill.id }),
+          });
+          setSkills(prev =>
+            prev.map(s =>
+              s.id === withdrawTarget.skill.id
+                ? { ...s, status: 'Private', visibility: 'private' }
+                : s
+            )
+          );
+        }}
       />
     </div>
   );

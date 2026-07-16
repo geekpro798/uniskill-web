@@ -97,7 +97,7 @@ export async function PATCH(
   const body = await req.json();
 
   const allowedFields = [
-    'name', 'contact_name', 'contact_email', 'contact_phone',
+    'team_name', 'contact_name', 'contact_email', 'contact_phone',
     'max_members', 'max_skills', 'max_credits_month',
     'monthly_fee_usd', 'plan', 'notes',
     'contract_start', 'contract_end', 'credits',

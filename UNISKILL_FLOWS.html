@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UniSkill 角色与流程</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:linear-gradient(160deg,#080c16 0%,#0f172a 50%,#0c1622 100%);
+  color:#e2e8f0;font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;overflow-x:auto;
+}
+svg{width:100%;max-width:1200px;height:auto}
+</style>
+</head>
+<body>
+
+<svg viewBox="0 0 1200 780" xmlns="http://www.w3.org/2000/svg">
+
+  <defs>
+    <linearGradient id="gBlue" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3B82F6"/><stop offset="100%" stop-color="#2563EB"/></linearGradient>
+    <linearGradient id="gGreen" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#10B981"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+    <linearGradient id="gPurple" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#8B5CF6"/><stop offset="100%" stop-color="#7C3AED"/></linearGradient>
+    <linearGradient id="gCyan" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#06B6D4"/><stop offset="100%" stop-color="#0891B2"/></linearGradient>
+    <linearGradient id="gAmber" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#F59E0B"/><stop offset="100%" stop-color="#D97706"/></linearGradient>
+    <linearGradient id="gRose" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#F43F5E"/><stop offset="100%" stop-color="#E11D48"/></linearGradient>
+    <linearGradient id="gTitle" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#60A5FA"/><stop offset="50%" stop-color="#8B5CF6"/><stop offset="100%" stop-color="#06B6D4"/></linearGradient>
+
+    <filter id="shadow"><feDropShadow dx="0" dy="2" stdDeviation="6" flood-color="#000" flood-opacity="0.4"/></filter>
+
+    <marker id="aBlue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#60A5FA"/></marker>
+    <marker id="aPurple" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#8B5CF6"/></marker>
+    <marker id="aGreen" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#10B981"/></marker>
+    <marker id="aCyan" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#06B6D4"/></marker>
+    <marker id="aAmber" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#F59E0B"/></marker>
+    <marker id="aRose" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#F43F5E"/></marker>
+  </defs>
+
+  <rect width="1200" height="780" fill="none"/>
+
+  <!-- TITLE -->
+  <text x="600" y="34" text-anchor="middle" font-size="18" font-weight="800" fill="url(#gTitle)" letter-spacing="-0.5">UniSkill 角色与流程</text>
+  <text x="600" y="52" text-anchor="middle" font-size="9" fill="#64748B">四类角色 · 双通道付费</text>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 1: 四类角色 -->
+  <!-- ============================================================ -->
+  <rect x="20" y="72" width="1160" height="30" rx="8" fill="rgba(96,165,250,0.08)"/>
+  <text x="40" y="92" font-size="12" font-weight="700" fill="#93C5FD">👥 四类用户角色</text>
+
+  <!-- Role 1: 个人开发者 -->
+  <rect x="20" y="110" width="280" height="210" rx="14" fill="rgba(96,165,250,0.04)" stroke="rgba(96,165,250,0.15)" stroke-width="1"/>
+  <text x="40" y="134" font-size="11" font-weight="700" fill="#60A5FA">👨‍💻 个人开发者</text>
+
+  <rect x="33" y="148" width="254" height="36" rx="9" fill="rgba(96,165,250,0.1)" stroke="rgba(96,165,250,0.2)" stroke-width="1"/>
+  <text x="48" y="163" font-size="8.5" font-weight="600" fill="#93C5FD">GitHub OAuth 注册</text>
+  <text x="48" y="177" font-size="7" fill="#94A3B8">或带钱包直接访问（野生 Agent）</text>
+
+  <rect x="33" y="192" width="254" height="36" rx="9" fill="rgba(96,165,250,0.1)" stroke="rgba(96,165,250,0.2)" stroke-width="1"/>
+  <text x="48" y="207" font-size="8.5" font-weight="600" fill="#93C5FD">🏦 激活 MPC 钱包 + Session Key</text>
+  <text x="48" y="221" font-size="7" fill="#94A3B8">Settings → 选时效 → curl 一键连接 Agent</text>
+
+  <rect x="33" y="236" width="254" height="36" rx="9" fill="rgba(96,165,250,0.1)" stroke="rgba(96,165,250,0.2)" stroke-width="1"/>
+  <text x="48" y="251" font-size="8.5" font-weight="600" fill="#93C5FD">🔧 浏览 & 安装技能</text>
+  <text x="48" y="265" font-size="7" fill="#94A3B8">Official 免费 + Market 付费 → 即装即用</text>
+
+  <rect x="33" y="280" width="254" height="32" rx="9" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.15)" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="48" y="300" font-size="7" fill="#FCD34D">💰 Credits 扣费（高频）或 USDC/USDT 按次（偶发）</text>
+
+  <!-- Role 2: 企业团队 -->
+  <rect x="315" y="110" width="280" height="210" rx="14" fill="rgba(139,92,246,0.04)" stroke="rgba(139,92,246,0.15)" stroke-width="1"/>
+  <text x="335" y="134" font-size="11" font-weight="700" fill="#A78BFA">🏢 企业团队</text>
+
+  <rect x="328" y="148" width="254" height="36" rx="9" fill="rgba(139,92,246,0.1)" stroke="rgba(139,92,246,0.2)" stroke-width="1"/>
+  <text x="343" y="163" font-size="8.5" font-weight="600" fill="#C4B5FD">📋 创建私有技能注册表</text>
+  <text x="343" y="177" font-size="7" fill="#94A3B8">将内部 API 封装为技能 → 仅团队可见</text>
+
+  <rect x="328" y="192" width="254" height="36" rx="9" fill="rgba(139,92,246,0.1)" stroke="rgba(139,92,246,0.2)" stroke-width="1"/>
+  <text x="343" y="207" font-size="8.5" font-weight="600" fill="#C4B5FD">👥 团队 Agent 统一调用</text>
+  <text x="343" y="221" font-size="7" fill="#94A3B8">一人开发 · 全团队即用 · 权限精细管控</text>
+
+  <rect x="328" y="236" width="254" height="36" rx="9" fill="rgba(139,92,246,0.1)" stroke="rgba(139,92,246,0.2)" stroke-width="1"/>
+  <text x="343" y="251" font-size="8.5" font-weight="600" fill="#C4B5FD">📊 全量审计 & 合规</text>
+  <text x="343" y="265" font-size="7" fill="#94A3B8">谁调了什么 · 消耗多少 · 全链路追踪</text>
+
+  <rect x="328" y="280" width="254" height="32" rx="9" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.15)" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="343" y="300" font-size="7" fill="#FCD34D">💰 团队 Credits 预算 → 月付 · 离职 Revoke 即刻切断</text>
+
+  <!-- Role 3: 技能创作者 -->
+  <rect x="610" y="110" width="280" height="210" rx="14" fill="rgba(16,185,129,0.04)" stroke="rgba(16,185,129,0.15)" stroke-width="1"/>
+  <text x="630" y="134" font-size="11" font-weight="700" fill="#6EE7B7">🎨 技能创作者</text>
+
+  <rect x="623" y="148" width="254" height="36" rx="9" fill="rgba(16,185,129,0.1)" stroke="rgba(16,185,129,0.2)" stroke-width="1"/>
+  <text x="638" y="163" font-size="8.5" font-weight="600" fill="#A7F3D0">📝 Markdown 编写技能</text>
+  <text x="638" y="177" font-size="7" fill="#94A3B8">不学新框架 · 写描述 + 配接口 → 即完成</text>
+
+  <rect x="623" y="192" width="254" height="36" rx="9" fill="rgba(16,185,129,0.1)" stroke="rgba(16,185,129,0.2)" stroke-width="1"/>
+  <text x="638" y="207" font-size="8.5" font-weight="600" fill="#A7F3D0">🧪 沙盒测试 → 🏪 发布 Market</text>
+  <text x="638" y="221" font-size="7" fill="#94A3B8">内置沙盒跑通 → 发布到社区市场 → 人人可用</text>
+
+  <rect x="623" y="236" width="254" height="36" rx="9" fill="rgba(245,158,11,0.12)" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
+  <text x="638" y="251" font-size="8.5" font-weight="600" fill="#FCD34D">💸 按调用量赚取收入</text>
+  <text x="638" y="265" font-size="7" fill="#94A3B8">平台抽 15% · 创作者 85% → 提现或自用</text>
+
+  <rect x="623" y="280" width="254" height="32" rx="9" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.15)" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="638" y="300" font-size="7" fill="#FCD34D">🏪 技能市场飞轮：技能越多 → 用户越多 → 收入越多</text>
+
+  <!-- Role 4: 野生 Agent (NEW) -->
+  <rect x="905" y="110" width="275" height="210" rx="14" fill="rgba(244,63,94,0.04)" stroke="rgba(244,63,94,0.18)" stroke-width="1.5"/>
+  <text x="925" y="134" font-size="11" font-weight="700" fill="#FDA4AF">🐺 野生 Agent</text>
+
+  <rect x="918" y="148" width="249" height="36" rx="9" fill="rgba(244,63,94,0.1)" stroke="rgba(244,63,94,0.22)" stroke-width="1"/>
+  <text x="933" y="163" font-size="8.5" font-weight="600" fill="#FDA4AF">🔓 无需注册 · Permissionless</text>
+  <text x="933" y="177" font-size="7" fill="#94A3B8">任意 Agent + 任意钱包直接调用</text>
+
+  <rect x="918" y="192" width="249" height="36" rx="9" fill="rgba(244,63,94,0.1)" stroke="rgba(244,63,94,0.22)" stroke-width="1"/>
+  <text x="933" y="207" font-size="8.5" font-weight="600" fill="#FDA4AF">🔏 EIP-191 签名鉴权</text>
+  <text x="933" y="221" font-size="7" fill="#94A3B8">钱包签名即身份 · 零信任安全模型</text>
+
+  <rect x="918" y="236" width="249" height="36" rx="9" fill="rgba(244,63,94,0.1)" stroke="rgba(244,63,94,0.22)" stroke-width="1"/>
+  <text x="933" y="251" font-size="8.5" font-weight="600" fill="#FDA4AF">💵 稳定币按次付费</text>
+  <text x="933" y="265" font-size="7" fill="#94A3B8">USDC/USDT 链上结算 · 按调用扣除</text>
+
+  <rect x="918" y="280" width="249" height="32" rx="9" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.15)" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="933" y="300" font-size="7" fill="#FCD34D">🌍 全球任意 Agent 即来即用 · 无国界</text>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 2: 双通道付费 -->
+  <!-- ============================================================ -->
+  <rect x="20" y="340" width="1160" height="30" rx="8" fill="rgba(245,158,11,0.08)"/>
+  <text x="40" y="360" font-size="12" font-weight="700" fill="#FCD34D">⬇️ 接入平台 · 双通道付费模式</text>
+
+  <!-- Channel divider -->
+  <line x1="600" y1="345" x2="600" y2="760" stroke="rgba(255,255,255,0.06)" stroke-width="1" stroke-dasharray="4,6"/>
+
+  <!-- Channel A: 注册用户 (Covers: 个人开发者 + 企业团队 + 技能创作者) -->
+  <rect x="20" y="380" width="560" height="370" rx="14" fill="rgba(139,92,246,0.04)" stroke="rgba(139,92,246,0.18)" stroke-width="1.5"/>
+  <rect x="20" y="380" width="560" height="36" rx="14" fill="rgba(139,92,246,0.12)"/>
+  <rect x="20" y="402" width="560" height="14" fill="rgba(139,92,246,0.12)"/>
+  <text x="300" y="404" text-anchor="middle" font-size="12" font-weight="700" fill="#C4B5FD">🟣 注册用户通道</text>
+  <text x="300" y="420" text-anchor="middle" font-size="8" fill="#A78BFA">适用于 个人开发者 · 企业团队 · 技能创作者</text>
+
+  <!-- Mapping: which roles use this channel -->
+  <rect x="40" y="435" width="520" height="24" rx="6" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+  <text x="300" y="452" text-anchor="middle" font-size="7.5" fill="#94A3B8">👨‍💻 个人开发者 ← → 🏢 企业团队 ← → 🎨 技能创作者</text>
+
+  <!-- Flow steps -->
+  <rect x="40" y="470" width="255" height="38" rx="9" fill="rgba(139,92,246,0.1)" stroke="rgba(139,92,246,0.2)" stroke-width="1"/>
+  <text x="60" y="489" font-size="8.5" font-weight="600" fill="#E2E8F0">👤 OAuth 注册 → 🏦 激活 MPC 钱包</text>
+
+  <line x1="295" y1="489" x2="335" y2="489" stroke="#8B5CF6" stroke-width="1.5" marker-end="url(#aPurple)"/>
+
+  <rect x="338" y="470" width="222" height="38" rx="9" fill="rgba(139,92,246,0.1)" stroke="rgba(139,92,246,0.2)" stroke-width="1"/>
+  <text x="358" y="489" font-size="8.5" font-weight="600" fill="#E2E8F0">🔑 生成 Session Key</text>
+
+  <!-- Arrow down then right -->
+  <path d="M449,508 L449,535 L40,535 L40,535" stroke="#8B5CF6" stroke-width="1.5" fill="none"/>
+  <path d="M40,535 L40,545" stroke="#8B5CF6" stroke-width="1.5" fill="none" marker-end="url(#aPurple)"/>
+
+  <rect x="40" y="551" width="520" height="38" rx="9" fill="rgba(139,92,246,0.1)" stroke="rgba(139,92,246,0.2)" stroke-width="1"/>
+  <text x="60" y="570" font-size="8.5" font-weight="600" fill="#E2E8F0">⚡ curl connect.sh → 自动注入 MCP 配置 → Agent 连接</text>
+
+  <path d="M300,589 L300,605" stroke="#8B5CF6" stroke-width="1.5" fill="none" marker-end="url(#aPurple)"/>
+
+  <rect x="40" y="611" width="520" height="38" rx="9" fill="rgba(245,158,11,0.12)" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
+  <text x="60" y="628" font-size="8.5" font-weight="600" fill="#E2E8F0">🤖 Agent 调用技能 → 💰 Credits 自动扣费 · 免签名 · 高频友好</text>
+
+  <!-- Key features -->
+  <rect x="40" y="665" width="245" height="28" rx="7" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.15)" stroke-width="1"/>
+  <text x="162" y="683" text-anchor="middle" font-size="7.5" fill="#6EE7B7">✅ 免签名 · 高频友好</text>
+
+  <rect x="300" y="665" width="260" height="28" rx="7" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.15)" stroke-width="1"/>
+  <text x="430" y="683" text-anchor="middle" font-size="7.5" fill="#6EE7B7">✅ Credits 预充值 · 支持订阅</text>
+
+  <rect x="160" y="702" width="260" height="28" rx="7" fill="rgba(16,185,129,0.08)" stroke="rgba(16,185,129,0.15)" stroke-width="1"/>
+  <text x="290" y="720" text-anchor="middle" font-size="7.5" fill="#6EE7B7">✅ 审计日志 · 可撤销 · 企业合规</text>
+
+  <!-- Channel B: 野生 Agent -->
+  <rect x="620" y="380" width="560" height="370" rx="14" fill="rgba(244,63,94,0.04)" stroke="rgba(244,63,94,0.2)" stroke-width="1.5"/>
+  <rect x="620" y="380" width="560" height="36" rx="14" fill="rgba(244,63,94,0.12)"/>
+  <rect x="620" y="402" width="560" height="14" fill="rgba(244,63,94,0.12)"/>
+  <text x="900" y="404" text-anchor="middle" font-size="12" font-weight="700" fill="#FDA4AF">🔴 野生 Agent 通道</text>
+  <text x="900" y="420" text-anchor="middle" font-size="8" fill="#FB7185">适用于 🐺 野生 Agent（免注册 · 带钱包即用）</text>
+
+  <!-- Mapping: which role uses this channel -->
+  <rect x="640" y="435" width="520" height="24" rx="6" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+  <text x="900" y="452" text-anchor="middle" font-size="7.5" fill="#94A3B8">🐺 野生 Agent（唯一使用此通道的角色）</text>
+
+  <!-- Flow steps -->
+  <rect x="640" y="470" width="255" height="38" rx="9" fill="rgba(244,63,94,0.1)" stroke="rgba(244,63,94,0.22)" stroke-width="1"/>
+  <text x="660" y="489" font-size="8.5" font-weight="600" fill="#E2E8F0">🐺 任意 Agent + 任意钱包</text>
+
+  <line x1="895" y1="489" x2="935" y2="489" stroke="#F43F5E" stroke-width="1.5" marker-end="url(#aRose)"/>
+
+  <rect x="938" y="470" width="222" height="38" rx="9" fill="rgba(244,63,94,0.1)" stroke="rgba(244,63,94,0.22)" stroke-width="1"/>
+  <text x="958" y="489" font-size="8.5" font-weight="600" fill="#E2E8F0">🔏 EIP-191 钱包签名</text>
+
+  <!-- Arrow down then right -->
+  <path d="M1049,508 L1049,535 L640,535 L640,535" stroke="#F43F5E" stroke-width="1.5" fill="none"/>
+  <path d="M640,535 L640,545" stroke="#F43F5E" stroke-width="1.5" fill="none" marker-end="url(#aRose)"/>
+
+  <rect x="640" y="551" width="520" height="38" rx="9" fill="rgba(244,63,94,0.1)" stroke="rgba(244,63,94,0.22)" stroke-width="1"/>
+  <text x="660" y="570" font-size="8.5" font-weight="600" fill="#E2E8F0">🌐 Gateway 验证签名 → 解析钱包地址 → 路由技能</text>
+
+  <path d="M900,589 L900,605" stroke="#F43F5E" stroke-width="1.5" fill="none" marker-end="url(#aRose)"/>
+
+  <rect x="640" y="611" width="520" height="38" rx="9" fill="rgba(245,158,11,0.15)" stroke="rgba(245,158,11,0.3)" stroke-width="1"/>
+  <text x="660" y="628" font-size="8.5" font-weight="600" fill="#E2E8F0">💵 USDC/USDT 按次扣除 → ✅ 技能执行 → 返回结果</text>
+
+  <!-- Key features -->
+  <rect x="640" y="665" width="245" height="28" rx="7" fill="rgba(244,63,94,0.1)" stroke="rgba(244,63,94,0.2)" stroke-width="1"/>
+  <text x="762" y="683" text-anchor="middle" font-size="7.5" fill="#FDA4AF">🔓 无需注册 · Permissionless</text>
+
+  <rect x="900" y="665" width="260" height="28" rx="7" fill="rgba(244,63,94,0.1)" stroke="rgba(244,63,94,0.2)" stroke-width="1"/>
+  <text x="1030" y="683" text-anchor="middle" font-size="7.5" fill="#FDA4AF">💵 稳定币支付 · 链上结算</text>
+
+  <rect x="760" y="702" width="260" height="28" rx="7" fill="rgba(244,63,94,0.1)" stroke="rgba(244,63,94,0.2)" stroke-width="1"/>
+  <text x="890" y="720" text-anchor="middle" font-size="7.5" fill="#FDA4AF">🌍 全球任意 Agent 可调用</text>
+
+</svg>
+
+</body>
+</html>

@@ -118,7 +118,7 @@ export default function NewEnterprisePage() {
             开通成功!
           </h1>
           <p className="text-sm mt-2" style={{ color: 'var(--color-text-secondary)' }}>
-            {created.team.name} 已成功开通
+            {created.team.team_name} 已成功开通
           </p>
         </div>
 

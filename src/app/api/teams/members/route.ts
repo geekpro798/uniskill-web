@@ -1,5 +1,5 @@
 // src/app/api/teams/members/route.ts
-// 团队成员管理 API — 邀请白名单 + 成员管理
+// 团队成员管理 API — 统一 team_members 表（status 区分邀请/正式成员）
 
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
@@ -34,7 +34,7 @@ async function checkMembership(userUid: string, userEmail: string | null | undef
   return null;
 }
 
-// GET — 列出成员 + 待处理邀请
+// GET — 列出正式成员 + 待处理邀请（统一从 team_members 查）
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions as any) as any;
   if (!session?.user) {
@@ -49,16 +49,18 @@ export async function GET(req: Request) {
 
   const supabase = getSupabaseAdmin();
 
-  const [membershipsRes, invitationsRes] = await Promise.all([
-    supabase.from("team_members").select("user_uid, role, joined_at").eq("team_uid", teamUid),
-    supabase.from("team_invitations").select("*").eq("team_uid", teamUid).eq("status", "pending"),
-  ]);
+  // 一次性查出所有记录（正式成员 + 邀请）
+  const { data: allRecords } = await supabase
+    .from("team_members")
+    .select("*")
+    .eq("team_uid", teamUid);
 
-  const memberships = membershipsRes.data || [];
-  const invitations = invitationsRes.data || [];
+  const records = allRecords || [];
+  const memberships = records.filter((r) => r.status === "active");
+  const invitations = records.filter((r) => r.status === "pending");
 
   // 收集 profile 信息
-  const allUids = memberships.map((m) => m.user_uid);
+  const allUids = memberships.map((m) => m.user_uid).filter(Boolean);
   let profiles: any[] = [];
   if (allUids.length > 0) {
     const res = await supabase
@@ -76,7 +78,7 @@ export async function GET(req: Request) {
       role: m.role,
       joined_at: m.joined_at,
       username: p?.username || null,
-      email: p?.email || null,
+      email: p?.email || m.email || null,
       avatar_url: p?.avatar_url || null,
     };
   });
@@ -84,7 +86,7 @@ export async function GET(req: Request) {
   return NextResponse.json({ members, invitations });
 }
 
-// POST — 添加成员到白名单（创建邀请）
+// POST — 邀请成员（写入 team_members，status = 'pending'）
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions as any) as any;
   if (!session?.user) {
@@ -108,64 +110,54 @@ export async function POST(req: Request) {
   const supabase = getSupabaseAdmin();
   const normalizedEmail = email.toLowerCase().trim();
 
-  // 检查是否已有邀请
-  const { data: existingInvite } = await supabase
-    .from("team_invitations")
+  // 查 team_name
+  const { data: team } = await supabase
+    .from("teams")
+    .select("team_name, admin_uid")
+    .eq("team_uid", team_uid)
+    .maybeSingle();
+
+  // 检查是否已有活跃成员或待处理邀请
+  const { data: existingRecord } = await supabase
+    .from("team_members")
     .select("*")
     .eq("team_uid", team_uid)
     .eq("email", normalizedEmail)
     .maybeSingle();
 
-  if (existingInvite) {
-    if (existingInvite.status === "pending") {
+  if (existingRecord) {
+    if (existingRecord.status === "pending") {
       return NextResponse.json({ error: "Invitation already sent to this email" }, { status: 409 });
     }
-    // 重新激活过期/取消的邀请
-    await supabase
-      .from("team_invitations")
-      .update({ status: "pending", invited_by_uid: userUid, created_at: new Date().toISOString() })
-      .eq("id", existingInvite.id);
-    return NextResponse.json({ success: true, invitation: { ...existingInvite, status: "pending" } });
-  }
-
-  // 检查是否已是成员
-  const { data: targetProfile } = await supabase
-    .from("profiles")
-    .select("user_uid, username, email")
-    .eq("email", normalizedEmail)
-    .maybeSingle();
-
-  if (targetProfile) {
-    const { data: existingMember } = await supabase
-      .from("team_members")
-      .select("role")
-      .eq("team_uid", team_uid)
-      .eq("user_uid", targetProfile.user_uid)
-      .maybeSingle();
-
-    if (existingMember) {
+    if (existingRecord.status === "active") {
       return NextResponse.json({ error: "User is already a team member" }, { status: 409 });
     }
+    // 重新激活已取消/过期的邀请
+    const { data: reactivated } = await supabase
+      .from("team_members")
+      .update({
+        status: "pending",
+        invited_by_uid: userUid,
+        created_at: new Date().toISOString(),
+        accepted_at: null,
+      })
+      .eq("id", existingRecord.id)
+      .select()
+      .single();
 
-    const { data: team } = await supabase
-      .from("teams")
-      .select("admin_uid")
-      .eq("team_uid", team_uid)
-      .maybeSingle();
-
-    if (team?.admin_uid === targetProfile.user_uid) {
-      return NextResponse.json({ error: "Cannot add the team owner as a member" }, { status: 409 });
-    }
+    return NextResponse.json({ success: true, invitation: reactivated });
   }
 
   // 创建邀请
   const { data: invitation, error } = await supabase
-    .from("team_invitations")
+    .from("team_members")
     .insert({
       team_uid,
+      team_name: (team as any)?.team_name || null,
       email: normalizedEmail,
       role: body.role || "member",
       invited_by_uid: userUid,
+      status: "pending",
     })
     .select()
     .single();
@@ -177,13 +169,11 @@ export async function POST(req: Request) {
   return NextResponse.json({
     success: true,
     invitation,
-    message: targetProfile
-      ? "User already has an account — they will be added on next login."
-      : "Invitation sent. The user will join automatically when they sign in.",
+    message: "Invitation sent. The user will join automatically when they sign in.",
   });
 }
 
-// DELETE — 移除成员 或 取消邀请
+// DELETE — 移除成员（status = 'active'）或取消邀请（status = 'pending'）
 export async function DELETE(req: Request) {
   const session = await getServerSession(authOptions as any) as any;
   if (!session?.user) {
@@ -212,13 +202,14 @@ export async function DELETE(req: Request) {
 
   const supabase = getSupabaseAdmin();
 
-  // 取消邀请
+  // 取消邀请（通过 invitation_id = team_members.id）
   if (invitationId) {
     const { error } = await supabase
-      .from("team_invitations")
+      .from("team_members")
       .update({ status: "cancelled" })
-      .eq("id", invitationId)
-      .eq("team_uid", teamUid);
+      .eq("id", parseInt(invitationId))
+      .eq("team_uid", teamUid)
+      .eq("status", "pending");
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -227,7 +218,7 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ success: true, cancelled_invitation: invitationId });
   }
 
-  // 移除成员
+  // 移除正式成员
   const { data: team } = await supabase
     .from("teams")
     .select("admin_uid")
@@ -243,6 +234,7 @@ export async function DELETE(req: Request) {
     .select("role")
     .eq("team_uid", teamUid)
     .eq("user_uid", targetUid)
+    .eq("status", "active")
     .maybeSingle();
 
   if (membership.role === "admin" && targetMembership?.role === "admin") {
@@ -253,7 +245,8 @@ export async function DELETE(req: Request) {
     .from("team_members")
     .delete()
     .eq("team_uid", teamUid)
-    .eq("user_uid", targetUid);
+    .eq("user_uid", targetUid)
+    .eq("status", "active");
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -262,7 +255,7 @@ export async function DELETE(req: Request) {
   return NextResponse.json({ success: true, removed: targetUid });
 }
 
-// PATCH — 变更成员角色
+// PATCH — 变更成员角色（仅 active 成员）
 export async function PATCH(req: Request) {
   const session = await getServerSession(authOptions as any) as any;
   if (!session?.user) {
@@ -301,9 +294,10 @@ export async function PATCH(req: Request) {
 
   const { data: updated, error } = await supabase
     .from("team_members")
-    .update({ role: newRole })
+    .update({ role: newRole, updated_at: new Date().toISOString() })
     .eq("team_uid", team_uid)
     .eq("user_uid", targetUid)
+    .eq("status", "active")
     .select()
     .single();
 

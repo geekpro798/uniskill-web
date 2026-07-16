@@ -138,7 +138,7 @@ export async function POST(req: Request) {
   const { data: team, error: teamError } = await supabase
     .from('teams')
     .insert({
-      name: company_name.trim(),
+      team_name: company_name.trim(),
       slug: company_slug.toLowerCase().trim(),
       created_by: admin.userUid,
       status: 'active',

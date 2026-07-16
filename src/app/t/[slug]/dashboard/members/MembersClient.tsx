@@ -18,7 +18,7 @@ interface Member {
 }
 
 interface Invitation {
-  id: string;
+  id: number;
   team_uid: string;
   email: string;
   role: string;
@@ -72,7 +72,7 @@ export default function MembersClient({
   const [addSuccess, setAddSuccess] = useState("");
   const [loadingRole, setLoadingRole] = useState<string | null>(null);
   const [loadingRemove, setLoadingRemove] = useState<string | null>(null);
-  const [loadingCancel, setLoadingCancel] = useState<string | null>(null);
+  const [loadingCancel, setLoadingCancel] = useState<number | null>(null);
   const [modal, setModal] = useState<{
     show: boolean;
     type: "confirm" | "alert";
@@ -155,7 +155,7 @@ export default function MembersClient({
     }
   };
 
-  const handleCancelInvite = async (invitationId: string) => {
+  const handleCancelInvite = async (invitationId: number) => {
     setLoadingCancel(invitationId);
     try {
       const res = await fetch(

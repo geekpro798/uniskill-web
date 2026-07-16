@@ -154,11 +154,11 @@ export default function EnterprisesListPage() {
                     <td className="px-6 py-4">
                       <Link href={`/admin/teams/${e.team_uid}`} className="flex items-center gap-3 group">
                         <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-white font-black text-sm">
-                          {e.name?.charAt(0) || '?'}
+                          {e.team_name?.charAt(0) || '?'}
                         </div>
                         <div>
                           <div className="text-sm font-bold group-hover:text-blue-500 transition-colors" style={{ color: 'var(--color-text-primary)' }}>
-                            {e.name}
+                            {e.team_name}
                           </div>
                           <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
                             {e.contact_email || e.contact_name || '—'}

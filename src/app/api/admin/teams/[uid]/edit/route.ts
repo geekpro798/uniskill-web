@@ -66,7 +66,7 @@ export async function POST(
 
   // 更新团队
   const updateData: any = {
-    name: company_name.trim(),
+    team_name: company_name.trim(),
     contact_name: contact_name || null,
     contact_email: bizEmail || null,
     contact_phone: contact_phone || null,

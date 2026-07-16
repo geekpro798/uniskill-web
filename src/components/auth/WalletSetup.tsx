@@ -3,7 +3,7 @@
 // 主权身份初始化引导组件 — Particle Network MPC 钱包激活
 // Sovereign identity onboarding: Particle Network MPC wallet activation
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useConnect, useConnectors, useAccount, useDisconnect } from '@particle-network/connectkit';
 import { motion } from 'framer-motion';
@@ -15,27 +15,31 @@ interface WalletSetupProps {
 
 export default function WalletSetup({ onComplete }: WalletSetupProps) {
     const { data: session }        = useSession();
-    const { connect }              = useConnect();
+    const { connect }                = useConnect();
     const connectors               = useConnectors();
     const { address, isConnected } = useAccount();
     const { disconnect }           = useDisconnect();
 
     const isGithubUser = !!(session?.user as any)?.githubId;
-    const authMethod = isGithubUser ? 'github' : 'email';
     const AuthIcon = isGithubUser ? Github : Mail;
     const authLabel = isGithubUser ? 'GitHub' : 'Email';
+    const userEmail = session?.user?.email || '';
 
     const [step,       setStep]       = useState<'idle' | 'connecting' | 'binding' | 'done' | 'error'>('idle');
     const [errorMsg,   setErrorMsg]   = useState<string>('');
     const [walletAddr, setWalletAddr] = useState<string>('');
 
+    // 用 ref 追踪 step，避免 useEffect 闭包拿到旧值
+    const stepRef = useRef(step);
+    useEffect(() => { stepRef.current = step; }, [step]);
+
     // ✅ 通过 Effect 监听 address 的可用状态
     // 如果处于 connecting 状态，或者 SDK 自动从 OAuth 重定向恢复了连接状态（step 为 idle），立刻自动执行绑定，免去用户二次点击！
     useEffect(() => {
-        if (isConnected && address && (step === 'connecting' || step === 'idle')) {
+        if (isConnected && address && (stepRef.current === 'connecting' || stepRef.current === 'idle')) {
             handleBinding(address);
         }
-    }, [isConnected, address, step]);
+    }, [isConnected, address]);
 
     const handleActivate = async () => {
         setStep('connecting');
@@ -56,17 +60,29 @@ export default function WalletSetup({ onComplete }: WalletSetupProps) {
                 disconnect(); 
             }
 
-            // 唤起授权窗口（GitHub 或 Email OTP，根据用户类型自动选择）
-            await connect({
+            // GitHub → socialType, Email → Particle UI 自行处理
+            if (isGithubUser) {
+              connect({
                 connector: authConnector,
                 // @ts-ignore
-                authParams: { socialType: authMethod }
-            });
+                authParams: { socialType: 'github' },
+              });
+            } else {
+              connect({ connector: authConnector });
+            }
 
-            // Note: The rest of the flow is passed cleanly to the useEffect!
+            // useEffect 监听 useAccount 变化后自动执行 handleBinding
         } catch (err: any) {
             console.error('[WalletSetup] Raw Error:', err);
-            
+
+            // 空对象 / 无有效信息 → 视为用户取消操作
+            const isEmptyObj = err && typeof err === 'object' && Object.keys(err).length === 0;
+
+            if (isEmptyObj) {
+                setStep('idle');
+                return;
+            }
+
             let extractedMsg = 'An unexpected error occurred';
             if (err instanceof Error) {
                 extractedMsg = err.message;

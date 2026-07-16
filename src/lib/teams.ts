@@ -28,13 +28,13 @@ export async function getTeamMembers(teamUid: string): Promise<TeamMember[]> {
 
   // 并行获取团队信息和成员列表
   const [{ data: team }, { data: memberships }] = await Promise.all([
-    supabase.from('teams').select('admin_uid, admin_email, name').eq('team_uid', teamUid).maybeSingle(),
+    supabase.from('teams').select('admin_uid, admin_email, team_name').eq('team_uid', teamUid).maybeSingle(),
     supabase.from('team_members').select('user_uid, role, joined_at').eq('team_uid', teamUid),
   ]);
 
   const ownerUid = (team as any)?.admin_uid as string | undefined;
   const ownerEmail = (team as any)?.admin_email as string | undefined;
-  const teamName = (team as any)?.name as string | undefined;
+  const teamName = (team as any)?.team_name as string | undefined;
 
   const membershipList = memberships || [];
 
@@ -210,9 +210,9 @@ export async function processPendingInvitations(
   const supabase = getSupabaseAdmin();
   const normalizedEmail = email.toLowerCase().trim();
 
-  // 查找该邮箱的所有待处理邀请
+  // 查找该邮箱的所有待处理邀请（status = 'pending' in team_members）
   const { data: invitations } = await supabase
-    .from('team_invitations')
+    .from('team_members')
     .select('*')
     .eq('email', normalizedEmail)
     .eq('status', 'pending');
@@ -222,19 +222,20 @@ export async function processPendingInvitations(
   const joinedTeamUids: string[] = [];
 
   for (const inv of invitations) {
-    // 检查是否已是成员（防止重复）
+    // 检查是否已是活跃成员
     const { data: existing } = await supabase
       .from('team_members')
-      .select('role')
+      .select('id')
       .eq('team_uid', inv.team_uid)
       .eq('user_uid', userUid)
+      .eq('status', 'active')
       .maybeSingle();
 
     if (existing) {
-      // 已是成员，标记邀请为 accepted
+      // 已是成员，取消邀请记录
       await supabase
-        .from('team_invitations')
-        .update({ status: 'accepted', accepted_at: new Date().toISOString() })
+        .from('team_members')
+        .update({ status: 'cancelled' })
         .eq('id', inv.id);
       continue;
     }
@@ -248,22 +249,19 @@ export async function processPendingInvitations(
 
     if (team?.admin_uid === userUid) continue;
 
-    // 加入团队
-    const { error: insertError } = await supabase
+    // 将邀请转为活跃成员
+    const { error: updateError } = await supabase
       .from('team_members')
-      .insert({
-        team_uid: inv.team_uid,
+      .update({
         user_uid: userUid,
-        role: inv.role || 'member',
-      });
+        status: 'active',
+        accepted_at: new Date().toISOString(),
+        joined_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', inv.id);
 
-    if (!insertError) {
-      // 更新邀请状态
-      await supabase
-        .from('team_invitations')
-        .update({ status: 'accepted', accepted_at: new Date().toISOString() })
-        .eq('id', inv.id);
-
+    if (!updateError) {
       joinedTeamUids.push(inv.team_uid);
       console.log(`[teams] Auto-joined user ${userUid} to team ${inv.team_uid} as ${inv.role}`);
     }
