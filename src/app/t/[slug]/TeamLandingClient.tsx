@@ -347,7 +347,7 @@ function MemberState({
               <stat.icon size={18} />
             </div>
             <p className="text-2xl font-black" style={{ color: "var(--color-text-primary)" }}>
-              {stat.value}{stat.suffix || ""}
+              {stat.value}
             </p>
             <p className="text-[10px] uppercase font-bold tracking-widest mt-0.5" style={{ color: "var(--color-text-secondary)" }}>
               {stat.label}

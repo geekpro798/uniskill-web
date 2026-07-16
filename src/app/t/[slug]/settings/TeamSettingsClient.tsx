@@ -67,7 +67,7 @@ export default function TeamSettingsClient({ team, userUid }: TeamSettingsClient
     <div className="flex flex-col gap-4">
       <Breadcrumbs
         items={[
-          { label: team.team_name, href: `/t/${team.slug}` },
+          { label: team.name, href: `/t/${team.slug}` },
           { label: "Dashboard", href: `/t/${team.slug}/dashboard` },
           { label: "Settings" },
         ]}
@@ -166,7 +166,7 @@ function ProfileTab({ team, slug }: { team: TeamInfo; slug: string }) {
             <Building2 className="w-6 h-6 text-blue-500" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{team.team_name}</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{team.name}</p>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               uniskill.ai/t/{slug}
             </p>

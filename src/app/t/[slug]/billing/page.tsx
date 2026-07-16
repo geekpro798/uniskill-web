@@ -9,13 +9,13 @@ export const dynamic = "force-dynamic";
 
 export default async function TeamBillingPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const session = await getServerSession(authOptions as any);
+  const session = (await getServerSession(authOptions as any)) as any;
 
-  if (!(session as any)?.user) {
+  if (!session?.user) {
     redirect(`/t/${slug}`);
   }
 
-  const userUid = (session as any).user.userUid;
+  const userUid = session.user.userUid;
   const userEmail = session.user.email;
 
   const team = await getTeamBySlug(slug);
@@ -30,9 +30,9 @@ export default async function TeamBillingPage({ params }: { params: Promise<{ sl
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg-main)" }}>
       <UnifiedNavbar
-        initialCredits={(session as any).user.credits}
-        initialDisplayName={(session as any).user.name || null}
-        initialAvatarUrl={(session as any).user.image || null}
+        initialCredits={session.user.credits}
+        initialDisplayName={session.user.name || null}
+        initialAvatarUrl={session.user.image || null}
       />
       <main className="max-w-3xl mx-auto pt-[88px] md:pt-[100px] pb-10 px-6">
         <TeamBillingClient
@@ -40,7 +40,7 @@ export default async function TeamBillingPage({ params }: { params: Promise<{ sl
           teamName={team.team_name}
           teamSlug={team.slug}
           plan={team.plan}
-          maxCreditsMonth={team.max_credits_month}
+          maxCreditsMonth={team.max_credits_month ?? null}
         />
       </main>
     </div>
