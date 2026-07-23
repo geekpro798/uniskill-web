@@ -153,6 +153,7 @@ export default function AdminSkillsPage() {
             <thead className="text-[10px] font-black uppercase text-slate-400 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
               <tr>
                 <th className="px-6 py-3 tracking-widest">Skill</th>
+                <th className="px-6 py-3 tracking-widest">Author</th>
                 <th className="px-6 py-3 tracking-widest">Status</th>
                 <th className="px-6 py-3 tracking-widest text-center">Calls</th>
                 <th className="px-6 py-3 tracking-widest text-center">Reports</th>
@@ -190,6 +191,11 @@ export default function AdminSkillsPage() {
                         )}
                       </div>
                     </div>
+                  </td>
+                  <td className="px-6 py-4 text-sm font-medium text-slate-600 dark:text-slate-300">
+                    <span className={skill.author === 'Anonymous' ? 'text-slate-400 italic font-normal' : ''}>
+                      {skill.author}
+                    </span>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`flex items-center gap-1.5 w-fit px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase border ${

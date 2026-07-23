@@ -92,10 +92,39 @@ export async function GET(req: Request) {
       });
     }
 
-    const enriched = (data || []).map(skill => ({
-      ...skill,
-      pending_reports: reportCountMap[skill.skill_uid] || 0,
-    }));
+    // 批量获取作者 profiles 信息
+    const ownerUids = Array.from(
+      new Set((data || []).map(s => s.owner_uid).filter(Boolean))
+    );
+    let ownerMap: Record<string, { username: string }> = {};
+
+    if (ownerUids.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_uid, username')
+        .in('user_uid', ownerUids);
+
+      (profiles || []).forEach(p => {
+        ownerMap[p.user_uid] = {
+          username: p.username || 'Unknown',
+        };
+      });
+    }
+
+    const enriched = (data || []).map(skill => {
+      let authorName = 'Unknown';
+      if (skill.owner_anonymous) {
+        authorName = 'Anonymous';
+      } else if (skill.owner_uid && ownerMap[skill.owner_uid]) {
+        authorName = ownerMap[skill.owner_uid].username;
+      }
+
+      return {
+        ...skill,
+        pending_reports: reportCountMap[skill.skill_uid] || 0,
+        author: authorName,
+      };
+    });
 
     return NextResponse.json({
       data: enriched,
